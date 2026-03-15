@@ -19,6 +19,8 @@ migrate_working_dir/
 *.pem
 *.key
 
+CREDENTIALS.txt
+
 # IntelliJ related
 *.iml
 *.ipr
