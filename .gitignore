@@ -3,6 +3,8 @@
 *.log
 *.pyc
 *.swp
+analyze_output.txt
+analyze_results.json
 .DS_Store
 .atom/
 .build/
