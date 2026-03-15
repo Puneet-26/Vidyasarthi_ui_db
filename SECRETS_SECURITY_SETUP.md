@@ -38,8 +38,8 @@ Your VidyaSarathi app now has **production-grade secrets management**!
 Your app is ready to go! The following variables are already in `.env`:
 
 ```env
-SUPABASE_URL=https://qhxrvagofgthruceztpc.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_URL= apna daal do 
+SUPABASE_ANON_KEY=ye bhi khudka hi dalna 
 APP_NAME=VidyaSarathi
 APP_ENVIRONMENT=development
 DEBUG_MODE=true
