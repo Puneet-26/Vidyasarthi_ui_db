@@ -5,6 +5,7 @@ import '../screens/teacher_dashboard.dart';
 import '../screens/parent_dashboard.dart';
 import '../screens/admin_dashboard.dart';
 import '../screens/non_teaching_staff_dashboard.dart';
+import '../widgets/shared_widgets.dart';
 
 class LoadingScreen extends StatefulWidget {
   final String role;
@@ -83,6 +84,8 @@ class _LoadingScreenState extends State<LoadingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -135,10 +138,10 @@ class _LoadingScreenState extends State<LoadingScreen>
               const SizedBox(height: 24),
               FadeTransition(
                 opacity: _fadeAnimation,
-                child: const Text(
+                child: Text(
                   'VIDYASARATHI',
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize: Responsive.sp(context, 28),
                     fontWeight: FontWeight.w800,
                     color: AppColors.textDark,
                     letterSpacing: 2,
@@ -150,8 +153,8 @@ class _LoadingScreenState extends State<LoadingScreen>
                 opacity: _fadeAnimation,
                 child: Text(
                   'Welcome, ${widget.role}',
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 16),
                     color: AppColors.textMid,
                     fontWeight: FontWeight.w500,
                   ),
@@ -167,10 +170,10 @@ class _LoadingScreenState extends State<LoadingScreen>
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Loading your dashboard...',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: Responsive.sp(context, 13),
                   color: AppColors.textLight,
                 ),
               ),

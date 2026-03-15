@@ -77,72 +77,85 @@ class _ParentHomePage extends StatelessWidget {
           const SizedBox(height: 24),
           const SectionHeader(title: 'My Children'),
           const SizedBox(height: 12),
-          Row(
-            children: List.generate(children.length, (i) {
-              final c = children[i];
-              final isSelected = i == selectedChild;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => onSelectChild(i),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: EdgeInsets.only(right: i < children.length - 1 ? 10 : 0),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppColors.parentAccent : Colors.white.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.parentAccent.withValues(alpha: isSelected ? 0.3 : 0.05),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: List.generate(children.length, (i) {
+                  final c = children[i];
+                  final isSelected = i == selectedChild;
+                  return SizedBox(
+                    width: (constraints.maxWidth - 10) / 2,
+                    child: GestureDetector(
+                      onTap: () => onSelectChild(i),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.parentAccent : Colors.white.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.parentAccent.withValues(alpha: isSelected ? 0.3 : 0.05),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
                         ),
-                      ],
+                        child: Row(
+                          children: [
+                            GradientAvatar(
+                              initials: c['name']!.substring(0, 2),
+                              color: isSelected ? Colors.white.withValues(alpha: 0.5) : AppColors.parentAccent,
+                              size: 38,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(c['name']!.split(' ')[0],
+                                      style: TextStyle(fontSize: Responsive.sp(context, 13), fontWeight: FontWeight.w700,
+                                          color: isSelected ? Colors.white : AppColors.textDark)),
+                                  Text(c['class']!,
+                                      style: TextStyle(fontSize: Responsive.sp(context, 11),
+                                          color: isSelected ? Colors.white70 : AppColors.textLight)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        GradientAvatar(
-                          initials: c['name']!.substring(0, 2),
-                          color: isSelected ? Colors.white.withValues(alpha: 0.5) : AppColors.parentAccent,
-                          size: 38,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(c['name']!.split(' ')[0],
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                                      color: isSelected ? Colors.white : AppColors.textDark)),
-                              Text(c['class']!,
-                                  style: TextStyle(fontSize: 11,
-                                      color: isSelected ? Colors.white70 : AppColors.textLight)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                  );
+                }),
               );
-            }),
+            },
           ),
           const SizedBox(height: 24),
           _ChildPerformanceBanner(childName: child['name']!.split(' ')[0]),
           const SizedBox(height: 24),
-          const Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: [
-              Expanded(child: StatCard(title: 'Attendance', value: '92%', icon: Icons.how_to_reg_rounded, color: AppColors.success, subtitle: 'This month')),
-              SizedBox(width: 12),
-              Expanded(child: StatCard(title: 'Overall Grade', value: 'A-', icon: Icons.grade_rounded, color: AppColors.parentAccent, subtitle: 'Semester 2')),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Row(
-            children: [
-              Expanded(child: StatCard(title: 'Fee Status', value: 'Paid', icon: Icons.check_circle_rounded, color: AppColors.success, subtitle: 'March 2026')),
-              SizedBox(width: 12),
-              Expanded(child: StatCard(title: 'Class Rank', value: '#7', icon: Icons.leaderboard_rounded, color: AppColors.warning, subtitle: 'Out of 40')),
+              SizedBox(
+                width: (MediaQuery.of(context).size.width - 52) / 2,
+                child: const StatCard(title: 'Attendance', value: '92%', icon: Icons.how_to_reg_rounded, color: AppColors.success, subtitle: 'This month'),
+              ),
+              SizedBox(
+                width: (MediaQuery.of(context).size.width - 52) / 2,
+                child: const StatCard(title: 'Overall Grade', value: 'A-', icon: Icons.grade_rounded, color: AppColors.parentAccent, subtitle: 'Semester 2'),
+              ),
+              SizedBox(
+                width: (MediaQuery.of(context).size.width - 52) / 2,
+                child: const StatCard(title: 'Fee Status', value: 'Paid', icon: Icons.check_circle_rounded, color: AppColors.success, subtitle: 'March 2026'),
+              ),
+              SizedBox(
+                width: (MediaQuery.of(context).size.width - 52) / 2,
+                child: const StatCard(title: 'Class Rank', value: '#7', icon: Icons.leaderboard_rounded, color: AppColors.warning, subtitle: 'Out of 40'),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -188,15 +201,15 @@ class _ParentChildrenPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    GradientAvatar(initials: 'AS', color: AppColors.parentAccent, size: 48),
-                    SizedBox(width: 14),
+                    const GradientAvatar(initials: 'AS', color: AppColors.parentAccent, size: 48),
+                    const SizedBox(width: 14),
                     Expanded(child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Aryan Sharma', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                        Text('Class 10-A • Roll No. 15', style: TextStyle(fontSize: 12, color: AppColors.textMid)),
+                        Text('Aryan Sharma', style: TextStyle(fontSize: Responsive.sp(context, 16), fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                        Text('Class 10-A • Roll No. 15', style: TextStyle(fontSize: Responsive.sp(context, 12), color: AppColors.textMid)),
                       ],
                     )),
                   ],
@@ -278,9 +291,9 @@ class _PaymentHistoryTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(amount, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                Text('$method • $date', style: const TextStyle(fontSize: 11, color: AppColors.textMid)),
-                Text('Ref: $ref', style: const TextStyle(fontSize: 10, color: AppColors.textLight)),
+                Text(amount, style: TextStyle(fontSize: Responsive.sp(context, 15), fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                Text('$method • $date', style: TextStyle(fontSize: Responsive.sp(context, 11), color: AppColors.textMid)),
+                Text('Ref: $ref', style: TextStyle(fontSize: Responsive.sp(context, 10), color: AppColors.textLight)),
               ],
             ),
           ),
@@ -346,8 +359,8 @@ class _ParentProfilePage extends StatelessWidget {
           const SizedBox(height: 20),
           const GradientAvatar(initials: 'RS', color: AppColors.parentAccent, size: 72),
           const SizedBox(height: 12),
-          const Text('Mr. Ramesh Sharma', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textDark)),
-          const Text('Parent • 1 child enrolled', style: TextStyle(fontSize: 13, color: AppColors.textMid)),
+          Text('Mr. Ramesh Sharma', style: TextStyle(fontSize: Responsive.sp(context, 20), fontWeight: FontWeight.w800, color: AppColors.textDark)),
+          Text('Parent • 1 child enrolled', style: TextStyle(fontSize: Responsive.sp(context, 13), color: AppColors.textMid)),
           const SizedBox(height: 24),
           GlassCard(
             padding: const EdgeInsets.all(16),
@@ -639,16 +652,16 @@ class _MessageItem extends StatelessWidget {
                   children: [
                     Text(
                       teacher,
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: TextStyle(
+                        fontSize: Responsive.sp(context, 13),
                         fontWeight: FontWeight.w700,
                         color: AppColors.textDark,
                       ),
                     ),
                     Text(
                       time,
-                      style: const TextStyle(
-                        fontSize: 11,
+                      style: TextStyle(
+                        fontSize: Responsive.sp(context, 11),
                         color: AppColors.textLight,
                       ),
                     ),
@@ -656,8 +669,8 @@ class _MessageItem extends StatelessWidget {
                 ),
                 Text(
                   subject,
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 11),
                     color: AppColors.parentAccent,
                     fontWeight: FontWeight.w600,
                   ),
@@ -665,8 +678,8 @@ class _MessageItem extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   message,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 12),
                     color: AppColors.textMid,
                     height: 1.4,
                   ),
@@ -714,16 +727,16 @@ class _EventItem extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 13),
                     fontWeight: FontWeight.w600,
                     color: AppColors.textDark,
                   ),
                 ),
                 Text(
                   date,
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 11),
                     color: AppColors.textLight,
                   ),
                 ),
@@ -739,7 +752,7 @@ class _EventItem extends StatelessWidget {
             child: Text(
               'RSVP',
               style: TextStyle(
-                fontSize: 11,
+                fontSize: Responsive.sp(context, 11),
                 fontWeight: FontWeight.w600,
                 color: color,
               ),

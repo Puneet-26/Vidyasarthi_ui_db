@@ -71,10 +71,13 @@ class _StudentHomePage extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Stats Row
-              const Row(
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
                 children: [
-                  Expanded(
-                    child: StatCard(
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - 52) / 2,
+                    child: const StatCard(
                       title: 'Attendance',
                       value: '92%',
                       icon: Icons.how_to_reg_rounded,
@@ -82,9 +85,9 @@ class _StudentHomePage extends StatelessWidget {
                       subtitle: 'This month',
                     ),
                   ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: StatCard(
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - 52) / 2,
+                    child: const StatCard(
                       title: 'Avg. Grade',
                       value: 'A-',
                       icon: Icons.star_rounded,
@@ -92,13 +95,9 @@ class _StudentHomePage extends StatelessWidget {
                       subtitle: 'Semester 2',
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              const Row(
-                children: [
-                  Expanded(
-                    child: StatCard(
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - 52) / 2,
+                    child: const StatCard(
                       title: 'Pending Tasks',
                       value: '4',
                       icon: Icons.pending_actions_rounded,
@@ -106,9 +105,9 @@ class _StudentHomePage extends StatelessWidget {
                       subtitle: 'Due this week',
                     ),
                   ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: StatCard(
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - 52) / 2,
+                    child: const StatCard(
                       title: 'Rank',
                       value: '#7',
                       icon: Icons.emoji_events_rounded,
@@ -226,7 +225,7 @@ class _StudentHomePage extends StatelessWidget {
                 icon: Icons.people_rounded,
                 color: AppColors.info,
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 80),
         ],
       ),
     );
@@ -294,12 +293,12 @@ class _SubjectCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                    Text('$code • $teacher', style: const TextStyle(fontSize: 12, color: AppColors.textMid)),
+                    Text(name, style: TextStyle(fontSize: Responsive.sp(context, 15), fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                    Text('$code • $teacher', style: TextStyle(fontSize: Responsive.sp(context, 12), color: AppColors.textMid)),
                   ],
                 ),
               ),
-              Text('${(progress * 100).round()}%', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color)),
+              Text('${(progress * 100).round()}%', style: TextStyle(fontSize: Responsive.sp(context, 13), fontWeight: FontWeight.w700, color: color)),
             ],
           ),
           const SizedBox(height: 12),
@@ -328,10 +327,10 @@ class _SyllabusTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(topic, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                Text(topic, style: TextStyle(fontSize: Responsive.sp(context, 13), fontWeight: FontWeight.w600,
                     color: done ? AppColors.textMid : AppColors.textDark,
                     decoration: done ? TextDecoration.lineThrough : null)),
-                Text(subject, style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+                Text(subject, style: TextStyle(fontSize: Responsive.sp(context, 11), color: AppColors.textLight)),
               ],
             ),
           ),
@@ -342,7 +341,7 @@ class _SyllabusTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(done ? 'Done' : 'Pending',
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+                style: TextStyle(fontSize: Responsive.sp(context, 10), fontWeight: FontWeight.w600,
                     color: done ? AppColors.success : AppColors.warning)),
           ),
         ],
@@ -632,31 +631,31 @@ class _TodayClassBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Next Class',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: Responsive.sp(context, 12),
                     color: Colors.white70,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Mathematics',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: Responsive.sp(context, 20),
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.access_time_rounded, color: Colors.white70, size: 14),
-                    SizedBox(width: 4),
+                    Icon(Icons.access_time_rounded, color: Colors.white70, size: Responsive.sp(context, 14)),
+                    const SizedBox(width: 4),
                     Text(
                       '10:30 AM  •  Room 204',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: Responsive.sp(context, 12),
                         color: Colors.white70,
                       ),
                     ),
@@ -725,15 +724,15 @@ class _AssignmentItem extends StatelessWidget {
                 Text(
                   subject,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: Responsive.sp(context, 11),
                     fontWeight: FontWeight.w600,
                     color: color,
                   ),
                 ),
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 13),
                     fontWeight: FontWeight.w600,
                     color: AppColors.textDark,
                   ),

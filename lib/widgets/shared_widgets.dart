@@ -1,6 +1,29 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
+// ─── Responsive Helper ──────────────────────────────────────────────────────
+class Responsive {
+  static double screenWidth(BuildContext context) => MediaQuery.of(context).size.width;
+  static double screenHeight(BuildContext context) => MediaQuery.of(context).size.height;
+
+  // Scale based on a standard mobile width of 375
+  // Clamped to avoid extreme scaling on very large or very small screens
+  static double scale(BuildContext context) {
+    double w = screenWidth(context);
+    if (w > 1200) return 1.6; // Large Desktop
+    if (w > 900) return 1.4;  // Desktop
+    if (w > 600) return 1.2;  // Tablet
+    return (w / 375).clamp(0.9, 1.1); // Mobile
+  }
+
+  // Fluid Font Size
+  static double sp(BuildContext context, double size) => size * scale(context);
+
+  // Relative Width/Height
+  static double w(BuildContext context, double percentage) => screenWidth(context) * (percentage / 100);
+  static double h(BuildContext context, double percentage) => screenHeight(context) * (percentage / 100);
+}
+
 // ─── Gradient Background Scaffold ──────────────────────────────────────────
 class GradientScaffold extends StatelessWidget {
   final Widget child;
@@ -21,6 +44,8 @@ class GradientScaffold extends StatelessWidget {
       appBar: appBar,
       bottomNavigationBar: bottomNavigationBar,
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -115,7 +140,7 @@ class StatCard extends StatelessWidget {
             value,
             style: TextStyle(
               fontFamily: 'Poppins',
-              fontSize: 24,
+              fontSize: Responsive.sp(context, 24),
               fontWeight: FontWeight.w800,
               color: color,
             ),
@@ -123,9 +148,9 @@ class StatCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Poppins',
-              fontSize: 12,
+              fontSize: Responsive.sp(context, 12),
               fontWeight: FontWeight.w500,
               color: AppColors.textMid,
             ),
@@ -134,9 +159,9 @@ class StatCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Poppins',
-                fontSize: 10,
+                fontSize: Responsive.sp(context, 10),
                 color: AppColors.textLight,
               ),
             ),
@@ -167,9 +192,9 @@ class SectionHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 16,
+            fontSize: Responsive.sp(context, 16),
             fontWeight: FontWeight.w700,
             color: AppColors.textDark,
           ),
@@ -179,9 +204,9 @@ class SectionHeader extends StatelessWidget {
             onTap: onAction,
             child: Text(
               action!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Poppins',
-                fontSize: 13,
+                fontSize: Responsive.sp(context, 13),
                 fontWeight: FontWeight.w500,
                 color: AppColors.primary,
               ),
@@ -258,9 +283,9 @@ class LabeledProgressBar extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Poppins',
-                fontSize: 13,
+                fontSize: Responsive.sp(context, 13),
                 fontWeight: FontWeight.w500,
                 color: AppColors.textMid,
               ),
@@ -269,7 +294,7 @@ class LabeledProgressBar extends StatelessWidget {
               trailing ?? '${(value * 100).toInt()}%',
               style: TextStyle(
                 fontFamily: 'Poppins',
-                fontSize: 13,
+                fontSize: Responsive.sp(context, 13),
                 fontWeight: FontWeight.w700,
                 color: color,
               ),
@@ -414,17 +439,17 @@ class DashboardHeader extends StatelessWidget {
             children: [
               Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 12,
+                  fontSize: Responsive.sp(context, 12),
                   color: AppColors.textLight,
                 ),
               ),
               Text(
                 name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 18,
+                  fontSize: Responsive.sp(context, 18),
                   fontWeight: FontWeight.w700,
                   color: AppColors.textDark,
                 ),
@@ -439,7 +464,7 @@ class DashboardHeader extends StatelessWidget {
                   role,
                   style: TextStyle(
                     fontFamily: 'Poppins',
-                    fontSize: 10,
+                    fontSize: Responsive.sp(context, 10),
                     fontWeight: FontWeight.w600,
                     color: roleColor,
                   ),

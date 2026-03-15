@@ -51,43 +51,55 @@ class _AdminDashboardState extends State<AdminDashboard> {
               // Key Stats Grid
               const SectionHeader(title: 'Key Metrics'),
               const SizedBox(height: 14),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                childAspectRatio: 1.5,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                children: const [
-                  StatCard(
-                    title: 'Total Students',
-                    value: '1,248',
-                    icon: Icons.school_rounded,
-                    color: AppColors.primary,
-                    subtitle: '+12 this month',
-                  ),
-                  StatCard(
-                    title: 'Teaching Staff',
-                    value: '84',
-                    icon: Icons.person_rounded,
-                    color: AppColors.teacherAccent,
-                    subtitle: '6 part-time',
-                  ),
-                  StatCard(
-                    title: "Today's Attendance",
-                    value: '94%',
-                    icon: Icons.how_to_reg_rounded,
-                    color: AppColors.success,
-                    subtitle: '1,173 present',
-                  ),
-                  StatCard(
-                    title: 'Fee Collection',
-                    value: '₹8.2L',
-                    icon: Icons.account_balance_rounded,
-                    color: AppColors.warning,
-                    subtitle: 'March 2026',
-                  ),
-                ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  return Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      SizedBox(
+                        width: (constraints.maxWidth - 12) / 2,
+                        child: const StatCard(
+                          title: 'Total Students',
+                          value: '1,248',
+                          icon: Icons.school_rounded,
+                          color: AppColors.primary,
+                          subtitle: '+12 this month',
+                        ),
+                      ),
+                      SizedBox(
+                        width: (constraints.maxWidth - 12) / 2,
+                        child: const StatCard(
+                          title: 'Teaching Staff',
+                          value: '84',
+                          icon: Icons.person_rounded,
+                          color: AppColors.teacherAccent,
+                          subtitle: '6 part-time',
+                        ),
+                      ),
+                      SizedBox(
+                        width: (constraints.maxWidth - 12) / 2,
+                        child: const StatCard(
+                          title: "Today's Attendance",
+                          value: '94%',
+                          icon: Icons.how_to_reg_rounded,
+                          color: AppColors.success,
+                          subtitle: '1,173 present',
+                        ),
+                      ),
+                      SizedBox(
+                        width: (constraints.maxWidth - 12) / 2,
+                        child: const StatCard(
+                          title: 'Fee Collection',
+                          value: '₹8.2L',
+                          icon: Icons.account_balance_rounded,
+                          color: AppColors.warning,
+                          subtitle: 'March 2026',
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 24),
 
@@ -167,7 +179,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               const SectionHeader(title: 'Top Performing Classes'),
               const SizedBox(height: 14),
               _TopClassesList(),
-              const SizedBox(height: 30),
+              const SizedBox(height: 80),
             ],
           ),
         ),
@@ -201,14 +213,14 @@ class _SchoolSummaryBanner extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'VIDYASARATHI',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: Responsive.sp(context, 18),
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                         letterSpacing: 1.5,
@@ -217,7 +229,7 @@ class _SchoolSummaryBanner extends StatelessWidget {
                     Text(
                       'Academic Year 2025-2026',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: Responsive.sp(context, 12),
                         color: Colors.white70,
                       ),
                     ),
@@ -230,10 +242,10 @@ class _SchoolSummaryBanner extends StatelessWidget {
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Text(
+                child: Text(
                   'Q4 • March',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: Responsive.sp(context, 12),
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
@@ -272,16 +284,16 @@ class _BannerStat extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 20,
+          style: TextStyle(
+            fontSize: Responsive.sp(context, 20),
             fontWeight: FontWeight.w800,
             color: Colors.white,
           ),
         ),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 11,
+          style: TextStyle(
+            fontSize: Responsive.sp(context, 11),
             color: Colors.white60,
           ),
         ),
@@ -334,8 +346,8 @@ class _AdminActionsGrid extends StatelessWidget {
               Text(
                 item['label'] as String,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 10,
+                style: TextStyle(
+                  fontSize: Responsive.sp(context, 10),
                   fontWeight: FontWeight.w600,
                   color: AppColors.textDark,
                   height: 1.2,
@@ -357,14 +369,14 @@ class _FeeOverviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       '₹82,40,000',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: Responsive.sp(context, 24),
                         fontWeight: FontWeight.w800,
                         color: AppColors.textDark,
                       ),
@@ -372,7 +384,7 @@ class _FeeOverviewCard extends StatelessWidget {
                     Text(
                       'Total Collected (2025-26)',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: Responsive.sp(context, 12),
                         color: AppColors.textLight,
                       ),
                     ),
@@ -434,7 +446,7 @@ class _FeeStatusChip extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontSize: 16,
+              fontSize: Responsive.sp(context, 16),
               fontWeight: FontWeight.w800,
               color: color,
             ),
@@ -442,7 +454,7 @@ class _FeeStatusChip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: Responsive.sp(context, 10),
               color: color.withOpacity(0.8),
               fontWeight: FontWeight.w500,
             ),
@@ -490,8 +502,8 @@ class _ActivityItem extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 13),
                     fontWeight: FontWeight.w700,
                     color: AppColors.textDark,
                   ),
@@ -499,8 +511,8 @@ class _ActivityItem extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   desc,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 12),
                     color: AppColors.textMid,
                     height: 1.4,
                   ),
@@ -510,8 +522,8 @@ class _ActivityItem extends StatelessWidget {
           ),
           Text(
             time,
-            style: const TextStyle(
-              fontSize: 10,
+            style: TextStyle(
+              fontSize: Responsive.sp(context, 10),
               color: AppColors.textLight,
             ),
           ),
@@ -570,8 +582,8 @@ class _AlertRow extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: Responsive.sp(context, 12),
               fontWeight: FontWeight.w500,
               color: AppColors.textMid,
             ),
@@ -587,7 +599,7 @@ class _AlertRow extends StatelessWidget {
           child: Text(
             priority,
             style: TextStyle(
-              fontSize: 9,
+              fontSize: Responsive.sp(context, 9),
               fontWeight: FontWeight.w700,
               color: color,
             ),

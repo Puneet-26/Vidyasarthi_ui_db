@@ -3,6 +3,7 @@ import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../models/models.dart';
 import '../services/database_service.dart';
+import '../services/auth_service.dart';
 
 class NonTeachingStaffDashboard extends StatefulWidget {
   const NonTeachingStaffDashboard({super.key});
@@ -169,10 +170,10 @@ class _HomePageState extends State<_HomePage> {
                 ],
               ),
               const SizedBox(height: 28),
-              const Text(
+              Text(
                 'Quick Actions',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: Responsive.sp(context, 18),
                   fontWeight: FontWeight.w700,
                   color: AppColors.textDark,
                 ),
@@ -274,15 +275,50 @@ class _AdmissionsPageState extends State<_AdmissionsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Admission Applications',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textDark,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Admission Applications',
+                style: TextStyle(
+                  fontSize: Responsive.sp(context, 20),
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _showRegistrationDialog,
+                icon: const Icon(Icons.add_rounded, size: 20),
+                label: const Text('Add New'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
+          if (_admissions.isEmpty)
+            Center(
+              child: Column(
+                children: [
+                  const SizedBox(height: 40),
+                  Icon(Icons.person_add_disabled_rounded, size: 64, color: AppColors.textLight.withOpacity(0.3)),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No applications found',
+                    style: TextStyle(
+                      fontSize: Responsive.sp(context, 16),
+                      color: AppColors.textMid,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ..._admissions.map((admission) {
             final statusColor = admission.status == 'pending'
                 ? Colors.orange
@@ -308,16 +344,16 @@ class _AdmissionsPageState extends State<_AdmissionsPage> {
                           children: [
                             Text(
                               admission.studentName,
-                              style: const TextStyle(
-                                fontSize: 15,
+                              style: TextStyle(
+                                fontSize: Responsive.sp(context, 15),
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textDark,
                               ),
                             ),
                             Text(
                               'Parent: ${admission.parentName}',
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: TextStyle(
+                                fontSize: Responsive.sp(context, 12),
                                 color: AppColors.textLight,
                               ),
                             ),
@@ -331,14 +367,14 @@ class _AdmissionsPageState extends State<_AdmissionsPage> {
                           color: statusColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text(
-                          admission.status.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: statusColor,
+                          child: Text(
+                            admission.status.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: Responsive.sp(context, 11),
+                              fontWeight: FontWeight.w600,
+                              color: statusColor,
+                            ),
                           ),
-                        ),
                       ),
                     ],
                   ),
@@ -348,40 +384,40 @@ class _AdmissionsPageState extends State<_AdmissionsPage> {
                     children: [
                       Text(
                         'Applied Batch: ${batch.name}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: Responsive.sp(context, 12),
                           color: AppColors.textMid,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Subjects: $subjects',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: Responsive.sp(context, 12),
                           color: AppColors.textMid,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Email: ${admission.email}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: Responsive.sp(context, 12),
                           color: AppColors.textMid,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Phone: ${admission.phoneNumber}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: Responsive.sp(context, 12),
                           color: AppColors.textMid,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Applied: ${admission.appliedDate.toLocal().toString().split(' ')[0]}',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: Responsive.sp(context, 12),
                           color: AppColors.textLight,
                         ),
                       ),
@@ -425,6 +461,362 @@ class _AdmissionsPageState extends State<_AdmissionsPage> {
           }),
         ],
       ),
+    );
+  }
+
+  void _showRegistrationDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _StudentRegistrationDialog(
+        batches: _batches,
+        subjects: _subjects,
+        onComplete: _fetchData,
+      ),
+    );
+  }
+}
+
+class _StudentRegistrationDialog extends StatefulWidget {
+  final List<Batch> batches;
+  final List<Subject> subjects;
+  final VoidCallback onComplete;
+
+  const _StudentRegistrationDialog({
+    required this.batches,
+    required this.subjects,
+    required this.onComplete,
+  });
+
+  @override
+  State<_StudentRegistrationDialog> createState() => _StudentRegistrationDialogState();
+}
+
+class _StudentRegistrationDialogState extends State<_StudentRegistrationDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _dbService = DatabaseService();
+  final _authService = AuthService();
+
+  final _nameController = TextEditingController();
+  final _parentNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _parentPhoneController = TextEditingController();
+  final _feesController = TextEditingController(text: '15000');
+
+  String? _selectedBatchId;
+  final List<String> _selectedSubjectIds = [];
+  bool _isLoading = false;
+  Map<String, dynamic>? _generatedCredentials;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _parentNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _parentPhoneController.dispose();
+    _feesController.dispose();
+    super.dispose();
+  }
+
+  String _generatePassword() {
+    // Simple numeric password for demo
+    return (100000 + (999999 - 100000) * (DateTime.now().millisecond / 1000)).toInt().toString();
+  }
+
+  Future<void> _handleRegister() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedBatchId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a batch')));
+      return;
+    }
+    if (_selectedSubjectIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select at least one subject')));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final name = _nameController.text.trim();
+      final email = _emailController.text.trim().toLowerCase();
+      final password = _generatePassword();
+
+      // 1. Create Credentials
+      final authResult = await _authService.signUp(
+        email: email,
+        password: password,
+        name: name,
+        role: 'student',
+      );
+
+      if (!authResult['success']) throw Exception(authResult['error']);
+
+      final userId = authResult['userId'];
+      final studentId = 'student_${DateTime.now().millisecondsSinceEpoch}';
+
+      // 2. Create Student Profile
+      final student = Student(
+        id: studentId,
+        userId: userId,
+        name: name,
+        email: email,
+        phoneNumber: _phoneController.text.trim(),
+        parentPhone: _parentPhoneController.text.trim(),
+        parentName: _parentNameController.text.trim(),
+        parentEmail: '', // Optional
+        batchId: _selectedBatchId!,
+        subjectIds: _selectedSubjectIds,
+        totalFees: double.tryParse(_feesController.text) ?? 15000,
+        feesPaid: 0,
+        feeStatus: 'pending',
+        enrollmentStatus: 'active',
+        enrollmentDate: DateTime.now(),
+      );
+
+      final success = await _dbService.createStudent(student);
+      if (!success) throw Exception('Failed to create student profile');
+
+      setState(() {
+        _generatedCredentials = {
+          'id': email,
+          'password': password,
+        };
+        _isLoading = false;
+      });
+      
+      widget.onComplete();
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_generatedCredentials != null) {
+      return Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 64),
+              const SizedBox(height: 16),
+              Text(
+                'Registration Successful!',
+                style: TextStyle(
+                  fontSize: Responsive.sp(context, 18),
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Please share these credentials with the student:',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: Responsive.sp(context, 13),
+                  color: AppColors.textMid,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+                ),
+                child: Column(
+                  children: [
+                    _credentialRow('Login ID:', _generatedCredentials!['id']),
+                    const Divider(height: 24),
+                    _credentialRow('Password:', _generatedCredentials!['password']),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Close', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.all(20),
+      child: Container(
+        width: 500,
+        padding: const EdgeInsets.all(24),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'New Student Admission',
+                      style: TextStyle(
+                        fontSize: Responsive.sp(context, 18),
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                _buildField('Student Full Name', _nameController, Icons.person_outline),
+                const SizedBox(height: 16),
+                _buildField('Parent Full Name', _parentNameController, Icons.family_restroom_outlined),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: _buildField('Email Address', _emailController, Icons.email_outlined, keyboardType: TextInputType.emailAddress)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildField('Admission Fees', _feesController, Icons.currency_rupee_rounded, keyboardType: TextInputType.number)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: _buildField('Student Phone', _phoneController, Icons.phone_outlined, keyboardType: TextInputType.phone)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildField('Parent Phone', _parentPhoneController, Icons.phone_android_outlined, keyboardType: TextInputType.phone)),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Academic Details',
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 14),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  decoration: _inputDecoration('Select Batch', Icons.group_outlined),
+                  value: _selectedBatchId,
+                  items: widget.batches
+                      .map((b) => DropdownMenuItem(value: b.id, child: Text(b.name)))
+                      .toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedBatchId = val;
+                      // Auto-select subjects for this batch if not already selected
+                      final batch = widget.batches.firstWhere((b) => b.id == val);
+                      _selectedSubjectIds.clear();
+                      _selectedSubjectIds.addAll(batch.subjects);
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Subjects',
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 12),
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textMid,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: widget.subjects.map((s) {
+                    final isSelected = _selectedSubjectIds.contains(s.id);
+                    return FilterChip(
+                      label: Text(s.name),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedSubjectIds.add(s.id);
+                          } else {
+                            _selectedSubjectIds.remove(s.id);
+                          }
+                        });
+                      },
+                      selectedColor: AppColors.primary.withOpacity(0.2),
+                      checkmarkColor: AppColors.primary,
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _handleRegister,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text('Add Student to Database', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildField(String label, TextEditingController controller, IconData icon, {TextInputType keyboardType = TextInputType.text}) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: _inputDecoration(label, icon),
+      validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+    );
+  }
+
+  InputDecoration _inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, size: 20),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+      filled: true,
+      fillColor: Colors.grey.shade50,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    );
+  }
+
+  Widget _credentialRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: AppColors.textMid)),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'monospace')),
+      ],
     );
   }
 }
@@ -768,10 +1160,10 @@ class _FeesPage extends StatelessWidget {
                 color: Colors.orange,
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Student-wise Fees',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: Responsive.sp(context, 16),
                   fontWeight: FontWeight.w700,
                   color: AppColors.textDark,
                 ),
@@ -798,16 +1190,16 @@ class _FeesPage extends StatelessWidget {
                               children: [
                                 Text(
                                   student.name,
-                                  style: const TextStyle(
-                                    fontSize: 13,
+                                  style: TextStyle(
+                                    fontSize: Responsive.sp(context, 13),
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.textDark,
                                   ),
                                 ),
                                 Text(
                                   student.id,
-                                  style: const TextStyle(
-                                    fontSize: 11,
+                                  style: TextStyle(
+                                    fontSize: Responsive.sp(context, 11),
                                     color: AppColors.textLight,
                                   ),
                                 ),
@@ -832,8 +1224,8 @@ class _FeesPage extends StatelessWidget {
                                   ),
                                   Text(
                                     '$percentage%',
-                                    style: const TextStyle(
-                                      fontSize: 10,
+                                    style: TextStyle(
+                                      fontSize: Responsive.sp(context, 10),
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.textDark,
                                     ),
@@ -847,8 +1239,8 @@ class _FeesPage extends StatelessWidget {
                       const SizedBox(height: 10),
                       Text(
                         'Paid: ₹${student.feesPaid} / ₹${student.totalFees} | Pending: ₹${pending.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: TextStyle(
+                          fontSize: Responsive.sp(context, 11),
                           color: AppColors.textMid,
                         ),
                       ),
@@ -896,16 +1288,16 @@ class _StatBox extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 11,
+            style: TextStyle(
+              fontSize: Responsive.sp(context, 11),
               color: AppColors.textLight,
               fontWeight: FontWeight.w500,
             ),
           ),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: Responsive.sp(context, 16),
               fontWeight: FontWeight.w700,
               color: AppColors.textDark,
             ),
@@ -949,16 +1341,16 @@ class _QuickActionTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 13),
                     fontWeight: FontWeight.w600,
                     color: AppColors.textDark,
                   ),
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 11),
                     color: AppColors.textLight,
                   ),
                 ),

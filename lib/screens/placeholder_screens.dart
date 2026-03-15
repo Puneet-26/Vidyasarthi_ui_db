@@ -14,8 +14,8 @@ class TimetableManagementScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Timetable',
-            style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textDark)),
+        title: Text('Timetable',
+            style: TextStyle(fontSize: Responsive.sp(context, 18), fontWeight: FontWeight.w700, color: AppColors.textDark)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.pop(context),
@@ -27,8 +27,8 @@ class TimetableManagementScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Timetable Management',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              Text('Timetable Management',
+                  style: TextStyle(fontSize: Responsive.sp(context, 20), fontWeight: FontWeight.w700, color: AppColors.textDark)),
               const SizedBox(height: 20),
               GlassCard(
                 padding: const EdgeInsets.all(16),
@@ -36,8 +36,8 @@ class TimetableManagementScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.schedule_rounded, size: 48, color: AppColors.primary),
                     const SizedBox(height: 12),
-                    const Text('📅 Weekly Timetable',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    Text('📅 Weekly Timetable',
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
                     const SizedBox(height: 8),
                     const Text('View and manage class schedules', style: TextStyle(color: AppColors.textMid)),
                     const SizedBox(height: 12),
@@ -56,10 +56,12 @@ class TimetableManagementScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.swap_horizontal_circle_rounded, size: 48, color: AppColors.studentAccent),
                     const SizedBox(height: 12),
-                    const Text('🔄 Proxy Lectures',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    Text('🔄 Proxy Lectures',
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
                     const SizedBox(height: 8),
-                    const Text('Manage substitute teachers', style: TextStyle(color: AppColors.textMid)),
+                    const Text('Manage substitute teachers', 
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: AppColors.textMid)),
                     const SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: () {},
@@ -69,6 +71,7 @@ class TimetableManagementScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -87,8 +90,8 @@ class SyllabusTrackingScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Syllabus',
-            style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textDark)),
+        title: Text('Syllabus',
+            style: TextStyle(fontSize: Responsive.sp(context, 18), fontWeight: FontWeight.w700, color: AppColors.textDark)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.pop(context),
@@ -100,8 +103,8 @@ class SyllabusTrackingScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Syllabus & Portion Tracking',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              Text('Syllabus & Portion Tracking',
+                  style: TextStyle(fontSize: Responsive.sp(context, 20), fontWeight: FontWeight.w700, color: AppColors.textDark)),
               const SizedBox(height: 20),
               GlassCard(
                 padding: const EdgeInsets.all(16),
@@ -109,8 +112,8 @@ class SyllabusTrackingScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.checklist_rounded, size: 48, color: AppColors.primary),
                     const SizedBox(height: 12),
-                    const Text('📚 Teacher View',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    Text('📚 Teacher View',
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
                     const SizedBox(height: 8),
                     const Text('Track topics completed and assignments', style: TextStyle(color: AppColors.textMid)),
                     const SizedBox(height: 12),
@@ -129,8 +132,8 @@ class SyllabusTrackingScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.trending_up_rounded, size: 48, color: AppColors.parentAccent),
                     const SizedBox(height: 12),
-                    const Text('👁️ Student/Parent View',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    Text('👁️ Student/Parent View',
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
                     const SizedBox(height: 8),
                     const Text('See progress bars of completed topics', style: TextStyle(color: AppColors.textMid)),
                     const SizedBox(height: 12),
@@ -160,8 +163,8 @@ class HomeworkSystemScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Homework',
-            style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textDark)),
+        title: Text('Homework',
+            style: TextStyle(fontSize: Responsive.sp(context, 18), fontWeight: FontWeight.w700, color: AppColors.textDark)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.pop(context),
@@ -173,8 +176,8 @@ class HomeworkSystemScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Homework Tracking',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              Text('Homework Tracking',
+                  style: TextStyle(fontSize: Responsive.sp(context, 20), fontWeight: FontWeight.w700, color: AppColors.textDark)),
               const SizedBox(height: 20),
               GlassCard(
                 padding: const EdgeInsets.all(16),
@@ -182,8 +185,8 @@ class HomeworkSystemScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.assignment_rounded, size: 48, color: AppColors.teacherAccent),
                     const SizedBox(height: 12),
-                    const Text('👨‍🏫 Assign & Track',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    Text('👨‍🏫 Assign & Track',
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
                     const SizedBox(height: 8),
                     const Text('Assign homework and mark submission status', style: TextStyle(color: AppColors.textMid)),
                     const SizedBox(height: 12),
@@ -202,8 +205,8 @@ class HomeworkSystemScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.notifications_active_rounded, size: 48, color: Colors.orange),
                     const SizedBox(height: 12),
-                    const Text('🔔 Auto-Notifications',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    Text('🔔 Auto-Notifications',
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
                     const SizedBox(height: 8),
                     const Text('Notify parents of incomplete homework', style: TextStyle(color: AppColors.textMid)),
                     const SizedBox(height: 12),
@@ -233,8 +236,8 @@ class FeePaymentPortalScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Fee Payment',
-            style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textDark)),
+        title: Text('Fee Payment',
+            style: TextStyle(fontSize: Responsive.sp(context, 18), fontWeight: FontWeight.w700, color: AppColors.textDark)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.pop(context),
@@ -246,8 +249,8 @@ class FeePaymentPortalScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Fee Management Portal',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              Text('Fee Management Portal',
+                  style: TextStyle(fontSize: Responsive.sp(context, 20), fontWeight: FontWeight.w700, color: AppColors.textDark)),
               const SizedBox(height: 20),
               GlassCard(
                 padding: const EdgeInsets.all(16),
@@ -255,8 +258,8 @@ class FeePaymentPortalScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.account_balance_wallet_rounded, size: 48, color: Colors.green),
                     const SizedBox(height: 12),
-                    const Text('💳 Process Payments',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    Text('💳 Process Payments',
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
                     const SizedBox(height: 8),
                     const Text('Record student fee payments and concessions', style: TextStyle(color: AppColors.textMid)),
                     const SizedBox(height: 12),
@@ -275,8 +278,8 @@ class FeePaymentPortalScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.receipt_rounded, size: 48, color: AppColors.primary),
                     const SizedBox(height: 12),
-                    const Text('📋 View Balance',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    Text('📋 View Balance',
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
                     const SizedBox(height: 8),
                     const Text('Check remaining dues and payment history', style: TextStyle(color: AppColors.textMid)),
                     const SizedBox(height: 12),
@@ -306,8 +309,8 @@ class LiveClassScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Live Classes',
-            style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textDark)),
+        title: Text('Live Classes',
+            style: TextStyle(fontSize: Responsive.sp(context, 18), fontWeight: FontWeight.w700, color: AppColors.textDark)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.pop(context),
@@ -319,8 +322,8 @@ class LiveClassScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Live Class Integration',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              Text('Live Class Integration',
+                  style: TextStyle(fontSize: Responsive.sp(context, 20), fontWeight: FontWeight.w700, color: AppColors.textDark)),
               const SizedBox(height: 20),
               GlassCard(
                 padding: const EdgeInsets.all(16),
@@ -328,8 +331,8 @@ class LiveClassScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.video_call_rounded, size: 48, color: AppColors.primary),
                     const SizedBox(height: 12),
-                    const Text('🎥 Join Live Class',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    Text('🎥 Join Live Class',
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
                     const SizedBox(height: 8),
                     const Text('Access Zoom/Google Meet links (Fee-locked)', style: TextStyle(color: AppColors.textMid)),
                     const SizedBox(height: 12),
@@ -359,8 +362,8 @@ class FeedbackSystemScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Feedback',
-            style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textDark)),
+        title: Text('Feedback',
+            style: TextStyle(fontSize: Responsive.sp(context, 18), fontWeight: FontWeight.w700, color: AppColors.textDark)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.pop(context),
@@ -372,8 +375,8 @@ class FeedbackSystemScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Feedback Management',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              Text('Feedback Management',
+                  style: TextStyle(fontSize: Responsive.sp(context, 20), fontWeight: FontWeight.w700, color: AppColors.textDark)),
               const SizedBox(height: 20),
               GlassCard(
                 padding: const EdgeInsets.all(16),
@@ -381,8 +384,8 @@ class FeedbackSystemScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.feedback_rounded, size: 48, color: AppColors.primary),
                     const SizedBox(height: 12),
-                    const Text('💭 Submit Feedback',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    Text('💭 Submit Feedback',
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
                     const SizedBox(height: 8),
                     const Text('Share anonymous suggestions (Parent-only)', style: TextStyle(color: AppColors.textMid)),
                     const SizedBox(height: 12),
@@ -412,8 +415,8 @@ class DoubtTrackingScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Doubts',
-            style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textDark)),
+        title: Text('Doubts',
+            style: TextStyle(fontSize: Responsive.sp(context, 18), fontWeight: FontWeight.w700, color: AppColors.textDark)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.pop(context),
@@ -425,8 +428,8 @@ class DoubtTrackingScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Doubt & Query Tracking',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              Text('Doubt & Query Tracking',
+                  style: TextStyle(fontSize: Responsive.sp(context, 20), fontWeight: FontWeight.w700, color: AppColors.textDark)),
               const SizedBox(height: 20),
               GlassCard(
                 padding: const EdgeInsets.all(16),
@@ -434,8 +437,8 @@ class DoubtTrackingScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.help_rounded, size: 48, color: AppColors.studentAccent),
                     const SizedBox(height: 12),
-                    const Text('❓ Raise a Doubt',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    Text('❓ Raise a Doubt',
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
                     const SizedBox(height: 8),
                     const Text('Submit questions for teachers to resolve', style: TextStyle(color: AppColors.textMid)),
                     const SizedBox(height: 12),
@@ -465,8 +468,8 @@ class TestsAndPracticeScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Tests',
-            style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textDark)),
+        title: Text('Tests',
+            style: TextStyle(fontSize: Responsive.sp(context, 18), fontWeight: FontWeight.w700, color: AppColors.textDark)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.pop(context),
@@ -478,8 +481,8 @@ class TestsAndPracticeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Tests & Practice',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              Text('Tests & Practice',
+                  style: TextStyle(fontSize: Responsive.sp(context, 20), fontWeight: FontWeight.w700, color: AppColors.textDark)),
               const SizedBox(height: 20),
               GlassCard(
                 padding: const EdgeInsets.all(16),
@@ -487,8 +490,8 @@ class TestsAndPracticeScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.quiz_rounded, size: 48, color: AppColors.primary),
                     const SizedBox(height: 12),
-                    const Text('📝 MCQ Practice',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    Text('📝 MCQ Practice',
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
                     const SizedBox(height: 8),
                     const Text('Self-study practice with multiple-choice questions', style: TextStyle(color: AppColors.textMid)),
                     const SizedBox(height: 12),
@@ -507,8 +510,8 @@ class TestsAndPracticeScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.leaderboard_rounded, size: 48, color: Colors.orange),
                     const SizedBox(height: 12),
-                    const Text('📊 Test Results',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    Text('📊 Test Results',
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
                     const SizedBox(height: 8),
                     const Text('View scores and performance analysis', style: TextStyle(color: AppColors.textMid)),
                     const SizedBox(height: 12),
@@ -538,50 +541,50 @@ class SelfStudyRoomScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Self-Study Rooms',
-            style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textDark)),
+        title: Text('Self-Study Rooms',
+            style: TextStyle(fontSize: Responsive.sp(context, 18), fontWeight: FontWeight.w700, color: AppColors.textDark)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.primary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      child: const SafeArea(
+      child: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Self-Study Room Availability',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-              SizedBox(height: 20),
+                  style: TextStyle(fontSize: Responsive.sp(context, 20), fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              const SizedBox(height: 20),
               GlassCard(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    Icon(Icons.meeting_room, size: 48, color: Colors.green),
-                    SizedBox(height: 12),
+                    const Icon(Icons.meeting_room, size: 48, color: Colors.green),
+                    const SizedBox(height: 12),
                     Text('🚪 Room A',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                    SizedBox(height: 8),
-                    Text('Status: Available (3/20 students)', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
-                    SizedBox(height: 8),
-                    Text('Capacity: 20 students', style: TextStyle(color: AppColors.textMid)),
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    const SizedBox(height: 8),
+                    const Text('Status: Available (3/20 students)', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    const Text('Capacity: 20 students', style: TextStyle(color: AppColors.textMid)),
                   ],
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               GlassCard(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    Icon(Icons.meeting_room, size: 48, color: Colors.orange),
-                    SizedBox(height: 12),
+                    const Icon(Icons.meeting_room, size: 48, color: Colors.orange),
+                    const SizedBox(height: 12),
                     Text('🚪 Room B',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                    SizedBox(height: 8),
-                    Text('Status: Full (20/20 students)', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.w600)),
-                    SizedBox(height: 8),
-                    Text('Capacity: 20 students', style: TextStyle(color: AppColors.textMid)),
+                        style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                    const SizedBox(height: 8),
+                    const Text('Status: Full (20/20 students)', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    const Text('Capacity: 20 students', style: TextStyle(color: AppColors.textMid)),
                   ],
                 ),
               ),

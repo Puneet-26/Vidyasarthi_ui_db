@@ -166,16 +166,19 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   Widget build(BuildContext context) {
     return GradientScaffold(
       child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: FadeTransition(
-            opacity: _fadeController,
-            child: SlideTransition(
-              position: Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
-                  .animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: FadeTransition(
+                opacity: _fadeController,
+                child: SlideTransition(
+                  position: Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
+                      .animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                   const SizedBox(height: 20),
 
                   // Logo Section
@@ -185,15 +188,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         Hero(
                           tag: 'logo',
                           child: Container(
-                            width: 90,
-                            height: 90,
+                            width: Responsive.sp(context, 90),
+                            height: Responsive.sp(context, 90),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [AppColors.primary, AppColors.primaryLight],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
-                              borderRadius: BorderRadius.circular(24),
+                              borderRadius: BorderRadius.circular(Responsive.sp(context, 24)),
                               boxShadow: [
                                 BoxShadow(
                                   color: AppColors.primary.withOpacity(0.4),
@@ -202,28 +205,28 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                 ),
                               ],
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.auto_stories_rounded,
                               color: Colors.white,
-                              size: 45,
+                              size: Responsive.sp(context, 45),
                             ),
                           ),
                         ),
                         const SizedBox(height: 20),
-                        const Text(
+                        Text(
                           'VIDYASARATHI',
                           style: TextStyle(
-                            fontSize: 28,
+                            fontSize: Responsive.sp(context, 28),
                             fontWeight: FontWeight.w800,
                             color: AppColors.textDark,
                             letterSpacing: 1.2,
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
+                        Text(
                           'Academic Management System',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: Responsive.sp(context, 13),
                             color: AppColors.textMid,
                             fontWeight: FontWeight.w500,
                           ),
@@ -235,22 +238,22 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   const SizedBox(height: 48),
 
                   // Welcome Section
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Welcome Back',
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: Responsive.sp(context, 22),
                           fontWeight: FontWeight.w800,
                           color: AppColors.textDark,
                         ),
                       ),
-                      SizedBox(height: 6),
+                      const SizedBox(height: 6),
                       Text(
                         'Sign in to access your dashboard',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: Responsive.sp(context, 14),
                           color: AppColors.textLight,
                           fontWeight: FontWeight.w400,
                         ),
@@ -328,44 +331,49 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   const SizedBox(height: 18),
 
                   // Remember Me & Forgot Password
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       GestureDetector(
                         onTap: _isLoading ? null : () => setState(() => _rememberMe = !_rememberMe),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 20,
-                              height: 20,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: _rememberMe
-                                      ? AppColors.primary
-                                      : AppColors.textLight.withOpacity(0.3),
-                                  width: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: _rememberMe
+                                        ? AppColors.primary
+                                        : AppColors.textLight.withOpacity(0.3),
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(6),
+                                  color: _rememberMe ? AppColors.primary : Colors.transparent,
                                 ),
-                                borderRadius: BorderRadius.circular(6),
-                                color: _rememberMe ? AppColors.primary : Colors.transparent,
+                                child: _rememberMe
+                                    ? const Icon(
+                                        Icons.check_rounded,
+                                        color: Colors.white,
+                                        size: 14,
+                                      )
+                                    : null,
                               ),
-                              child: _rememberMe
-                                  ? const Icon(
-                                      Icons.check_rounded,
-                                      color: Colors.white,
-                                      size: 14,
-                                    )
-                                  : null,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Remember me',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textMid,
-                                fontWeight: FontWeight.w500,
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Remember me',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textMid,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                       TextButton(
@@ -379,6 +387,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                   ),
                                 );
                               },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                         child: const Text(
                           'Forgot Password?',
                           style: TextStyle(
@@ -445,11 +458,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
 
                   // Footer
-                  const Center(
+                  Center(
                     child: Text(
                       'Secure login powered by Supabase',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: Responsive.sp(context, 11),
                         color: AppColors.textLight,
                         fontWeight: FontWeight.w400,
                       ),
@@ -463,8 +476,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           ),
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 
   Widget _buildInputField({
     required TextEditingController controller,
@@ -482,8 +497,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 13,
+          style: TextStyle(
+            fontSize: Responsive.sp(context, 13),
             fontWeight: FontWeight.w600,
             color: AppColors.textDark,
           ),
@@ -501,7 +516,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               hintText: hint,
               hintStyle: TextStyle(
                 color: AppColors.textLight.withOpacity(0.6),
-                fontSize: 13,
+                fontSize: Responsive.sp(context, 13),
               ),
               filled: true,
               fillColor: error != null ? Colors.red.withOpacity(0.05) : Colors.white,
@@ -561,10 +576,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Password',
           style: TextStyle(
-            fontSize: 13,
+            fontSize: Responsive.sp(context, 13),
             fontWeight: FontWeight.w600,
             color: AppColors.textDark,
           ),

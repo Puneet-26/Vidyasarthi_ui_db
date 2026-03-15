@@ -73,10 +73,13 @@ class _TeacherHomePage extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Stats
-              const Row(
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
                 children: [
-                  Expanded(
-                    child: StatCard(
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - 52) / 2,
+                    child: const StatCard(
                       title: 'My Classes',
                       value: '6',
                       icon: Icons.class_rounded,
@@ -84,9 +87,9 @@ class _TeacherHomePage extends StatelessWidget {
                       subtitle: 'This semester',
                     ),
                   ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: StatCard(
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - 52) / 2,
+                    child: const StatCard(
                       title: 'Total Students',
                       value: '184',
                       icon: Icons.groups_rounded,
@@ -94,13 +97,9 @@ class _TeacherHomePage extends StatelessWidget {
                       subtitle: 'Across all classes',
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              const Row(
-                children: [
-                  Expanded(
-                    child: StatCard(
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - 52) / 2,
+                    child: const StatCard(
                       title: "Today's Classes",
                       value: '4',
                       icon: Icons.schedule_rounded,
@@ -108,9 +107,9 @@ class _TeacherHomePage extends StatelessWidget {
                       subtitle: '2 remaining',
                     ),
                   ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: StatCard(
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - 52) / 2,
+                    child: const StatCard(
                       title: 'Pending Marks',
                       value: '12',
                       icon: Icons.pending_rounded,
@@ -163,6 +162,7 @@ class _TeacherHomePage extends StatelessWidget {
                 time: '2 hours ago',
                 isLate: false,
               ),
+              const SizedBox(height: 80),
         ],
       ),
     );
@@ -221,16 +221,16 @@ class _ClassCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(batch, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                Text('$subject • $room', style: const TextStyle(fontSize: 12, color: AppColors.textMid)),
-                Text(time, style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+                Text(batch, style: TextStyle(fontSize: Responsive.sp(context, 14), fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                Text('$subject • $room', style: TextStyle(fontSize: Responsive.sp(context, 12), color: AppColors.textMid)),
+                Text(time, style: TextStyle(fontSize: Responsive.sp(context, 11), color: AppColors.textLight)),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-            child: Text('$students', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary)),
+            child: Text('$students', style: TextStyle(fontSize: Responsive.sp(context, 13), fontWeight: FontWeight.w700, color: AppColors.primary)),
           ),
         ],
       ),
@@ -256,12 +256,12 @@ class _HomeworkCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                Text(batch, style: const TextStyle(fontSize: 11, color: AppColors.textMid)),
+                Text(title, style: TextStyle(fontSize: Responsive.sp(context, 13), fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                Text(batch, style: TextStyle(fontSize: Responsive.sp(context, 11), color: AppColors.textMid)),
               ],
             ),
           ),
-          Text(due, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isOverdue ? AppColors.error : AppColors.textLight)),
+          Text(due, style: TextStyle(fontSize: Responsive.sp(context, 11), fontWeight: FontWeight.w600, color: isOverdue ? AppColors.error : AppColors.textLight)),
         ],
       ),
     );
@@ -329,8 +329,8 @@ class _AttendanceClassTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(batch, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-              Text(isDone ? 'Present: $present / $total' : 'Not yet marked', style: const TextStyle(fontSize: 11, color: AppColors.textMid)),
+              Text(batch, style: TextStyle(fontSize: Responsive.sp(context, 13), fontWeight: FontWeight.w600, color: AppColors.textDark)),
+              Text(isDone ? 'Present: $present / $total' : 'Not yet marked', style: TextStyle(fontSize: Responsive.sp(context, 11), color: AppColors.textMid)),
             ],
           ),
         ),
@@ -391,15 +391,15 @@ class _MarksTestCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                Text(batch, style: const TextStyle(fontSize: 11, color: AppColors.textMid)),
+                Text(title, style: TextStyle(fontSize: Responsive.sp(context, 13), fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                Text(batch, style: TextStyle(fontSize: Responsive.sp(context, 11), color: AppColors.textMid)),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
-            child: Text(status, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: statusColor)),
+            child: Text(status, style: TextStyle(fontSize: Responsive.sp(context, 11), fontWeight: FontWeight.w600, color: statusColor)),
           ),
         ],
       ),
@@ -465,8 +465,8 @@ class _NoticeCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                Text('From $from • $time', style: const TextStyle(fontSize: 11, color: AppColors.textMid)),
+                Text(title, style: TextStyle(fontSize: Responsive.sp(context, 13), fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                Text('From $from • $time', style: TextStyle(fontSize: Responsive.sp(context, 11), color: AppColors.textMid)),
               ],
             ),
           ),
@@ -745,7 +745,7 @@ class _AttendanceStat extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-            fontSize: 22,
+            fontSize: Responsive.sp(context, 22),
             fontWeight: FontWeight.w800,
             color: color,
           ),
