@@ -48,14 +48,8 @@ Your VidyaSarathi app is now ready to connect to Supabase! Here's what's been se
 3. Click **Users** tab
 4. Click **Add user** button
 5. Create these users:
+apne hisab se daalo yaar kuch bhi masti nai
 
-| Email | Password | Role | Notes |
-|-------|----------|------|-------|
-| admin@vidya.com | admin123 | (metadata) | Super Admin |
-| staff@vidya.com | staff123 | (metadata) | Reception Staff |
-| teacher@vidya.com | teacher123 | (metadata) | Teacher |
-| student@vidya.com | student123 | (metadata) | Student |
-| parent@vidya.com | parent123 | (metadata) | Parent |
 
 **For each user**, after creating:
 1. Click the user row to edit
