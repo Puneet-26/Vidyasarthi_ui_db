@@ -21,7 +21,6 @@ DROP TABLE IF EXISTS batches CASCADE;
 DROP TABLE IF EXISTS subjects CASCADE;
 DROP TABLE IF EXISTS auth_credentials CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
-
 -- ==================== STEP 2: AUTH CREDENTIALS TABLE ====================
 -- This is how VidyaSarathi handles login (custom auth, not Supabase Auth)
 CREATE TABLE auth_credentials (
