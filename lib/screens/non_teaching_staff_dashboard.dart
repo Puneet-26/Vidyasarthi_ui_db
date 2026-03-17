@@ -121,7 +121,7 @@ class _HomePageState extends State<_HomePage> {
               const DashboardHeader(
                 name: 'Admin Staff',
                 role: 'NON-TEACHING',
-                subtitle: 'Good Morning 🏫',
+                subtitle: 'Staff Dashboard',
                 roleColor: AppColors.adminAccent,
                 notificationCount: 5,
               ),

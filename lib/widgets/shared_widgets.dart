@@ -476,9 +476,12 @@ class DashboardHeader extends StatelessWidget {
         Stack(
           clipBehavior: Clip.none,
           children: [
-            const GlassCard(
-              padding: EdgeInsets.all(10),
-              child: Icon(Icons.notifications_outlined, color: AppColors.textDark, size: 22),
+            GestureDetector(
+              onTap: onNotification,
+              child: const GlassCard(
+                padding: EdgeInsets.all(10),
+                child: Icon(Icons.notifications_outlined, color: AppColors.textDark, size: 22),
+              ),
             ),
             if (notificationCount > 0)
               Positioned(

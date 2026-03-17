@@ -70,7 +70,7 @@ class _ParentHomePage extends StatelessWidget {
           const DashboardHeader(
             name: 'Mr. Ramesh Sharma',
             role: 'PARENT',
-            subtitle: 'Welcome back 👋',
+            subtitle: 'Parent Dashboard',
             roleColor: AppColors.parentAccent,
             notificationCount: 2,
           ),

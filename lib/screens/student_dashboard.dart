@@ -50,6 +50,55 @@ class _StudentDashboardState extends State<StudentDashboard> {
 }
 
 class _StudentHomePage extends StatelessWidget {
+  void _showNoticesSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.35,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            controller: scrollController,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(color: AppColors.divider, borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text('Notices & Holidays',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                const SizedBox(height: 16),
+                _HolidayNotice(title: 'Holi Holiday', date: 'March 14, 2026', icon: Icons.celebration_rounded, color: AppColors.warning),
+                const SizedBox(height: 10),
+                _HolidayNotice(title: 'Good Friday', date: 'April 3, 2026', icon: Icons.church_rounded, color: AppColors.info),
+                const SizedBox(height: 10),
+                _HolidayNotice(title: 'Dr. Ambedkar Jayanti', date: 'April 14, 2026', icon: Icons.star_rounded, color: AppColors.primary),
+                const SizedBox(height: 10),
+                _HolidayNotice(title: 'Summer Vacation Begins', date: 'May 1, 2026', icon: Icons.wb_sunny_rounded, color: AppColors.error),
+                const SizedBox(height: 10),
+                _HolidayNotice(title: 'Independence Day', date: 'August 15, 2026', icon: Icons.flag_rounded, color: AppColors.success),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -57,12 +106,13 @@ class _StudentHomePage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const DashboardHeader(
+          DashboardHeader(
             name: 'Aryan Sharma',
             role: 'STUDENT',
-            subtitle: 'Good Morning 🌸',
+            subtitle: 'Student Dashboard',
             roleColor: AppColors.studentAccent,
             notificationCount: 3,
+            onNotification: () => _showNoticesSheet(context),
           ),
               const SizedBox(height: 24),
 
@@ -200,31 +250,6 @@ class _StudentHomePage extends StatelessWidget {
               _TimetableList(),
               const SizedBox(height: 24),
 
-              // Notices
-              SectionHeader(
-                title: 'Recent Notices',
-                action: 'All',
-                onAction: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const FeedbackSystemScreen()),
-                  );
-                },
-              ),
-              const SizedBox(height: 14),
-              const _NoticeItem(
-                title: 'Annual Sports Day - Registration Open',
-                time: '2 hours ago',
-                icon: Icons.sports_soccer_rounded,
-                color: AppColors.warning,
-              ),
-              const SizedBox(height: 10),
-              const _NoticeItem(
-                title: 'PTM Scheduled for March 20th',
-                time: 'Yesterday',
-                icon: Icons.people_rounded,
-                color: AppColors.info,
-              ),
               const SizedBox(height: 80),
         ],
       ),
@@ -904,6 +929,51 @@ class _NoticeItem extends StatelessWidget {
             ),
           ),
           const Icon(Icons.chevron_right_rounded, color: AppColors.textLight),
+        ],
+      ),
+    );
+  }
+}
+
+class _HolidayNotice extends StatelessWidget {
+  final String title;
+  final String date;
+  final IconData icon;
+  final Color color;
+
+  const _HolidayNotice({required this.title, required this.date, required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                Text(date, style: const TextStyle(fontSize: 11, color: AppColors.textMid)),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+            child: Text('Holiday', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color)),
+          ),
         ],
       ),
     );
