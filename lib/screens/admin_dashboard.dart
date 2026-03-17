@@ -106,8 +106,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   final List<BottomNavItem> _navItems = const [
     BottomNavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard_rounded, label: 'Dashboard'),
-    BottomNavItem(icon: Icons.bar_chart_outlined, activeIcon: Icons.bar_chart_rounded, label: 'Reports'),
-    BottomNavItem(icon: Icons.history_rounded, activeIcon: Icons.history_rounded, label: 'Activities'),
+    BottomNavItem(icon: Icons.school_outlined, activeIcon: Icons.school_rounded, label: 'Students'),
+    BottomNavItem(icon: Icons.people_outlined, activeIcon: Icons.people_rounded, label: 'Teachers'),
+    BottomNavItem(icon: Icons.admin_panel_settings_outlined, activeIcon: Icons.admin_panel_settings_rounded, label: 'Staff'),
+    BottomNavItem(icon: Icons.family_restroom_outlined, activeIcon: Icons.family_restroom_rounded, label: 'Parents'),
     BottomNavItem(icon: Icons.account_circle_outlined, activeIcon: Icons.account_circle_rounded, label: 'Profile'),
   ];
 
@@ -118,7 +120,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         currentIndex: _selectedIndex,
         items: _navItems,
         onTap: (i) {
-          if (i == 3) {
+          if (i == 5) {
             _showProfileSheet(context);
           } else {
             setState(() => _selectedIndex = i);
@@ -131,8 +133,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
           index: _selectedIndex,
           children: [
             _DashboardTab(),
-            _ReportsTab(),
-            _ActivitiesTab(),
+            _StudentsTab(),
+            _TeachersTab(),
+            _StaffTab(),
+            _ParentsTab(),
           ],
         ),
       ),
@@ -282,7 +286,7 @@ class _ActivitiesTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'Recent Activities', action: 'View Log'),
+          const SectionHeader(title: 'Recent Activities'),
           const SizedBox(height: 14),
           const _ActivityItem(
             title: 'New Teacher Onboarded',
@@ -315,6 +319,422 @@ class _ActivitiesTab extends StatelessWidget {
             icon: Icons.schedule_rounded,
             color: AppColors.adminAccent,
           ),
+          const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+//  NEW COMPREHENSIVE ADMIN TABS
+// ============================================================
+
+class _StudentsTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(title: 'Student Management'),
+          const SizedBox(height: 16),
+          
+          // Quick Actions
+          Row(
+            children: [
+              Expanded(
+                child: _ActionCard(
+                  icon: Icons.person_add_rounded,
+                  label: 'Add Student',
+                  color: AppColors.success,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _AddStudentScreen())),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _ActionCard(
+                  icon: Icons.list_alt_rounded,
+                  label: 'View All',
+                  color: AppColors.primary,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _AllStudentsScreen())),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Student Stats
+          const SectionHeader(title: 'Student Overview'),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: const StatCard(
+                  title: 'Total Students',
+                  value: '1,248',
+                  icon: Icons.school_rounded,
+                  color: AppColors.primary,
+                  subtitle: 'Active',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: const StatCard(
+                  title: 'New This Month',
+                  value: '12',
+                  icon: Icons.trending_up_rounded,
+                  color: AppColors.success,
+                  subtitle: 'Admissions',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: const StatCard(
+                  title: 'Avg Attendance',
+                  value: '94%',
+                  icon: Icons.how_to_reg_rounded,
+                  color: AppColors.info,
+                  subtitle: 'This month',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: const StatCard(
+                  title: 'Fee Pending',
+                  value: '112',
+                  icon: Icons.warning_rounded,
+                  color: AppColors.warning,
+                  subtitle: 'Students',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Recent Students
+          const SectionHeader(title: 'Recent Admissions'),
+          const SizedBox(height: 14),
+          _StudentListItem(name: 'Aryan Sharma', batch: 'Class 10-A', status: 'Active', statusColor: AppColors.success),
+          const SizedBox(height: 8),
+          _StudentListItem(name: 'Priya Patel', batch: 'Class 9-B', status: 'Active', statusColor: AppColors.success),
+          const SizedBox(height: 8),
+          _StudentListItem(name: 'Rohan Mehta', batch: 'Class 11-C', status: 'Pending', statusColor: AppColors.warning),
+          
+          const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+}
+
+class _TeachersTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(title: 'Teacher Management'),
+          const SizedBox(height: 16),
+          
+          // Quick Actions
+          Row(
+            children: [
+              Expanded(
+                child: _ActionCard(
+                  icon: Icons.person_add_rounded,
+                  label: 'Add Teacher',
+                  color: AppColors.teacherAccent,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _AddTeacherScreen())),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _ActionCard(
+                  icon: Icons.list_alt_rounded,
+                  label: 'View All',
+                  color: AppColors.primary,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _AllTeachersScreen())),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Teacher Stats
+          const SectionHeader(title: 'Teacher Overview'),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: const StatCard(
+                  title: 'Total Teachers',
+                  value: '84',
+                  icon: Icons.person_rounded,
+                  color: AppColors.teacherAccent,
+                  subtitle: 'Active',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: const StatCard(
+                  title: 'Classes Today',
+                  value: '156',
+                  icon: Icons.class_rounded,
+                  color: AppColors.primary,
+                  subtitle: 'Scheduled',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: const StatCard(
+                  title: 'Attendance',
+                  value: '98%',
+                  icon: Icons.how_to_reg_rounded,
+                  color: AppColors.success,
+                  subtitle: 'Marked',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: const StatCard(
+                  title: 'On Leave',
+                  value: '3',
+                  icon: Icons.event_busy_rounded,
+                  color: AppColors.warning,
+                  subtitle: 'Today',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Teacher List
+          const SectionHeader(title: 'Teaching Staff'),
+          const SizedBox(height: 14),
+          _TeacherListItem(name: 'Mrs. Priya Nair', subject: 'Physics', classes: '3 Classes', statusColor: AppColors.success),
+          const SizedBox(height: 8),
+          _TeacherListItem(name: 'Mr. Arun Kumar', subject: 'Mathematics', classes: '4 Classes', statusColor: AppColors.success),
+          const SizedBox(height: 8),
+          _TeacherListItem(name: 'Dr. Meena Verma', subject: 'Chemistry', classes: '3 Classes', statusColor: AppColors.success),
+          
+          const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+}
+
+class _StaffTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(title: 'Staff Operations'),
+          const SizedBox(height: 16),
+          
+          // Staff Actions Grid
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            childAspectRatio: 1.5,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            children: [
+              _StaffActionCard(
+                icon: Icons.person_add_rounded,
+                label: 'Admissions',
+                color: AppColors.primary,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _AdminAdmissionsScreen())),
+              ),
+              _StaffActionCard(
+                icon: Icons.schedule_rounded,
+                label: 'Timetable',
+                color: AppColors.info,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _AdminTimetableScreen())),
+              ),
+              _StaffActionCard(
+                icon: Icons.campaign_rounded,
+                label: 'Broadcast',
+                color: AppColors.warning,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _AdminBroadcastScreen())),
+              ),
+              _StaffActionCard(
+                icon: Icons.account_balance_wallet_rounded,
+                label: 'Fee Management',
+                color: AppColors.success,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _AdminFeesScreen())),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Pending Tasks
+          const SectionHeader(title: 'Pending Tasks'),
+          const SizedBox(height: 14),
+          const GlassCard(
+            child: Column(
+              children: [
+                _PendingTaskItem(
+                  title: 'Admission Applications',
+                  count: '7',
+                  icon: Icons.person_add_rounded,
+                  color: AppColors.primary,
+                ),
+                Divider(color: AppColors.divider, height: 20),
+                _PendingTaskItem(
+                  title: 'Fee Reminders',
+                  count: '14',
+                  icon: Icons.notifications_rounded,
+                  color: AppColors.warning,
+                ),
+                Divider(color: AppColors.divider, height: 20),
+                _PendingTaskItem(
+                  title: 'Timetable Conflicts',
+                  count: '2',
+                  icon: Icons.warning_rounded,
+                  color: AppColors.error,
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+}
+
+class _ParentsTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(title: 'Parent Management'),
+          const SizedBox(height: 16),
+          
+          // Quick Actions
+          Row(
+            children: [
+              Expanded(
+                child: _ActionCard(
+                  icon: Icons.family_restroom_rounded,
+                  label: 'View All',
+                  color: AppColors.parentAccent,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _AllParentsScreen())),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _ActionCard(
+                  icon: Icons.message_rounded,
+                  label: 'Send Notice',
+                  color: AppColors.info,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _SendNoticeScreen())),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Parent Stats
+          const SectionHeader(title: 'Parent Overview'),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: const StatCard(
+                  title: 'Total Parents',
+                  value: '892',
+                  icon: Icons.family_restroom_rounded,
+                  color: AppColors.parentAccent,
+                  subtitle: 'Registered',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: const StatCard(
+                  title: 'Active Users',
+                  value: '756',
+                  icon: Icons.verified_user_rounded,
+                  color: AppColors.success,
+                  subtitle: 'This month',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: const StatCard(
+                  title: 'Fee Paid',
+                  value: '780',
+                  icon: Icons.check_circle_rounded,
+                  color: AppColors.success,
+                  subtitle: 'Parents',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: const StatCard(
+                  title: 'Fee Pending',
+                  value: '112',
+                  icon: Icons.pending_rounded,
+                  color: AppColors.warning,
+                  subtitle: 'Parents',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Recent Parent Activity
+          const SectionHeader(title: 'Recent Activity'),
+          const SizedBox(height: 14),
+          _ParentActivityItem(
+            parentName: 'Mr. Rajesh Sharma',
+            activity: 'Paid fees for Aryan Sharma',
+            time: '2 hours ago',
+            icon: Icons.payment_rounded,
+            color: AppColors.success,
+          ),
+          const SizedBox(height: 8),
+          _ParentActivityItem(
+            parentName: 'Mrs. Sunita Patel',
+            activity: 'Viewed report card',
+            time: '5 hours ago',
+            icon: Icons.description_rounded,
+            color: AppColors.info,
+          ),
+          const SizedBox(height: 8),
+          _ParentActivityItem(
+            parentName: 'Mr. Vikram Mehta',
+            activity: 'Sent message to teacher',
+            time: 'Yesterday',
+            icon: Icons.message_rounded,
+            color: AppColors.primary,
+          ),
+          
           const SizedBox(height: 80),
         ],
       ),
@@ -856,6 +1276,801 @@ class _ProfileInfoRow extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+
+// ============================================================
+//  SUPPORTING WIDGETS
+// ============================================================
+
+class _ActionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionCard({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: GlassCard(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: Responsive.sp(context, 13),
+                fontWeight: FontWeight.w600,
+                color: AppColors.textDark,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StaffActionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _StaffActionCard({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: GlassCard(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: Responsive.sp(context, 12),
+                fontWeight: FontWeight.w600,
+                color: AppColors.textDark,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StudentListItem extends StatelessWidget {
+  final String name;
+  final String batch;
+  final String status;
+  final Color statusColor;
+
+  const _StudentListItem({
+    required this.name,
+    required this.batch,
+    required this.status,
+    required this.statusColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.studentAccent.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.person_rounded, color: AppColors.studentAccent, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 13),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                Text(
+                  batch,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 11),
+                    color: AppColors.textMid,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              status,
+              style: TextStyle(
+                fontSize: Responsive.sp(context, 10),
+                fontWeight: FontWeight.w600,
+                color: statusColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TeacherListItem extends StatelessWidget {
+  final String name;
+  final String subject;
+  final String classes;
+  final Color statusColor;
+
+  const _TeacherListItem({
+    required this.name,
+    required this.subject,
+    required this.classes,
+    required this.statusColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.teacherAccent.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.person_rounded, color: AppColors.teacherAccent, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 13),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                Text(
+                  '$subject • $classes',
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 11),
+                    color: AppColors.textMid,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: AppColors.textLight, size: 20),
+        ],
+      ),
+    );
+  }
+}
+
+class _PendingTaskItem extends StatelessWidget {
+  final String title;
+  final String count;
+  final IconData icon;
+  final Color color;
+
+  const _PendingTaskItem({
+    required this.title,
+    required this.count,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: color, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: Responsive.sp(context, 13),
+              fontWeight: FontWeight.w500,
+              color: AppColors.textDark,
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            count,
+            style: TextStyle(
+              fontSize: Responsive.sp(context, 13),
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ParentActivityItem extends StatelessWidget {
+  final String parentName;
+  final String activity;
+  final String time;
+  final IconData icon;
+  final Color color;
+
+  const _ParentActivityItem({
+    required this.parentName,
+    required this.activity,
+    required this.time,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  parentName,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 13),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                Text(
+                  activity,
+                  style: TextStyle(
+                    fontSize: Responsive.sp(context, 11),
+                    color: AppColors.textMid,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            time,
+            style: TextStyle(
+              fontSize: Responsive.sp(context, 10),
+              color: AppColors.textLight,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+//  PLACEHOLDER DETAIL SCREENS
+// ============================================================
+
+class _AddStudentScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Add New Student', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700)),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const GlassCard(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40),
+                  child: Column(
+                    children: [
+                      Icon(Icons.person_add_rounded, size: 64, color: AppColors.primary),
+                      SizedBox(height: 16),
+                      Text('Student Registration Form', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                      SizedBox(height: 8),
+                      Text('Coming soon...', style: TextStyle(color: AppColors.textLight)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AllStudentsScreen extends StatelessWidget {
+  final List<Map<String, dynamic>> students = const [
+    {'name': 'Aryan Sharma', 'batch': 'Class 10-A', 'status': 'Active', 'attendance': '94%'},
+    {'name': 'Priya Patel', 'batch': 'Class 9-B', 'status': 'Active', 'attendance': '96%'},
+    {'name': 'Rohan Mehta', 'batch': 'Class 11-C', 'status': 'Active', 'attendance': '89%'},
+    {'name': 'Sneha Iyer', 'batch': 'Class 10-A', 'status': 'Active', 'attendance': '92%'},
+    {'name': 'Karan Singh', 'batch': 'Class 12-A', 'status': 'Active', 'attendance': '97%'},
+    {'name': 'Ananya Nair', 'batch': 'Class 9-A', 'status': 'Active', 'attendance': '91%'},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('All Students', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700)),
+      ),
+      body: ListView.separated(
+        padding: const EdgeInsets.all(20),
+        itemCount: students.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (_, i) {
+          final student = students[i];
+          return GlassCard(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.studentAccent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.person_rounded, color: AppColors.studentAccent, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(student['name'] as String, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                      Text('${student['batch']} • ${student['attendance']}', style: const TextStyle(fontSize: 11, color: AppColors.textMid)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, color: AppColors.textLight, size: 20),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AddTeacherScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Add New Teacher', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700)),
+      ),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(20),
+        child: GlassCard(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  Icon(Icons.person_add_rounded, size: 64, color: AppColors.teacherAccent),
+                  SizedBox(height: 16),
+                  Text('Teacher Registration Form', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                  SizedBox(height: 8),
+                  Text('Coming soon...', style: TextStyle(color: AppColors.textLight)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AllTeachersScreen extends StatelessWidget {
+  final List<Map<String, dynamic>> teachers = const [
+    {'name': 'Mrs. Priya Nair', 'subject': 'Physics', 'classes': '3 Classes'},
+    {'name': 'Mr. Arun Kumar', 'subject': 'Mathematics', 'classes': '4 Classes'},
+    {'name': 'Dr. Meena Verma', 'subject': 'Chemistry', 'classes': '3 Classes'},
+    {'name': 'Mrs. Sunita Rao', 'subject': 'English', 'classes': '5 Classes'},
+    {'name': 'Mr. Vikram Singh', 'subject': 'History', 'classes': '3 Classes'},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('All Teachers', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700)),
+      ),
+      body: ListView.separated(
+        padding: const EdgeInsets.all(20),
+        itemCount: teachers.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (_, i) {
+          final teacher = teachers[i];
+          return GlassCard(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.teacherAccent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.person_rounded, color: AppColors.teacherAccent, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(teacher['name'] as String, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                      Text('${teacher['subject']} • ${teacher['classes']}', style: const TextStyle(fontSize: 11, color: AppColors.textMid)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, color: AppColors.textLight, size: 20),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AdminAdmissionsScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Admissions', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700)),
+      ),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(20),
+        child: GlassCard(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  Icon(Icons.person_add_rounded, size: 64, color: AppColors.primary),
+                  SizedBox(height: 16),
+                  Text('Admission Management', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                  SizedBox(height: 8),
+                  Text('View and manage all admission applications', style: TextStyle(color: AppColors.textLight)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminTimetableScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Timetable', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700)),
+      ),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(20),
+        child: GlassCard(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  Icon(Icons.schedule_rounded, size: 64, color: AppColors.info),
+                  SizedBox(height: 16),
+                  Text('Timetable Management', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                  SizedBox(height: 8),
+                  Text('Create and manage class schedules', style: TextStyle(color: AppColors.textLight)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminBroadcastScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Broadcast', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700)),
+      ),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(20),
+        child: GlassCard(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  Icon(Icons.campaign_rounded, size: 64, color: AppColors.warning),
+                  SizedBox(height: 16),
+                  Text('Broadcast Messages', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                  SizedBox(height: 8),
+                  Text('Send notices to students, teachers, and parents', style: TextStyle(color: AppColors.textLight)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminFeesScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Fee Management', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700)),
+      ),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(20),
+        child: GlassCard(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  Icon(Icons.account_balance_wallet_rounded, size: 64, color: AppColors.success),
+                  SizedBox(height: 16),
+                  Text('Fee Management', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                  SizedBox(height: 8),
+                  Text('Track and manage student fees', style: TextStyle(color: AppColors.textLight)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AllParentsScreen extends StatelessWidget {
+  final List<Map<String, dynamic>> parents = const [
+    {'name': 'Mr. Rajesh Sharma', 'children': '1 Child', 'status': 'Active'},
+    {'name': 'Mrs. Sunita Patel', 'children': '2 Children', 'status': 'Active'},
+    {'name': 'Mr. Vikram Mehta', 'children': '1 Child', 'status': 'Active'},
+    {'name': 'Mrs. Priya Iyer', 'children': '1 Child', 'status': 'Active'},
+    {'name': 'Mr. Karan Singh', 'children': '2 Children', 'status': 'Active'},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('All Parents', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700)),
+      ),
+      body: ListView.separated(
+        padding: const EdgeInsets.all(20),
+        itemCount: parents.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (_, i) {
+          final parent = parents[i];
+          return GlassCard(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.parentAccent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.family_restroom_rounded, color: AppColors.parentAccent, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(parent['name'] as String, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                      Text(parent['children'] as String, style: const TextStyle(fontSize: 11, color: AppColors.textMid)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, color: AppColors.textLight, size: 20),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SendNoticeScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text('Send Notice', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700)),
+      ),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(20),
+        child: GlassCard(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  Icon(Icons.message_rounded, size: 64, color: AppColors.info),
+                  SizedBox(height: 16),
+                  Text('Send Notice to Parents', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                  SizedBox(height: 8),
+                  Text('Compose and send notices', style: TextStyle(color: AppColors.textLight)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
