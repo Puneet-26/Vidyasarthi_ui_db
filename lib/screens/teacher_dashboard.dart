@@ -17,14 +17,12 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   final List<BottomNavItem> _navItems = const [
     BottomNavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
     BottomNavItem(icon: Icons.class_outlined, activeIcon: Icons.class_rounded, label: 'Classes'),
-    BottomNavItem(icon: Icons.edit_outlined, activeIcon: Icons.edit_rounded, label: 'Activities'),
     BottomNavItem(icon: Icons.account_circle_outlined, activeIcon: Icons.account_circle_rounded, label: 'Profile'),
   ];
 
   List<Widget> get _pages => [
     const _TeacherHomePage(),
     const _TeacherClassesPage(),
-    const _TeacherMessagesPage(),
   ];
 
   void _showProfileSheet(BuildContext context) {
@@ -113,7 +111,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         currentIndex: _selectedIndex,
         items: _navItems,
         onTap: (i) {
-          if (i == 3) {
+          if (i == 2) {
             _showProfileSheet(context);
           } else {
             setState(() => _selectedIndex = i);
@@ -196,53 +194,6 @@ class _TeacherHomePage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Stats
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  SizedBox(
-                    width: (MediaQuery.of(context).size.width - 52) / 2,
-                    child: const StatCard(
-                      title: 'My Classes',
-                      value: '6',
-                      icon: Icons.class_rounded,
-                      color: AppColors.teacherAccent,
-                      subtitle: 'This semester',
-                    ),
-                  ),
-                  SizedBox(
-                    width: (MediaQuery.of(context).size.width - 52) / 2,
-                    child: const StatCard(
-                      title: 'Total Students',
-                      value: '184',
-                      icon: Icons.groups_rounded,
-                      color: AppColors.primary,
-                      subtitle: 'Across all classes',
-                    ),
-                  ),
-                  SizedBox(
-                    width: (MediaQuery.of(context).size.width - 52) / 2,
-                    child: const StatCard(
-                      title: "Today's Classes",
-                      value: '4',
-                      icon: Icons.schedule_rounded,
-                      color: AppColors.success,
-                      subtitle: '2 remaining',
-                    ),
-                  ),
-                  SizedBox(
-                    width: (MediaQuery.of(context).size.width - 52) / 2,
-                    child: const StatCard(
-                      title: 'Pending Marks',
-                      value: '12',
-                      icon: Icons.pending_rounded,
-                      color: AppColors.warning,
-                      subtitle: 'Need entry',
-                    ),
-                  ),
-                ],
-              ),
               const SizedBox(height: 24),
 
               // Today's Schedule
@@ -252,34 +203,11 @@ class _TeacherHomePage extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Attendance Summary
-              const SectionHeader(title: 'Attendance Summary', action: 'Mark Today'),
+              const SectionHeader(title: 'Attendance Summary'),
               const SizedBox(height: 14),
               _AttendanceSummaryCard(),
               const SizedBox(height: 24),
 
-              // Recent Student Activity
-              const SectionHeader(title: 'Recent Submissions', action: 'View All'),
-              const SizedBox(height: 14),
-              const _SubmissionItem(
-                student: 'Aryan Sharma',
-                assignment: 'Math - Chapter 5',
-                time: '10 min ago',
-                isLate: false,
-              ),
-              const SizedBox(height: 8),
-              const _SubmissionItem(
-                student: 'Sneha Patel',
-                assignment: 'Science Lab Report',
-                time: '1 hour ago',
-                isLate: true,
-              ),
-              const SizedBox(height: 8),
-              const _SubmissionItem(
-                student: 'Rohan Mehta',
-                assignment: 'English Essay',
-                time: '2 hours ago',
-                isLate: false,
-              ),
               const SizedBox(height: 80),
         ],
       ),
