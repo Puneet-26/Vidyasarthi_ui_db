@@ -151,7 +151,7 @@ class _DashboardTab extends StatelessWidget {
           const DashboardHeader(
             name: 'Dr. Vijay Menon',
             role: 'ADMIN',
-            subtitle: 'School Overview 🏫',
+            subtitle: 'Overview 🏫',
             roleColor: AppColors.adminAccent,
             notificationCount: 8,
           ),

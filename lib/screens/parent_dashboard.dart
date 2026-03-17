@@ -440,7 +440,7 @@ class _ParentChatPage extends StatelessWidget {
             time: '3 days ago',
           ),
           const SizedBox(height: 24),
-          const SectionHeader(title: 'School Notices'),
+          const SectionHeader(title: 'Notices'),
           const SizedBox(height: 14),
           const _EventItem(title: 'Parent-Teacher Meeting - March 22', date: 'March 22, 2026', icon: Icons.people_rounded, color: AppColors.info),
           const SizedBox(height: 8),

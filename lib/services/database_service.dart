@@ -218,6 +218,16 @@ class DatabaseService {
     }
   }
 
+  Future<bool> createTimeTableEntry(TimeTable tt) async {
+    try {
+      await _client.from('timetables').insert(tt.toJson());
+      return true;
+    } catch (e) {
+      print('Error creating timetable entry: $e');
+      return false;
+    }
+  }
+
   // ==================== HOMEWORK ====================
   Future<List<Homework>> getHomeworkByBatch(String batchId) async {
     try {
