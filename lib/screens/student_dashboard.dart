@@ -120,13 +120,16 @@ class _StudentHomePage extends StatelessWidget {
               _TodayClassBanner(),
               const SizedBox(height: 24),
 
-              // Stats Row
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
+              // Timetable Today
+              const SectionHeader(title: "Today's Timetable"),
+              const SizedBox(height: 14),
+              _TimetableList(),
+              const SizedBox(height: 24),
+
+              // Stats Row — Attendance & Pending Tasks only
+              Row(
                 children: [
-                  SizedBox(
-                    width: (MediaQuery.of(context).size.width - 52) / 2,
+                  Expanded(
                     child: const StatCard(
                       title: 'Attendance',
                       value: '92%',
@@ -135,18 +138,8 @@ class _StudentHomePage extends StatelessWidget {
                       subtitle: 'This month',
                     ),
                   ),
-                  SizedBox(
-                    width: (MediaQuery.of(context).size.width - 52) / 2,
-                    child: const StatCard(
-                      title: 'Avg. Grade',
-                      value: 'A-',
-                      icon: Icons.star_rounded,
-                      color: AppColors.warning,
-                      subtitle: 'Semester 2',
-                    ),
-                  ),
-                  SizedBox(
-                    width: (MediaQuery.of(context).size.width - 52) / 2,
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: const StatCard(
                       title: 'Pending Tasks',
                       value: '4',
@@ -155,31 +148,12 @@ class _StudentHomePage extends StatelessWidget {
                       subtitle: 'Due this week',
                     ),
                   ),
-                  SizedBox(
-                    width: (MediaQuery.of(context).size.width - 52) / 2,
-                    child: const StatCard(
-                      title: 'Rank',
-                      value: '#7',
-                      icon: Icons.emoji_events_rounded,
-                      color: AppColors.primary,
-                      subtitle: 'Class of 40',
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 24),
 
               // Subject Performance
-              SectionHeader(
-                title: 'Subject Performance',
-                action: 'View All',
-                onAction: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SyllabusTrackingScreen()),
-                  );
-                },
-              ),
+              const SectionHeader(title: 'Subject Performance'),
               const SizedBox(height: 14),
               const GlassCard(
                 child: Column(
@@ -199,16 +173,7 @@ class _StudentHomePage extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Upcoming Assignments
-              SectionHeader(
-                title: 'Upcoming Assignments',
-                action: 'See All',
-                onAction: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const HomeworkSystemScreen()),
-                  );
-                },
-              ),
+              const SectionHeader(title: 'Upcoming Assignments'),
               const SizedBox(height: 14),
               const _AssignmentItem(
                 subject: 'Mathematics',
@@ -235,21 +200,6 @@ class _StudentHomePage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Timetable Today
-              SectionHeader(
-                title: "Today's Timetable",
-                action: 'Full Week',
-                onAction: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const TimetableManagementScreen()),
-                  );
-                },
-              ),
-              const SizedBox(height: 14),
-              _TimetableList(),
-              const SizedBox(height: 24),
-
               const SizedBox(height: 80),
         ],
       ),
@@ -263,6 +213,23 @@ class _StudentHomePage extends StatelessWidget {
 
 class _StudentSubjectsPage extends StatelessWidget {
   const _StudentSubjectsPage();
+
+  static const _physicsModules = [
+    {'status': 'done'}, {'status': 'done'}, {'status': 'done'}, {'status': 'done'},
+    {'status': 'done'}, {'status': 'done'}, {'status': 'ongoing'},
+    {'status': 'pending'}, {'status': 'pending'}, {'status': 'pending'}, {'status': 'pending'},
+  ];
+  static const _chemModules = [
+    {'status': 'done'}, {'status': 'done'}, {'status': 'done'}, {'status': 'done'},
+    {'status': 'done'}, {'status': 'done'}, {'status': 'done'}, {'status': 'ongoing'},
+    {'status': 'pending'}, {'status': 'pending'}, {'status': 'pending'},
+  ];
+  static const _mathModules = [
+    {'status': 'done'}, {'status': 'done'}, {'status': 'done'}, {'status': 'done'},
+    {'status': 'done'}, {'status': 'done'}, {'status': 'done'}, {'status': 'done'},
+    {'status': 'done'}, {'status': 'ongoing'}, {'status': 'pending'},
+  ];
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -272,19 +239,11 @@ class _StudentSubjectsPage extends StatelessWidget {
         children: [
           const SectionHeader(title: 'My Subjects'),
           const SizedBox(height: 16),
-          _SubjectCard(name: 'Physics', code: 'PHY101', teacher: 'Mr. Arun Kumar', progress: 0.65, color: AppColors.primary),
+          _SubjectCard(name: 'Physics', code: 'PHY101', teacher: 'Mr. Arun Kumar', progress: 0.65, color: AppColors.primary, modules: _physicsModules),
           const SizedBox(height: 12),
-          _SubjectCard(name: 'Chemistry', code: 'CHM101', teacher: 'Mrs. Priya Sharma', progress: 0.72, color: AppColors.info),
+          _SubjectCard(name: 'Chemistry', code: 'CHM101', teacher: 'Mrs. Priya Sharma', progress: 0.72, color: AppColors.info, modules: _chemModules),
           const SizedBox(height: 12),
-          _SubjectCard(name: 'Mathematics', code: 'MTH101', teacher: 'Mr. Vikram Singh', progress: 0.85, color: AppColors.success),
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Recent Syllabus'),
-          const SizedBox(height: 12),
-          _SyllabusTile(topic: 'Newton\'s Laws of Motion', subject: 'Physics', done: true),
-          const SizedBox(height: 8),
-          _SyllabusTile(topic: 'Chemical Bonding', subject: 'Chemistry', done: true),
-          const SizedBox(height: 8),
-          _SyllabusTile(topic: 'Differential Calculus', subject: 'Mathematics', done: false),
+          _SubjectCard(name: 'Mathematics', code: 'MTH101', teacher: 'Mr. Vikram Singh', progress: 0.85, color: AppColors.success, modules: _mathModules),
           const SizedBox(height: 30),
         ],
       ),
@@ -298,37 +257,195 @@ class _SubjectCard extends StatelessWidget {
   final String teacher;
   final double progress;
   final Color color;
-  const _SubjectCard({required this.name, required this.code, required this.teacher, required this.progress, required this.color});
+  final List<Map<String, dynamic>> modules;
+  const _SubjectCard({
+    required this.name,
+    required this.code,
+    required this.teacher,
+    required this.progress,
+    required this.color,
+    required this.modules,
+  });
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
-                child: Icon(Icons.book_rounded, color: color, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name, style: TextStyle(fontSize: Responsive.sp(context, 15), fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                    Text('$code • $teacher', style: TextStyle(fontSize: Responsive.sp(context, 12), color: AppColors.textMid)),
-                  ],
-                ),
-              ),
-              Text('${(progress * 100).round()}%', style: TextStyle(fontSize: Responsive.sp(context, 13), fontWeight: FontWeight.w700, color: color)),
-            ],
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => _SubjectModulesScreen(
+            name: name,
+            code: code,
+            teacher: teacher,
+            color: color,
+            modules: modules,
           ),
-          const SizedBox(height: 12),
-          LabeledProgressBar(label: 'Syllabus completed', value: progress, color: color),
-        ],
+        ),
+      ),
+      child: GlassCard(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                  child: Icon(Icons.book_rounded, color: color, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(name, style: TextStyle(fontSize: Responsive.sp(context, 15), fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                      Text('$code • $teacher', style: TextStyle(fontSize: Responsive.sp(context, 12), color: AppColors.textMid)),
+                    ],
+                  ),
+                ),
+                Text('${(progress * 100).round()}%', style: TextStyle(fontSize: Responsive.sp(context, 13), fontWeight: FontWeight.w700, color: color)),
+                const SizedBox(width: 6),
+                Icon(Icons.chevron_right_rounded, color: AppColors.textLight, size: 20),
+              ],
+            ),
+            const SizedBox(height: 12),
+            LabeledProgressBar(label: 'Syllabus completed', value: progress, color: color),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SubjectModulesScreen extends StatelessWidget {
+  final String name;
+  final String code;
+  final String teacher;
+  final Color color;
+  final List<Map<String, dynamic>> modules;
+
+  const _SubjectModulesScreen({
+    required this.name,
+    required this.code,
+    required this.teacher,
+    required this.color,
+    required this.modules,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final completed = modules.where((m) => m['status'] == 'done').length;
+    final total = modules.length;
+
+    return Scaffold(
+      backgroundColor: AppColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textDark)),
+            Text('$code • $teacher', style: const TextStyle(fontSize: 11, color: AppColors.textMid)),
+          ],
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Progress summary
+            GlassCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('$completed of $total modules completed',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                      Text('${((completed / total) * 100).round()}%',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: completed / total,
+                      minHeight: 8,
+                      backgroundColor: AppColors.divider,
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            const SectionHeader(title: 'Modules'),
+            const SizedBox(height: 12),
+            ...modules.asMap().entries.map((entry) {
+              final i = entry.key;
+              final m = entry.value;
+              final status = m['status'] as String; // 'done', 'ongoing', 'pending'
+              Color statusColor;
+              IconData statusIcon;
+              String statusLabel;
+              switch (status) {
+                case 'done':
+                  statusColor = AppColors.success;
+                  statusIcon = Icons.check_circle_rounded;
+                  statusLabel = 'Completed';
+                  break;
+                case 'ongoing':
+                  statusColor = color;
+                  statusIcon = Icons.play_circle_rounded;
+                  statusLabel = 'Ongoing';
+                  break;
+                default:
+                  statusColor = AppColors.textLight;
+                  statusIcon = Icons.radio_button_unchecked_rounded;
+                  statusLabel = 'Pending';
+              }
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: GlassCard(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      Icon(statusIcon, color: statusColor, size: 22),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text('Module ${i + 1}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: status == 'done' ? AppColors.textMid : AppColors.textDark,
+                              decoration: status == 'done' ? TextDecoration.lineThrough : null,
+                            )),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(statusLabel,
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: statusColor)),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(height: 30),
+          ],
+        ),
       ),
     );
   }
@@ -510,42 +627,6 @@ class _StudentResultsPage extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Fee Status'),
-          const SizedBox(height: 12),
-          GlassCard(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Total Fees', style: TextStyle(fontSize: 14, color: AppColors.textMid)),
-                    const Text('₹50,000', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Paid', style: TextStyle(fontSize: 14, color: AppColors.textMid)),
-                    Text('₹50,000', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.success)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Center(
-                    child: Text('✅ Fees Fully Paid', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.success)),
-                  ),
-                ),
-              ],
-            ),
-          ),
           const SizedBox(height: 30),
         ],
       ),
@@ -555,18 +636,55 @@ class _StudentResultsPage extends StatelessWidget {
 
 class _StudentProfilePage extends StatelessWidget {
   const _StudentProfilePage();
+
   @override
   Widget build(BuildContext context) {
+    // Fee data (replace with real data from Student model when wired up)
+    const double totalFees = 50000;
+    const double feesPaid = 30000;
+    const double feesDue = totalFees - feesPaid;
+    const String feeStatus = 'pending'; // 'active', 'pending', 'overdue'
+
+    final List<Map<String, dynamic>> installments = [
+      {'label': 'Installment 1', 'amount': 15000.0, 'due': 'Jan 10, 2026', 'paid': true},
+      {'label': 'Installment 2', 'amount': 15000.0, 'due': 'Feb 10, 2026', 'paid': true},
+      {'label': 'Installment 3', 'amount': 10000.0, 'due': 'Mar 10, 2026', 'paid': false},
+      {'label': 'Installment 4', 'amount': 10000.0, 'due': 'Apr 10, 2026', 'paid': false},
+    ];
+
+    Color statusColor;
+    String statusLabel;
+    IconData statusIcon;
+    switch (feeStatus) {
+      case 'overdue':
+        statusColor = AppColors.error;
+        statusLabel = 'Overdue';
+        statusIcon = Icons.warning_rounded;
+        break;
+      case 'active':
+        statusColor = AppColors.success;
+        statusLabel = 'Fully Paid';
+        statusIcon = Icons.check_circle_rounded;
+        break;
+      default:
+        statusColor = AppColors.warning;
+        statusLabel = 'Partially Paid';
+        statusIcon = Icons.pending_rounded;
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          GradientAvatar(initials: 'AS', color: AppColors.studentAccent, size: 72),
+          Center(child: GradientAvatar(initials: 'AS', color: AppColors.studentAccent, size: 72)),
           const SizedBox(height: 12),
-          const Text('Aryan Sharma', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textDark)),
-          const Text('Student • Class 10-A', style: TextStyle(fontSize: 13, color: AppColors.textMid)),
+          const Center(child: Text('Aryan Sharma', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textDark))),
+          const Center(child: Text('Student • Class 10-A', style: TextStyle(fontSize: 13, color: AppColors.textMid))),
           const SizedBox(height: 24),
+
+          // Personal Info
           GlassCard(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -583,7 +701,99 @@ class _StudentProfilePage extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 24),
+
+          // Fee Summary
+          const SectionHeader(title: 'Fee Summary'),
+          const SizedBox(height: 12),
+          GlassCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _FeeSummaryTile(
+                        label: 'Total Fees',
+                        amount: totalFees,
+                        color: AppColors.textDark,
+                        icon: Icons.account_balance_wallet_outlined,
+                      ),
+                    ),
+                    Container(width: 1, height: 48, color: AppColors.divider),
+                    Expanded(
+                      child: _FeeSummaryTile(
+                        label: 'Fees Paid',
+                        amount: feesPaid,
+                        color: AppColors.success,
+                        icon: Icons.check_circle_outline_rounded,
+                      ),
+                    ),
+                    Container(width: 1, height: 48, color: AppColors.divider),
+                    Expanded(
+                      child: _FeeSummaryTile(
+                        label: 'Fees Due',
+                        amount: feesDue,
+                        color: feesDue > 0 ? AppColors.error : AppColors.success,
+                        icon: feesDue > 0 ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                // Progress bar
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: feesPaid / totalFees,
+                    minHeight: 8,
+                    backgroundColor: AppColors.divider,
+                    valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('${((feesPaid / totalFees) * 100).round()}% paid',
+                        style: TextStyle(fontSize: 12, color: statusColor, fontWeight: FontWeight.w600)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(statusIcon, size: 13, color: statusColor),
+                          const SizedBox(width: 4),
+                          Text(statusLabel, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Installments
+          const SectionHeader(title: 'Installments'),
+          const SizedBox(height: 12),
+          ...installments.map((inst) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _InstallmentTile(
+              label: inst['label'] as String,
+              amount: inst['amount'] as double,
+              dueDate: inst['due'] as String,
+              paid: inst['paid'] as bool,
+            ),
+          )),
           const SizedBox(height: 20),
+
+          // Logout
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -599,6 +809,92 @@ class _StudentProfilePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeeSummaryTile extends StatelessWidget {
+  final String label;
+  final double amount;
+  final Color color;
+  final IconData icon;
+  const _FeeSummaryTile({required this.label, required this.amount, required this.color, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 22),
+        const SizedBox(height: 6),
+        Text('₹${amount.toStringAsFixed(0)}',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: color)),
+        const SizedBox(height: 2),
+        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textLight), textAlign: TextAlign.center),
+      ],
+    );
+  }
+}
+
+class _InstallmentTile extends StatelessWidget {
+  final String label;
+  final double amount;
+  final String dueDate;
+  final bool paid;
+  const _InstallmentTile({required this.label, required this.amount, required this.dueDate, required this.paid});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (paid ? AppColors.success : AppColors.warning).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              paid ? Icons.check_circle_rounded : Icons.schedule_rounded,
+              color: paid ? AppColors.success : AppColors.warning,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                Text('Due: $dueDate', style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text('₹${amount.toStringAsFixed(0)}',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              const SizedBox(height: 2),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: (paid ? AppColors.success : AppColors.warning).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  paid ? 'Paid' : 'Pending',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: paid ? AppColors.success : AppColors.warning,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
