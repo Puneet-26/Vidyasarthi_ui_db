@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
+import 'login_screen.dart';
 import 'placeholder_screens.dart';
 
 class TeacherDashboard extends StatefulWidget {
@@ -18,7 +19,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     BottomNavItem(icon: Icons.class_outlined, activeIcon: Icons.class_rounded, label: 'Classes'),
     BottomNavItem(icon: Icons.fact_check_outlined, activeIcon: Icons.fact_check_rounded, label: 'Attendance'),
     BottomNavItem(icon: Icons.assessment_outlined, activeIcon: Icons.assessment_rounded, label: 'Marks'),
-    BottomNavItem(icon: Icons.message_outlined, activeIcon: Icons.message_rounded, label: 'Messages'),
+    BottomNavItem(icon: Icons.notifications_outlined, activeIcon: Icons.notifications_rounded, label: 'Activities'),
+    BottomNavItem(icon: Icons.account_circle_outlined, activeIcon: Icons.account_circle_rounded, label: 'Profile'),
   ];
 
   List<Widget> get _pages => [
@@ -29,13 +31,98 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     const _TeacherMessagesPage(),
   ];
 
+  void _showProfileSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.55,
+        minChildSize: 0.4,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            controller: scrollController,
+            child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: AppColors.divider, borderRadius: BorderRadius.circular(2)),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              width: 64, height: 64,
+              decoration: BoxDecoration(color: AppColors.teacherAccent.withOpacity(0.12), shape: BoxShape.circle),
+              child: const Icon(Icons.account_circle_rounded, color: AppColors.teacherAccent, size: 40),
+            ),
+            const SizedBox(height: 12),
+            const Text('Mrs. Priya Nair',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.teacherAccent.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text('TEACHER',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.teacherAccent)),
+            ),
+            const SizedBox(height: 24),
+            _TeacherProfileInfoRow(icon: Icons.email_outlined, label: 'Email', value: 'priya.nair@vidyasarathi.edu'),
+            const Divider(color: AppColors.divider, height: 24),
+            _TeacherProfileInfoRow(icon: Icons.phone_outlined, label: 'Phone', value: '+91 98765 12345'),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  );
+                },
+                icon: const Icon(Icons.logout_rounded, size: 18),
+                label: const Text('Log Out'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GradientScaffold(
       bottomNavigationBar: VidyaBottomNav(
         currentIndex: _selectedIndex,
         items: _navItems,
-        onTap: (i) => setState(() => _selectedIndex = i),
+        onTap: (i) {
+          if (i == 5) {
+            _showProfileSheet(context);
+          } else {
+            setState(() => _selectedIndex = i);
+          }
+        },
         activeColor: AppColors.teacherAccent,
       ),
       child: SafeArea(
@@ -423,21 +510,6 @@ class _TeacherMessagesPage extends StatelessWidget {
           _NoticeCard(title: 'Staff Meeting - Training Update', from: 'Admin', time: '3 days ago', priority: 'normal'),
           const SizedBox(height: 10),
           _NoticeCard(title: 'Holiday Notice - Holi', from: 'Admin', time: '5 days ago', priority: 'normal'),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false),
-              icon: const Icon(Icons.logout_rounded),
-              label: const Text('Logout'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-            ),
-          ),
           const SizedBox(height: 30),
         ],
       ),
@@ -840,6 +912,38 @@ class _SubmissionItem extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TeacherProfileInfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _TeacherProfileInfoRow({required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.teacherAccent.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: AppColors.teacherAccent, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textLight, fontWeight: FontWeight.w500)),
+            Text(value, style: const TextStyle(fontSize: 14, color: AppColors.textDark, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ],
     );
   }
 }

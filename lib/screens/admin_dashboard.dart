@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
+import 'login_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -12,12 +13,102 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
 
+  void _showProfileSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.55,
+        minChildSize: 0.4,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            controller: scrollController,
+            child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppColors.adminAccent.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.account_circle_rounded, color: AppColors.adminAccent, size: 40),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Dr. Vijay Menon',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textDark),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.adminAccent.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                'ADMIN',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.adminAccent),
+              ),
+            ),
+            const SizedBox(height: 24),
+            _ProfileInfoRow(icon: Icons.email_outlined, label: 'Email', value: 'vijay.menon@vidyasarathi.edu'),
+            const Divider(color: AppColors.divider, height: 24),
+            _ProfileInfoRow(icon: Icons.phone_outlined, label: 'Phone', value: '+91 98765 43210'),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  );
+                },
+                icon: const Icon(Icons.logout_rounded, size: 18),
+                label: const Text('Log Out'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+          ),
+        ),
+      ),
+    );
+  }
+
   final List<BottomNavItem> _navItems = const [
     BottomNavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard_rounded, label: 'Dashboard'),
-    BottomNavItem(icon: Icons.people_outline, activeIcon: Icons.people_rounded, label: 'Users'),
     BottomNavItem(icon: Icons.bar_chart_outlined, activeIcon: Icons.bar_chart_rounded, label: 'Reports'),
-    BottomNavItem(icon: Icons.settings_outlined, activeIcon: Icons.settings_rounded, label: 'Settings'),
-    BottomNavItem(icon: Icons.notifications_outlined, activeIcon: Icons.notifications_rounded, label: 'Alerts'),
+    BottomNavItem(icon: Icons.history_rounded, activeIcon: Icons.history_rounded, label: 'Activities'),
+    BottomNavItem(icon: Icons.account_circle_outlined, activeIcon: Icons.account_circle_rounded, label: 'Profile'),
   ];
 
   @override
@@ -26,167 +117,211 @@ class _AdminDashboardState extends State<AdminDashboard> {
       bottomNavigationBar: VidyaBottomNav(
         currentIndex: _selectedIndex,
         items: _navItems,
-        onTap: (i) => setState(() => _selectedIndex = i),
+        onTap: (i) {
+          if (i == 3) {
+            _showProfileSheet(context);
+          } else {
+            setState(() => _selectedIndex = i);
+          }
+        },
         activeColor: AppColors.adminAccent,
       ),
       child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const DashboardHeader(
-                name: 'Dr. Vijay Menon',
-                role: 'ADMIN',
-                subtitle: 'School Overview 🏫',
-                roleColor: AppColors.adminAccent,
-                notificationCount: 8,
-              ),
-              const SizedBox(height: 24),
-
-              // School Summary Banner
-              _SchoolSummaryBanner(),
-              const SizedBox(height: 24),
-
-              // Key Stats Grid
-              const SectionHeader(title: 'Key Metrics'),
-              const SizedBox(height: 14),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  return Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      SizedBox(
-                        width: (constraints.maxWidth - 12) / 2,
-                        child: const StatCard(
-                          title: 'Total Students',
-                          value: '1,248',
-                          icon: Icons.school_rounded,
-                          color: AppColors.primary,
-                          subtitle: '+12 this month',
-                        ),
-                      ),
-                      SizedBox(
-                        width: (constraints.maxWidth - 12) / 2,
-                        child: const StatCard(
-                          title: 'Teaching Staff',
-                          value: '84',
-                          icon: Icons.person_rounded,
-                          color: AppColors.teacherAccent,
-                          subtitle: '6 part-time',
-                        ),
-                      ),
-                      SizedBox(
-                        width: (constraints.maxWidth - 12) / 2,
-                        child: const StatCard(
-                          title: "Today's Attendance",
-                          value: '94%',
-                          icon: Icons.how_to_reg_rounded,
-                          color: AppColors.success,
-                          subtitle: '1,173 present',
-                        ),
-                      ),
-                      SizedBox(
-                        width: (constraints.maxWidth - 12) / 2,
-                        child: const StatCard(
-                          title: 'Fee Collection',
-                          value: '₹8.2L',
-                          icon: Icons.account_balance_rounded,
-                          color: AppColors.warning,
-                          subtitle: 'March 2026',
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // Quick Admin Actions
-              const SectionHeader(title: 'Admin Actions'),
-              const SizedBox(height: 14),
-              _AdminActionsGrid(),
-              const SizedBox(height: 24),
-
-              // Department Attendance
-              const SectionHeader(title: 'Department Attendance', action: 'Full Report'),
-              const SizedBox(height: 14),
-              const GlassCard(
-                child: Column(
-                  children: [
-                    LabeledProgressBar(label: 'Primary (Std 1-5)', value: 0.96, color: AppColors.success),
-                    SizedBox(height: 14),
-                    LabeledProgressBar(label: 'Middle (Std 6-8)', value: 0.91, color: AppColors.primary),
-                    SizedBox(height: 14),
-                    LabeledProgressBar(label: 'Secondary (Std 9-10)', value: 0.88, color: AppColors.teacherAccent),
-                    SizedBox(height: 14),
-                    LabeledProgressBar(label: 'Senior (Std 11-12)', value: 0.94, color: AppColors.warning),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Fee Collection Overview
-              const SectionHeader(title: 'Fee Collection Overview', action: 'Details'),
-              const SizedBox(height: 14),
-              _FeeOverviewCard(),
-              const SizedBox(height: 24),
-
-              // Recent Activities
-              const SectionHeader(title: 'Recent Activities', action: 'View Log'),
-              const SizedBox(height: 14),
-              const _ActivityItem(
-                title: 'New Teacher Onboarded',
-                desc: 'Ms. Kavita Singh joined as Science teacher for Class 7',
-                time: '1 hour ago',
-                icon: Icons.person_add_rounded,
-                color: AppColors.success,
-              ),
-              const SizedBox(height: 8),
-              const _ActivityItem(
-                title: 'Fee Reminder Sent',
-                desc: '45 parents notified for pending Q4 fees',
-                time: '3 hours ago',
-                icon: Icons.send_rounded,
-                color: AppColors.warning,
-              ),
-              const SizedBox(height: 8),
-              const _ActivityItem(
-                title: 'Notice Published',
-                desc: 'Annual Day notice sent to all students and parents',
-                time: 'Yesterday',
-                icon: Icons.campaign_rounded,
-                color: AppColors.info,
-              ),
-              const SizedBox(height: 8),
-              const _ActivityItem(
-                title: 'Timetable Updated',
-                desc: 'Class 10-A timetable revised for exam preparation',
-                time: '2 days ago',
-                icon: Icons.schedule_rounded,
-                color: AppColors.adminAccent,
-              ),
-              const SizedBox(height: 24),
-
-              // Alerts & Pending Items
-              const SectionHeader(title: 'Pending Actions', action: 'Resolve All'),
-              const SizedBox(height: 14),
-              _PendingAlerts(),
-              const SizedBox(height: 24),
-
-              // Top Performing Classes
-              const SectionHeader(title: 'Top Performing Classes'),
-              const SizedBox(height: 14),
-              _TopClassesList(),
-              const SizedBox(height: 80),
-            ],
-          ),
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            _DashboardTab(),
+            _ReportsTab(),
+            _ActivitiesTab(),
+          ],
         ),
       ),
     );
   }
 }
+
+class _DashboardTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const DashboardHeader(
+            name: 'Dr. Vijay Menon',
+            role: 'ADMIN',
+            subtitle: 'School Overview 🏫',
+            roleColor: AppColors.adminAccent,
+            notificationCount: 8,
+          ),
+          const SizedBox(height: 24),
+          _SchoolSummaryBanner(),
+          const SizedBox(height: 24),
+          const SectionHeader(title: 'Key Metrics'),
+          const SizedBox(height: 14),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  SizedBox(
+                    width: (constraints.maxWidth - 12) / 2,
+                    child: const StatCard(
+                      title: 'Total Students',
+                      value: '1,248',
+                      icon: Icons.school_rounded,
+                      color: AppColors.primary,
+                      subtitle: '+12 this month',
+                    ),
+                  ),
+                  SizedBox(
+                    width: (constraints.maxWidth - 12) / 2,
+                    child: const StatCard(
+                      title: 'Teaching Staff',
+                      value: '84',
+                      icon: Icons.person_rounded,
+                      color: AppColors.teacherAccent,
+                      subtitle: '6 part-time',
+                    ),
+                  ),
+                  SizedBox(
+                    width: (constraints.maxWidth - 12) / 2,
+                    child: const StatCard(
+                      title: "Today's Attendance",
+                      value: '94%',
+                      icon: Icons.how_to_reg_rounded,
+                      color: AppColors.success,
+                      subtitle: '1,173 present',
+                    ),
+                  ),
+                  SizedBox(
+                    width: (constraints.maxWidth - 12) / 2,
+                    child: const StatCard(
+                      title: 'Fee Collection',
+                      value: '₹8.2L',
+                      icon: Icons.account_balance_rounded,
+                      color: AppColors.warning,
+                      subtitle: 'March 2026',
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          const SectionHeader(title: 'Admin Actions'),
+          const SizedBox(height: 14),
+          _AdminActionsGrid(),
+          const SizedBox(height: 24),
+          const SectionHeader(title: 'Department Attendance', action: 'Full Report'),
+          const SizedBox(height: 14),
+          const GlassCard(
+            child: Column(
+              children: [
+                LabeledProgressBar(label: 'Primary (Std 1-5)', value: 0.96, color: AppColors.success),
+                SizedBox(height: 14),
+                LabeledProgressBar(label: 'Middle (Std 6-8)', value: 0.91, color: AppColors.primary),
+                SizedBox(height: 14),
+                LabeledProgressBar(label: 'Secondary (Std 9-10)', value: 0.88, color: AppColors.teacherAccent),
+                SizedBox(height: 14),
+                LabeledProgressBar(label: 'Senior (Std 11-12)', value: 0.94, color: AppColors.warning),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          const SectionHeader(title: 'Fee Collection Overview', action: 'Details'),
+          const SizedBox(height: 14),
+          _FeeOverviewCard(),
+          const SizedBox(height: 24),
+          const SectionHeader(title: 'Pending Actions', action: 'Resolve All'),
+          const SizedBox(height: 14),
+          _PendingAlerts(),
+          const SizedBox(height: 24),
+          const SectionHeader(title: 'Top Performing Classes'),
+          const SizedBox(height: 14),
+          _TopClassesList(),
+          const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReportsTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(title: 'Reports'),
+          const SizedBox(height: 14),
+          const GlassCard(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Text('Reports coming soon', style: TextStyle(color: AppColors.textLight)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivitiesTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(title: 'Recent Activities', action: 'View Log'),
+          const SizedBox(height: 14),
+          const _ActivityItem(
+            title: 'New Teacher Onboarded',
+            desc: 'Ms. Kavita Singh joined as Science teacher for Class 7',
+            time: '1 hour ago',
+            icon: Icons.person_add_rounded,
+            color: AppColors.success,
+          ),
+          const SizedBox(height: 8),
+          const _ActivityItem(
+            title: 'Fee Reminder Sent',
+            desc: '45 parents notified for pending Q4 fees',
+            time: '3 hours ago',
+            icon: Icons.send_rounded,
+            color: AppColors.warning,
+          ),
+          const SizedBox(height: 8),
+          const _ActivityItem(
+            title: 'Notice Published',
+            desc: 'Annual Day notice sent to all students and parents',
+            time: 'Yesterday',
+            icon: Icons.campaign_rounded,
+            color: AppColors.info,
+          ),
+          const SizedBox(height: 8),
+          const _ActivityItem(
+            title: 'Timetable Updated',
+            desc: 'Class 10-A timetable revised for exam preparation',
+            time: '2 days ago',
+            icon: Icons.schedule_rounded,
+            color: AppColors.adminAccent,
+          ),
+          const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+}
+
 
 class _SchoolSummaryBanner extends StatelessWidget {
   @override
@@ -689,6 +824,38 @@ class _TopClassesList extends StatelessWidget {
           );
         }).toList(),
       ),
+    );
+  }
+}
+
+class _ProfileInfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _ProfileInfoRow({required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.adminAccent.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: AppColors.adminAccent, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textLight, fontWeight: FontWeight.w500)),
+            Text(value, style: const TextStyle(fontSize: 14, color: AppColors.textDark, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ],
     );
   }
 }
