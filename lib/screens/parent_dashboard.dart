@@ -15,7 +15,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
   int _selectedChild = 0;
 
   final List<Map<String, String>> _children = const [
-    {'name': 'Aryan Sharma', 'class': 'Class 9-A', 'rollNo': '15'},
+    {'name': 'Aryan Sharma', 'class': 'Class 10-A', 'rollNo': '15'},
     {'name': 'Priya Sharma', 'class': 'Class 6-B', 'rollNo': '08'},
   ];
 
@@ -23,17 +23,56 @@ class _ParentDashboardState extends State<ParentDashboard> {
     BottomNavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
     BottomNavItem(icon: Icons.child_care_outlined, activeIcon: Icons.child_care_rounded, label: 'Children'),
     BottomNavItem(icon: Icons.payment_outlined, activeIcon: Icons.payment_rounded, label: 'Fees'),
-    BottomNavItem(icon: Icons.chat_outlined, activeIcon: Icons.chat_rounded, label: 'Chat'),
     BottomNavItem(icon: Icons.person_outline, activeIcon: Icons.person_rounded, label: 'Profile'),
   ];
 
   List<Widget> get _pages => [
-    _ParentHomePage(children: _children, selectedChild: _selectedChild, onSelectChild: (i) => setState(() => _selectedChild = i)),
+    _ParentHomePage(children: _children, selectedChild: _selectedChild, onSelectChild: (i) => setState(() => _selectedChild = i), onNotification: () => _showNoticesSheet(context)),
     const _ParentChildrenPage(),
     const _ParentFeesPage(),
-    const _ParentChatPage(),
     const _ParentProfilePage(),
   ];
+
+  void _showNoticesSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.35,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SingleChildScrollView(
+            controller: scrollController,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(color: AppColors.divider, borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text('Notices & Updates',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                const SizedBox(height: 16),
+                _EventItem(title: 'Mid-Term Exams - March 28', date: 'March 28, 2026', icon: Icons.quiz_rounded, color: AppColors.warning),
+                const SizedBox(height: 10),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,25 +93,80 @@ class _ParentDashboardState extends State<ParentDashboard> {
   }
 }
 
-class _ParentHomePage extends StatelessWidget {
+class _ParentHomePage extends StatefulWidget {
   final List<Map<String, String>> children;
   final int selectedChild;
   final ValueChanged<int> onSelectChild;
-  const _ParentHomePage({required this.children, required this.selectedChild, required this.onSelectChild});
+  final VoidCallback onNotification;
+  const _ParentHomePage({required this.children, required this.selectedChild, required this.onSelectChild, required this.onNotification});
+  @override
+  State<_ParentHomePage> createState() => _ParentHomePageState();
+}
+
+class _ParentHomePageState extends State<_ParentHomePage> {
+  late int _selectedChild;
+
+  // Per-child data
+  static const _childData = [
+    {
+      'attendance': '92%',
+      'grade': 'A-',
+      'feeStatus': 'Paid',
+      'rank': '#7',
+      'rankOf': '40',
+      'tests': '8/10',
+      'homework': '95%',
+      'subjects': [
+        {'label': 'Physics', 'value': 0.85},
+        {'label': 'Chemistry', 'value': 0.78},
+        {'label': 'Mathematics', 'value': 0.91},
+      ],
+    },
+    {
+      'attendance': '87%',
+      'grade': 'B+',
+      'feeStatus': 'Due',
+      'rank': '#12',
+      'rankOf': '35',
+      'tests': '6/10',
+      'homework': '80%',
+      'subjects': [
+        {'label': 'English', 'value': 0.72},
+        {'label': 'Science', 'value': 0.68},
+        {'label': 'Mathematics', 'value': 0.75},
+      ],
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedChild = widget.selectedChild;
+  }
+
+  @override
+  void didUpdateWidget(covariant _ParentHomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedChild != widget.selectedChild) {
+      _selectedChild = widget.selectedChild;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final child = children[selectedChild];
+    final child = widget.children[_selectedChild];
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const DashboardHeader(
-            name: 'Mr. Ramesh Sharma',
+          DashboardHeader(
+            name: 'Mr. Rajesh Sharma',
             role: 'PARENT',
             subtitle: 'Parent Dashboard',
             roleColor: AppColors.parentAccent,
-            notificationCount: 2,
+            notificationCount: 1,
+            onNotification: widget.onNotification,
           ),
           const SizedBox(height: 24),
           const SectionHeader(title: 'My Children'),
@@ -82,13 +176,16 @@ class _ParentHomePage extends StatelessWidget {
               return Wrap(
                 spacing: 10,
                 runSpacing: 10,
-                children: List.generate(children.length, (i) {
-                  final c = children[i];
-                  final isSelected = i == selectedChild;
+                children: List.generate(widget.children.length, (i) {
+                  final c = widget.children[i];
+                  final isSelected = i == _selectedChild;
                   return SizedBox(
                     width: (constraints.maxWidth - 10) / 2,
                     child: GestureDetector(
-                      onTap: () => onSelectChild(i),
+                      onTap: () {
+                        setState(() => _selectedChild = i);
+                        widget.onSelectChild(i);
+                      },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.all(14),
@@ -134,7 +231,11 @@ class _ParentHomePage extends StatelessWidget {
             },
           ),
           const SizedBox(height: 24),
-          _ChildPerformanceBanner(childName: child['name']!.split(' ')[0]),
+          _ChildPerformanceBanner(
+            childName: child['name']!.split(' ')[0],
+            tests: _childData[_selectedChild]['tests'] as String,
+            homework: _childData[_selectedChild]['homework'] as String,
+          ),
           const SizedBox(height: 24),
           Wrap(
             spacing: 12,
@@ -142,42 +243,45 @@ class _ParentHomePage extends StatelessWidget {
             children: [
               SizedBox(
                 width: (MediaQuery.of(context).size.width - 52) / 2,
-                child: const StatCard(title: 'Attendance', value: '92%', icon: Icons.how_to_reg_rounded, color: AppColors.success, subtitle: 'This month'),
+                child: StatCard(title: 'Attendance', value: _childData[_selectedChild]['attendance'] as String, icon: Icons.how_to_reg_rounded, color: AppColors.success, subtitle: 'This month'),
               ),
               SizedBox(
                 width: (MediaQuery.of(context).size.width - 52) / 2,
-                child: const StatCard(title: 'Overall Grade', value: 'A-', icon: Icons.grade_rounded, color: AppColors.parentAccent, subtitle: 'Semester 2'),
+                child: StatCard(title: 'Overall Grade', value: _childData[_selectedChild]['grade'] as String, icon: Icons.grade_rounded, color: AppColors.parentAccent, subtitle: 'Semester 2'),
               ),
               SizedBox(
                 width: (MediaQuery.of(context).size.width - 52) / 2,
-                child: const StatCard(title: 'Fee Status', value: 'Paid', icon: Icons.check_circle_rounded, color: AppColors.success, subtitle: 'March 2026'),
+                child: StatCard(
+                  title: 'Fee Status',
+                  value: _childData[_selectedChild]['feeStatus'] as String,
+                  icon: (_childData[_selectedChild]['feeStatus'] as String) == 'Paid' ? Icons.check_circle_rounded : Icons.pending_rounded,
+                  color: (_childData[_selectedChild]['feeStatus'] as String) == 'Paid' ? AppColors.success : AppColors.warning,
+                  subtitle: 'March 2026',
+                ),
               ),
               SizedBox(
                 width: (MediaQuery.of(context).size.width - 52) / 2,
-                child: const StatCard(title: 'Class Rank', value: '#7', icon: Icons.leaderboard_rounded, color: AppColors.warning, subtitle: 'Out of 40'),
+                child: StatCard(title: 'Class Rank', value: _childData[_selectedChild]['rank'] as String, icon: Icons.leaderboard_rounded, color: AppColors.warning, subtitle: 'Out of ${_childData[_selectedChild]['rankOf']}'),
               ),
             ],
           ),
           const SizedBox(height: 24),
           const SectionHeader(title: 'Academic Progress'),
           const SizedBox(height: 14),
-          const GlassCard(
+          GlassCard(
             child: Column(
               children: [
-                LabeledProgressBar(label: 'Physics', value: 0.85, color: AppColors.primary),
-                SizedBox(height: 14),
-                LabeledProgressBar(label: 'Chemistry', value: 0.78, color: AppColors.info),
-                SizedBox(height: 14),
-                LabeledProgressBar(label: 'Mathematics', value: 0.91, color: AppColors.success),
+                for (int i = 0; i < (_childData[_selectedChild]['subjects'] as List).length; i++) ...[
+                  if (i > 0) const SizedBox(height: 14),
+                  LabeledProgressBar(
+                    label: (_childData[_selectedChild]['subjects'] as List)[i]['label'] as String,
+                    value: (_childData[_selectedChild]['subjects'] as List)[i]['value'] as double,
+                    color: i == 0 ? AppColors.primary : i == 1 ? AppColors.info : AppColors.success,
+                  ),
+                ],
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Upcoming Events'),
-          const SizedBox(height: 14),
-          const _EventItem(title: 'Parent-Teacher Meeting', date: 'March 20, 2026', icon: Icons.people_rounded, color: AppColors.info),
-          const SizedBox(height: 8),
-          const _EventItem(title: 'Annual Sports Day', date: 'March 28, 2026', icon: Icons.sports_rounded, color: AppColors.warning),
           const SizedBox(height: 30),
         ],
       ),
@@ -359,8 +463,8 @@ class _ParentProfilePage extends StatelessWidget {
           const SizedBox(height: 20),
           const GradientAvatar(initials: 'RS', color: AppColors.parentAccent, size: 72),
           const SizedBox(height: 12),
-          Text('Mr. Ramesh Sharma', style: TextStyle(fontSize: Responsive.sp(context, 20), fontWeight: FontWeight.w800, color: AppColors.textDark)),
-          Text('Parent • 1 child enrolled', style: TextStyle(fontSize: Responsive.sp(context, 13), color: AppColors.textMid)),
+          Text('Mr. Rajesh Sharma', style: TextStyle(fontSize: Responsive.sp(context, 20), fontWeight: FontWeight.w800, color: AppColors.textDark)),
+          Text('Parent • 2 children enrolled', style: TextStyle(fontSize: Responsive.sp(context, 13), color: AppColors.textMid)),
           const SizedBox(height: 24),
           GlassCard(
             padding: const EdgeInsets.all(16),
@@ -370,9 +474,9 @@ class _ParentProfilePage extends StatelessWidget {
                 const Divider(height: 20),
                 _ProfileRow2(icon: Icons.phone_outlined, label: 'Phone', value: '+91-9876543200'),
                 const Divider(height: 20),
-                _ProfileRow2(icon: Icons.child_care_outlined, label: 'Child', value: 'Aryan Sharma'),
+                _ProfileRow2(icon: Icons.child_care_outlined, label: 'Child 1', value: 'Aryan Sharma • Class 10-A'),
                 const Divider(height: 20),
-                _ProfileRow2(icon: Icons.class_outlined, label: 'Class', value: 'Class 10-A'),
+                _ProfileRow2(icon: Icons.child_care_outlined, label: 'Child 2', value: 'Priya Sharma • Class 6-B'),
               ],
             ),
           ),
@@ -423,8 +527,10 @@ class _ProfileRow2 extends StatelessWidget {
 
 class _ChildPerformanceBanner extends StatelessWidget {
   final String childName;
+  final String tests;
+  final String homework;
 
-  const _ChildPerformanceBanner({required this.childName});
+  const _ChildPerformanceBanner({required this.childName, required this.tests, required this.homework});
 
   @override
   Widget build(BuildContext context) {
@@ -469,11 +575,12 @@ class _ChildPerformanceBanner extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
                   children: [
-                    _PillStat(label: 'Tests', value: '8/10'),
-                    SizedBox(width: 8),
-                    _PillStat(label: 'Homework', value: '95%'),
+                    _PillStat(label: 'Tests', value: tests),
+                    _PillStat(label: 'Homework', value: homework),
                   ],
                 ),
               ],
