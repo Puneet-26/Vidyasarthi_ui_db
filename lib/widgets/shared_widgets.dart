@@ -412,6 +412,7 @@ class DashboardHeader extends StatelessWidget {
   final Color roleColor;
   final VoidCallback? onNotification;
   final int notificationCount;
+  final bool showNotification;
 
   const DashboardHeader({
     super.key,
@@ -421,6 +422,7 @@ class DashboardHeader extends StatelessWidget {
     required this.roleColor,
     this.onNotification,
     this.notificationCount = 0,
+    this.showNotification = true,
   });
 
   @override
@@ -473,6 +475,7 @@ class DashboardHeader extends StatelessWidget {
             ],
           ),
         ),
+        if (showNotification)
         Stack(
           clipBehavior: Clip.none,
           children: [

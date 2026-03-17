@@ -216,6 +216,7 @@ class _HomePageState extends State<_HomePage> {
                 subtitle: 'Staff Dashboard',
                 roleColor: AppColors.adminAccent,
                 notificationCount: 0,
+                showNotification: false,
               ),
               const SizedBox(height: 24),
               Row(
