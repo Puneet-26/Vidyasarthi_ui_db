@@ -3,13 +3,13 @@ import '../models/models.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
-  
+
   factory DatabaseService() {
     return _instance;
   }
-  
+
   DatabaseService._internal();
-  
+
   SupabaseClient get _client => Supabase.instance.client;
   SupabaseClient get client => _client;
 
@@ -17,9 +17,7 @@ class DatabaseService {
   Future<List<Subject>> getAllSubjects() async {
     try {
       final response = await _client.from('subjects').select();
-      return (response as List)
-          .map((s) => Subject.fromJson(s))
-          .toList();
+      return (response as List).map((s) => Subject.fromJson(s)).toList();
     } catch (e) {
       print('Error fetching subjects: $e');
       return [];
@@ -28,11 +26,8 @@ class DatabaseService {
 
   Future<Subject?> getSubjectById(String subjectId) async {
     try {
-      final response = await _client
-          .from('subjects')
-          .select()
-          .eq('id', subjectId)
-          .single();
+      final response =
+          await _client.from('subjects').select().eq('id', subjectId).single();
       return Subject.fromJson(response);
     } catch (e) {
       return null;
@@ -43,9 +38,7 @@ class DatabaseService {
   Future<List<Batch>> getAllBatches() async {
     try {
       final response = await _client.from('batches').select();
-      return (response as List)
-          .map((b) => Batch.fromJson(b))
-          .toList();
+      return (response as List).map((b) => Batch.fromJson(b)).toList();
     } catch (e) {
       print('Error fetching batches: $e');
       return [];
@@ -54,11 +47,8 @@ class DatabaseService {
 
   Future<Batch?> getBatchById(String batchId) async {
     try {
-      final response = await _client
-          .from('batches')
-          .select()
-          .eq('id', batchId)
-          .single();
+      final response =
+          await _client.from('batches').select().eq('id', batchId).single();
       return Batch.fromJson(response);
     } catch (e) {
       return null;
@@ -69,9 +59,7 @@ class DatabaseService {
   Future<List<Student>> getAllStudents() async {
     try {
       final response = await _client.from('students').select();
-      return (response as List)
-          .map((s) => Student.fromJson(s))
-          .toList();
+      return (response as List).map((s) => Student.fromJson(s)).toList();
     } catch (e) {
       print('Error fetching students: $e');
       return [];
@@ -80,13 +68,9 @@ class DatabaseService {
 
   Future<List<Student>> getStudentsByBatch(String batchId) async {
     try {
-      final response = await _client
-          .from('students')
-          .select()
-          .eq('batch_id', batchId);
-      return (response as List)
-          .map((s) => Student.fromJson(s))
-          .toList();
+      final response =
+          await _client.from('students').select().eq('batch_id', batchId);
+      return (response as List).map((s) => Student.fromJson(s)).toList();
     } catch (e) {
       return [];
     }
@@ -94,11 +78,8 @@ class DatabaseService {
 
   Future<Student?> getStudentById(String studentId) async {
     try {
-      final response = await _client
-          .from('students')
-          .select()
-          .eq('id', studentId)
-          .single();
+      final response =
+          await _client.from('students').select().eq('id', studentId).single();
       return Student.fromJson(response);
     } catch (e) {
       return null;
@@ -107,10 +88,25 @@ class DatabaseService {
 
   Future<bool> createStudent(Student student) async {
     try {
-      await _client.from('students').insert(student.toJson());
+      final json = student.toJson();
+      if ((json['id'] as String).isEmpty) json.remove('id');
+      if ((json['user_id'] as String).isEmpty) json.remove('user_id');
+      await _client.from('students').insert(json);
       return true;
     } catch (e) {
       print('Error creating student: $e');
+      return false;
+    }
+  }
+
+  Future<bool> createBatch(Batch batch) async {
+    try {
+      final json = batch.toJson();
+      if ((json['id'] as String).isEmpty) json.remove('id');
+      await _client.from('batches').insert(json);
+      return true;
+    } catch (e) {
+      print('Error creating batch: $e');
       return false;
     }
   }
@@ -132,9 +128,7 @@ class DatabaseService {
   Future<List<Admission>> getAllAdmissions() async {
     try {
       final response = await _client.from('admissions').select();
-      return (response as List)
-          .map((a) => Admission.fromJson(a))
-          .toList();
+      return (response as List).map((a) => Admission.fromJson(a)).toList();
     } catch (e) {
       print('Error fetching admissions: $e');
       return [];
@@ -143,13 +137,9 @@ class DatabaseService {
 
   Future<List<Admission>> getAdmissionsByStatus(String status) async {
     try {
-      final response = await _client
-          .from('admissions')
-          .select()
-          .eq('status', status);
-      return (response as List)
-          .map((a) => Admission.fromJson(a))
-          .toList();
+      final response =
+          await _client.from('admissions').select().eq('status', status);
+      return (response as List).map((a) => Admission.fromJson(a)).toList();
     } catch (e) {
       return [];
     }
@@ -182,8 +172,7 @@ class DatabaseService {
     try {
       await _client
           .from('admissions')
-          .update({'status': status})
-          .eq('id', admissionId);
+          .update({'status': status}).eq('id', admissionId);
       return true;
     } catch (e) {
       print('Error updating admission: $e');
@@ -195,9 +184,7 @@ class DatabaseService {
   Future<List<TimeTable>> getAllTimeTables() async {
     try {
       final response = await _client.from('timetables').select();
-      return (response as List)
-          .map((t) => TimeTable.fromJson(t))
-          .toList();
+      return (response as List).map((t) => TimeTable.fromJson(t)).toList();
     } catch (e) {
       print('Error fetching timetables: $e');
       return [];
@@ -206,13 +193,9 @@ class DatabaseService {
 
   Future<List<TimeTable>> getTimeTableByBatch(String batchId) async {
     try {
-      final response = await _client
-          .from('timetables')
-          .select()
-          .eq('batch_id', batchId);
-      return (response as List)
-          .map((t) => TimeTable.fromJson(t))
-          .toList();
+      final response =
+          await _client.from('timetables').select().eq('batch_id', batchId);
+      return (response as List).map((t) => TimeTable.fromJson(t)).toList();
     } catch (e) {
       return [];
     }
@@ -231,13 +214,9 @@ class DatabaseService {
   // ==================== HOMEWORK ====================
   Future<List<Homework>> getHomeworkByBatch(String batchId) async {
     try {
-      final response = await _client
-          .from('homework')
-          .select()
-          .eq('batch_id', batchId);
-      return (response as List)
-          .map((h) => Homework.fromJson(h))
-          .toList();
+      final response =
+          await _client.from('homework').select().eq('batch_id', batchId);
+      return (response as List).map((h) => Homework.fromJson(h)).toList();
     } catch (e) {
       return [];
     }
@@ -245,13 +224,9 @@ class DatabaseService {
 
   Future<List<Homework>> getActiveHomework() async {
     try {
-      final response = await _client
-          .from('homework')
-          .select()
-          .eq('status', 'active');
-      return (response as List)
-          .map((h) => Homework.fromJson(h))
-          .toList();
+      final response =
+          await _client.from('homework').select().eq('status', 'active');
+      return (response as List).map((h) => Homework.fromJson(h)).toList();
     } catch (e) {
       return [];
     }
@@ -270,13 +245,9 @@ class DatabaseService {
   // ==================== TESTS ====================
   Future<List<Test>> getTestsByBatch(String batchId) async {
     try {
-      final response = await _client
-          .from('tests')
-          .select()
-          .eq('batch_id', batchId);
-      return (response as List)
-          .map((t) => Test.fromJson(t))
-          .toList();
+      final response =
+          await _client.from('tests').select().eq('batch_id', batchId);
+      return (response as List).map((t) => Test.fromJson(t)).toList();
     } catch (e) {
       return [];
     }
@@ -299,9 +270,7 @@ class DatabaseService {
           .from('test_results')
           .select()
           .eq('student_id', studentId);
-      return (response as List)
-          .map((r) => TestResult.fromJson(r))
-          .toList();
+      return (response as List).map((r) => TestResult.fromJson(r)).toList();
     } catch (e) {
       return [];
     }
@@ -324,9 +293,7 @@ class DatabaseService {
           .from('fee_payments')
           .select()
           .eq('student_id', studentId);
-      return (response as List)
-          .map((f) => FeePayment.fromJson(f))
-          .toList();
+      return (response as List).map((f) => FeePayment.fromJson(f)).toList();
     } catch (e) {
       return [];
     }
@@ -349,9 +316,7 @@ class DatabaseService {
           .from('broadcasts')
           .select()
           .order('sent_date', ascending: false);
-      return (response as List)
-          .map((b) => Broadcast.fromJson(b))
-          .toList();
+      return (response as List).map((b) => Broadcast.fromJson(b)).toList();
     } catch (e) {
       print('Error fetching broadcasts: $e');
       return [];
@@ -371,13 +336,9 @@ class DatabaseService {
   // ==================== DOUBTS ====================
   Future<List<Doubt>> getDoubtsByStudent(String studentId) async {
     try {
-      final response = await _client
-          .from('doubts')
-          .select()
-          .eq('student_id', studentId);
-      return (response as List)
-          .map((d) => Doubt.fromJson(d))
-          .toList();
+      final response =
+          await _client.from('doubts').select().eq('student_id', studentId);
+      return (response as List).map((d) => Doubt.fromJson(d)).toList();
     } catch (e) {
       return [];
     }
@@ -385,13 +346,9 @@ class DatabaseService {
 
   Future<List<Doubt>> getUnresolvedDoubts() async {
     try {
-      final response = await _client
-          .from('doubts')
-          .select()
-          .eq('status', 'open');
-      return (response as List)
-          .map((d) => Doubt.fromJson(d))
-          .toList();
+      final response =
+          await _client.from('doubts').select().eq('status', 'open');
+      return (response as List).map((d) => Doubt.fromJson(d)).toList();
     } catch (e) {
       return [];
     }
@@ -414,9 +371,7 @@ class DatabaseService {
           .from('feedbacks')
           .select()
           .order('submitted_date', ascending: false);
-      return (response as List)
-          .map((f) => Feedback.fromJson(f))
-          .toList();
+      return (response as List).map((f) => Feedback.fromJson(f)).toList();
     } catch (e) {
       print('Error fetching feedback: $e');
       return [];

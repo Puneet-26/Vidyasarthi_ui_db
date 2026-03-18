@@ -1,15 +1,16 @@
+import 'dart:math';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
-  
+
   factory AuthService() {
     return _instance;
   }
-  
+
   AuthService._internal();
-  
+
   SupabaseClient get _client => Supabase.instance.client;
   SupabaseClient get client => _client;
   User? get currentUser => _client.auth.currentUser;
@@ -70,10 +71,11 @@ class AuthService {
     String? phoneNumber,
   }) async {
     try {
-      // Insert into auth_credentials table
+      final id = _generateUuid();
       final response = await _client.from('auth_credentials').insert({
+        'id': id,
         'email': email.trim().toLowerCase(),
-        'password_hash': password, // In production, hash this!
+        'password_hash': password,
         'name': name,
         'role': role,
         'created_at': DateTime.now().toIso8601String(),
@@ -97,14 +99,17 @@ class AuthService {
     }
   }
 
+  String _generateUuid() {
+    final random = Random.secure();
+    String hex(int n) => random.nextInt(n).toRadixString(16).padLeft(4, '0');
+    return '${hex(65536)}${hex(65536)}-${hex(65536)}-4${hex(4096).substring(1)}-${(8 + random.nextInt(4)).toRadixString(16)}${hex(4096).substring(1)}-${hex(65536)}${hex(65536)}${hex(65536)}';
+  }
+
   /// Fetch user data from database
   Future<AppUser?> getUserData(String userId) async {
     try {
-      final response = await _client
-          .from('users')
-          .select()
-          .eq('id', userId)
-          .maybeSingle();
+      final response =
+          await _client.from('users').select().eq('id', userId).maybeSingle();
 
       if (response == null) return null;
 

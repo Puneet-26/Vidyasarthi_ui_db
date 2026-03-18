@@ -18,7 +18,9 @@ class _NonTeachingStaffDashboardState extends State<NonTeachingStaffDashboard> {
 
   final List<BottomNavItem> _navItems = const [
     BottomNavItem(
-        icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+        label: 'Home'),
     BottomNavItem(
         icon: Icons.person_add_outlined,
         activeIcon: Icons.person_add_rounded,
@@ -63,42 +65,61 @@ class _NonTeachingStaffDashboardState extends State<NonTeachingStaffDashboard> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 40, height: 4,
-                  decoration: BoxDecoration(color: AppColors.divider, borderRadius: BorderRadius.circular(2)),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: AppColors.divider,
+                      borderRadius: BorderRadius.circular(2)),
                 ),
                 const SizedBox(height: 20),
                 Container(
-                  width: 64, height: 64,
+                  width: 64,
+                  height: 64,
                   decoration: BoxDecoration(
                     color: AppColors.adminAccent.withOpacity(0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.account_circle_rounded, color: AppColors.adminAccent, size: 40),
+                  child: const Icon(Icons.account_circle_rounded,
+                      color: AppColors.adminAccent, size: 40),
                 ),
                 const SizedBox(height: 12),
                 const Text('Admin Staff',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark)),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.adminAccent.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text('NON-TEACHING STAFF',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.adminAccent)),
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.adminAccent)),
                 ),
                 const SizedBox(height: 24),
-                const _StaffProfileRow(icon: Icons.email_outlined, label: 'Email', value: 'staff@vidyasarathi.edu'),
+                const _StaffProfileRow(
+                    icon: Icons.email_outlined,
+                    label: 'Email',
+                    value: 'staff@vidyasarathi.edu'),
                 const Divider(color: AppColors.divider, height: 24),
-                const _StaffProfileRow(icon: Icons.phone_outlined, label: 'Phone', value: '+91 98765 43210'),
+                const _StaffProfileRow(
+                    icon: Icons.phone_outlined,
+                    label: 'Phone',
+                    value: '+91 98765 43210'),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+                      Navigator.of(context)
+                          .pushNamedAndRemoveUntil('/login', (_) => false);
                     },
                     icon: const Icon(Icons.logout_rounded, size: 18),
                     label: const Text('Log Out'),
@@ -106,8 +127,10 @@ class _NonTeachingStaffDashboardState extends State<NonTeachingStaffDashboard> {
                       backgroundColor: AppColors.error,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      textStyle: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -172,8 +195,10 @@ class _HomePageState extends State<_HomePage> {
     final students = await _dbService.getAllStudents();
     final broadcasts = await _dbService.getAllBroadcasts();
 
-    int pendingAdmissions = admissions.where((e) => e.status == 'pending').length;
-    int pendingFeesStudents = students.where((e) => e.feesPaid < e.totalFees).length;
+    int pendingAdmissions =
+        admissions.where((e) => e.status == 'pending').length;
+    int pendingFeesStudents =
+        students.where((e) => e.feesPaid < e.totalFees).length;
     int totalStudents = students.length;
     int totalBroadcasts = broadcasts.length;
 
@@ -198,12 +223,13 @@ class _HomePageState extends State<_HomePage> {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
 
-        final data = snapshot.data ?? {
-          'pendingAdmissions': 7,
-          'pendingFeesStudents': 14,
-          'totalStudents': 186,
-          'totalBroadcasts': 23,
-        };
+        final data = snapshot.data ??
+            {
+              'pendingAdmissions': 7,
+              'pendingFeesStudents': 14,
+              'totalStudents': 186,
+              'totalBroadcasts': 23,
+            };
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -278,9 +304,8 @@ class _AdmissionsPage extends StatefulWidget {
 
 class _AdmissionsPageState extends State<_AdmissionsPage> {
   final DatabaseService _dbService = DatabaseService();
-  List<Admission> _admissions = [];
+  List<Student> _students = [];
   List<Batch> _batches = [];
-  List<Subject> _subjects = [];
   bool _isLoading = true;
 
   @override
@@ -291,34 +316,18 @@ class _AdmissionsPageState extends State<_AdmissionsPage> {
 
   Future<void> _fetchData() async {
     final futures = await Future.wait([
-      _dbService.getAllAdmissions(),
+      _dbService.getAllStudents(),
       _dbService.getAllBatches(),
-      _dbService.getAllSubjects(),
     ]);
 
     if (mounted) {
       setState(() {
-        _admissions = futures[0] as List<Admission>;
+        _students = futures[0] as List<Student>;
         _batches = futures[1] as List<Batch>;
-        _subjects = futures[2] as List<Subject>;
         _isLoading = false;
       });
     }
   }
-
-  Future<void> _updateStatus(String admissionId, String status) async {
-    final success = await _dbService.updateAdmissionStatus(admissionId, status);
-    if (success && mounted) {
-      _fetchData();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update status to $status')),
-      );
-    }
-  }
-
-  void _approveAdmission(String admissionId) => _updateStatus(admissionId, 'approved');
-  void _rejectAdmission(String admissionId) => _updateStatus(admissionId, 'rejected');
 
   @override
   Widget build(BuildContext context) {
@@ -329,41 +338,75 @@ class _AdmissionsPageState extends State<_AdmissionsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Student Management',
+            style: TextStyle(
+              fontSize: Responsive.sp(context, 20),
+              fontWeight: FontWeight.w700,
+              color: AppColors.textDark,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Action Buttons
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Admission Applications',
-                style: TextStyle(
-                  fontSize: Responsive.sp(context, 20),
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _showNewAdmissionDialog,
+                  icon: const Icon(Icons.person_add_rounded, size: 20),
+                  label: const Text('New Admission'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                 ),
               ),
-              ElevatedButton.icon(
-                onPressed: _showRegistrationDialog,
-                icon: const Icon(Icons.add_rounded, size: 20),
-                label: const Text('Add New'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _showCreateBatchDialog,
+                  icon: const Icon(Icons.class_rounded, size: 20),
+                  label: const Text('Create Batch'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          if (_admissions.isEmpty)
+          const SizedBox(height: 24),
+
+          // Current Students List
+          Text(
+            'Current Students (${_students.length})',
+            style: TextStyle(
+              fontSize: Responsive.sp(context, 16),
+              fontWeight: FontWeight.w600,
+              color: AppColors.textDark,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          if (_students.isEmpty)
             Center(
               child: Column(
                 children: [
                   const SizedBox(height: 40),
-                  Icon(Icons.person_add_disabled_rounded, size: 64, color: AppColors.textLight.withOpacity(0.3)),
+                  Icon(Icons.school_outlined,
+                      size: 64, color: AppColors.textLight.withOpacity(0.3)),
                   const SizedBox(height: 16),
                   Text(
-                    'No applications found',
+                    'No students found',
                     style: TextStyle(
                       fontSize: Responsive.sp(context, 16),
                       color: AppColors.textMid,
@@ -372,32 +415,55 @@ class _AdmissionsPageState extends State<_AdmissionsPage> {
                   ),
                 ],
               ),
-            ),
-          ..._admissions.map((admission) {
-            final statusColor = admission.status == 'pending'
-                ? Colors.orange
-                : admission.status == 'approved'
-                    ? Colors.green
-                    : Colors.red;
+            )
+          else
+            ..._students.map((student) {
+              final batch = _batches.firstWhere(
+                (b) => b.id == student.batchId,
+                orElse: () => Batch(
+                    id: '',
+                    name: 'Unknown',
+                    level: '',
+                    subjects: [],
+                    createdAt: DateTime.now()),
+              );
 
-            final batch = _batches.firstWhere((b) => b.id == admission.appliedBatchId,
-                orElse: () => Batch(id: '', name: 'Unknown', level: '', subjects: [], createdAt: DateTime.now()));
-            final subjects = _subjects.where((s) => admission.requestedSubjectIds.contains(s.id)).map((s) => s.name).join(', ');
-
-            return GlassCard(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: GlassCard(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
                     children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            student.name.isNotEmpty
+                                ? student.name
+                                    .substring(
+                                        0, student.name.length.clamp(0, 2))
+                                    .toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              admission.studentName,
+                              student.name,
                               style: TextStyle(
                                 fontSize: Responsive.sp(context, 15),
                                 fontWeight: FontWeight.w600,
@@ -405,9 +471,16 @@ class _AdmissionsPageState extends State<_AdmissionsPage> {
                               ),
                             ),
                             Text(
-                              'Parent: ${admission.parentName}',
+                              '${batch.name} • ${student.phoneNumber.isNotEmpty ? student.phoneNumber : student.email}',
                               style: TextStyle(
                                 fontSize: Responsive.sp(context, 12),
+                                color: AppColors.textMid,
+                              ),
+                            ),
+                            Text(
+                              student.email,
+                              style: TextStyle(
+                                fontSize: Responsive.sp(context, 11),
                                 color: AppColors.textLight,
                               ),
                             ),
@@ -416,460 +489,492 @@ class _AdmissionsPageState extends State<_AdmissionsPage> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
+                          color: student.enrollmentStatus == 'active'
+                              ? AppColors.success.withOpacity(0.12)
+                              : AppColors.warning.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                          child: Text(
-                            admission.status.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: Responsive.sp(context, 11),
-                              fontWeight: FontWeight.w600,
-                              color: statusColor,
-                            ),
+                        child: Text(
+                          student.enrollmentStatus.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: student.enrollmentStatus == 'active'
+                                ? AppColors.success
+                                : AppColors.warning,
                           ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Applied Batch: ${batch.name}',
-                        style: TextStyle(
-                          fontSize: Responsive.sp(context, 12),
-                          color: AppColors.textMid,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Subjects: $subjects',
-                        style: TextStyle(
-                          fontSize: Responsive.sp(context, 12),
-                          color: AppColors.textMid,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Email: ${admission.email}',
-                        style: TextStyle(
-                          fontSize: Responsive.sp(context, 12),
-                          color: AppColors.textMid,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Phone: ${admission.phoneNumber}',
-                        style: TextStyle(
-                          fontSize: Responsive.sp(context, 12),
-                          color: AppColors.textMid,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Applied: ${admission.appliedDate.toLocal().toString().split(' ')[0]}',
-                        style: TextStyle(
-                          fontSize: Responsive.sp(context, 12),
-                          color: AppColors.textLight,
                         ),
                       ),
                     ],
                   ),
-                  if (admission.status == 'pending') ...[
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _approveAdmission(admission.id),
-                            icon: const Icon(Icons.check),
-                            label: const Text('Approve'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _rejectAdmission(admission.id),
-                            icon: const Icon(Icons.close),
-                            label: const Text('Reject'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            );
-          }),
+                ),
+              );
+            }).toList(),
         ],
       ),
     );
   }
 
-  void _showRegistrationDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _StudentRegistrationDialog(
-        batches: _batches,
-        subjects: _subjects,
-        onComplete: _fetchData,
+  void _showNewAdmissionDialog() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _NewAdmissionScreen(
+          batches: _batches,
+          onSaved: _fetchData,
+        ),
+      ),
+    );
+  }
+
+  void _showCreateBatchDialog() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _CreateBatchScreen(onSaved: _fetchData),
       ),
     );
   }
 }
 
-class _StudentRegistrationDialog extends StatefulWidget {
+// ─── New Admission Screen ──────────────────────────────────────────────────
+class _NewAdmissionScreen extends StatefulWidget {
   final List<Batch> batches;
-  final List<Subject> subjects;
-  final VoidCallback onComplete;
-
-  const _StudentRegistrationDialog({
-    required this.batches,
-    required this.subjects,
-    required this.onComplete,
-  });
-
+  final VoidCallback onSaved;
+  const _NewAdmissionScreen({required this.batches, required this.onSaved});
   @override
-  State<_StudentRegistrationDialog> createState() => _StudentRegistrationDialogState();
+  State<_NewAdmissionScreen> createState() => _NewAdmissionScreenState();
 }
 
-class _StudentRegistrationDialogState extends State<_StudentRegistrationDialog> {
+class _NewAdmissionScreenState extends State<_NewAdmissionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _dbService = DatabaseService();
   final _authService = AuthService();
 
-  final _nameController = TextEditingController();
-  final _parentNameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _parentPhoneController = TextEditingController();
-  final _feesController = TextEditingController(text: '15000');
+  final _nameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _parentNameCtrl = TextEditingController();
+  final _parentPhoneCtrl = TextEditingController();
+  final _parentEmailCtrl = TextEditingController();
+  final _feesCtrl = TextEditingController(text: '15000');
 
   String? _selectedBatchId;
-  final List<String> _selectedSubjectIds = [];
   bool _isLoading = false;
-  Map<String, dynamic>? _generatedCredentials;
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _parentNameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _parentPhoneController.dispose();
-    _feesController.dispose();
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _phoneCtrl.dispose();
+    _parentNameCtrl.dispose();
+    _parentPhoneCtrl.dispose();
+    _parentEmailCtrl.dispose();
+    _feesCtrl.dispose();
     super.dispose();
   }
 
   String _generatePassword() {
-    // Simple numeric password for demo
-    return (100000 + (999999 - 100000) * (DateTime.now().millisecond / 1000)).toInt().toString();
+    final now = DateTime.now();
+    return '${now.day}${now.month}${now.year % 100}${now.millisecond % 1000}'
+        .padLeft(6, '0');
   }
 
-  Future<void> _handleRegister() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedBatchId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a batch')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Please select a batch')));
       return;
     }
-    if (_selectedSubjectIds.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select at least one subject')));
-      return;
-    }
-
     setState(() => _isLoading = true);
-
     try {
-      final name = _nameController.text.trim();
-      final email = _emailController.text.trim().toLowerCase();
       final password = _generatePassword();
-
-      // 1. Create Credentials
       final authResult = await _authService.signUp(
-        email: email,
+        email: _emailCtrl.text.trim(),
         password: password,
-        name: name,
+        name: _nameCtrl.text.trim(),
         role: 'student',
+        phoneNumber: _phoneCtrl.text.trim(),
       );
-
-      if (!authResult['success']) throw Exception(authResult['error']);
-
-      final userId = authResult['userId'];
-      final studentId = 'student_${DateTime.now().millisecondsSinceEpoch}';
-
-      // 2. Create Student Profile
+      if (!(authResult['success'] as bool)) {
+        throw Exception(authResult['error']);
+      }
       final student = Student(
-        id: studentId,
-        userId: userId,
-        name: name,
-        email: email,
-        phoneNumber: _phoneController.text.trim(),
-        parentPhone: _parentPhoneController.text.trim(),
-        parentName: _parentNameController.text.trim(),
-        parentEmail: '', // Optional
+        id: '',
+        userId: authResult['userId'] ?? '',
+        name: _nameCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
+        phoneNumber: _phoneCtrl.text.trim(),
+        parentPhone: _parentPhoneCtrl.text.trim(),
+        parentName: _parentNameCtrl.text.trim(),
+        parentEmail: _parentEmailCtrl.text.trim(),
         batchId: _selectedBatchId!,
-        subjectIds: _selectedSubjectIds,
-        totalFees: double.tryParse(_feesController.text) ?? 15000,
+        subjectIds: const [],
+        totalFees: double.tryParse(_feesCtrl.text) ?? 15000,
         feesPaid: 0,
         feeStatus: 'pending',
         enrollmentStatus: 'active',
         enrollmentDate: DateTime.now(),
       );
-
-      final success = await _dbService.createStudent(student);
-      if (!success) throw Exception('Failed to create student profile');
-
-      setState(() {
-        _generatedCredentials = {
-          'id': email,
-          'password': password,
-        };
-        _isLoading = false;
-      });
-      
-      widget.onComplete();
+      final ok = await _dbService.createStudent(student);
+      if (!ok) throw Exception('Failed to save student record');
+      widget.onSaved();
+      if (mounted) {
+        _showSuccessDialog(password);
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _showSuccessDialog(String password) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(children: [
+          Icon(Icons.check_circle_rounded, color: AppColors.success),
+          SizedBox(width: 8),
+          Text('Student Added'),
+        ]),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Login credentials for the student:',
+                style: TextStyle(color: AppColors.textMid, fontSize: 13)),
+            const SizedBox(height: 12),
+            _CredRow(label: 'Email', value: _emailCtrl.text.trim()),
+            const SizedBox(height: 6),
+            _CredRow(label: 'Password', value: password),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context); // close dialog
+              Navigator.pop(context); // go back to admissions
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Done', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_generatedCredentials != null) {
-      return Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 64),
-              const SizedBox(height: 16),
-              Text(
-                'Registration Successful!',
-                style: TextStyle(
-                  fontSize: Responsive.sp(context, 18),
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Please share these credentials with the student:',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: Responsive.sp(context, 13),
-                  color: AppColors.textMid,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.1)),
-                ),
-                child: Column(
-                  children: [
-                    _credentialRow('Login ID:', _generatedCredentials!['id']),
-                    const Divider(height: 24),
-                    _credentialRow('Password:', _generatedCredentials!['password']),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Close', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.all(20),
-      child: Container(
-        width: 500,
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: const Text('New Admission',
+            style: TextStyle(
+                fontWeight: FontWeight.w700, color: AppColors.textDark)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.textDark),
+      ),
+      body: GradientScaffold(
+        child: SafeArea(
           child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'New Student Admission',
-                      style: TextStyle(
-                        fontSize: Responsive.sp(context, 18),
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textDark,
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SectionLabel('Student Details'),
+                  const SizedBox(height: 12),
+                  _Field(
+                      ctrl: _nameCtrl,
+                      label: 'Full Name',
+                      icon: Icons.person_rounded,
+                      validator: (v) => v!.isEmpty ? 'Required' : null),
+                  const SizedBox(height: 12),
+                  _Field(
+                      ctrl: _emailCtrl,
+                      label: 'Email',
+                      icon: Icons.email_rounded,
+                      keyboard: TextInputType.emailAddress,
+                      validator: (v) => v!.isEmpty ? 'Required' : null),
+                  const SizedBox(height: 12),
+                  _Field(
+                      ctrl: _phoneCtrl,
+                      label: 'Phone',
+                      icon: Icons.phone_rounded,
+                      keyboard: TextInputType.phone,
+                      validator: (v) => v!.isEmpty ? 'Required' : null),
+                  const SizedBox(height: 20),
+                  _SectionLabel('Parent Details'),
+                  const SizedBox(height: 12),
+                  _Field(
+                      ctrl: _parentNameCtrl,
+                      label: 'Parent Name',
+                      icon: Icons.family_restroom_rounded,
+                      validator: (v) => v!.isEmpty ? 'Required' : null),
+                  const SizedBox(height: 12),
+                  _Field(
+                      ctrl: _parentPhoneCtrl,
+                      label: 'Parent Phone',
+                      icon: Icons.phone_rounded,
+                      keyboard: TextInputType.phone,
+                      validator: (v) => v!.isEmpty ? 'Required' : null),
+                  const SizedBox(height: 12),
+                  _Field(
+                      ctrl: _parentEmailCtrl,
+                      label: 'Parent Email',
+                      icon: Icons.email_outlined,
+                      keyboard: TextInputType.emailAddress,
+                      validator: (v) => v!.isEmpty ? 'Required' : null),
+                  const SizedBox(height: 20),
+                  _SectionLabel('Batch & Fees'),
+                  const SizedBox(height: 12),
+                  GlassCard(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedBatchId,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        labelText: 'Select Batch',
+                        prefixIcon:
+                            Icon(Icons.class_rounded, color: AppColors.primary),
+                      ),
+                      items: widget.batches
+                          .map((b) => DropdownMenuItem(
+                              value: b.id, child: Text(b.name)))
+                          .toList(),
+                      onChanged: (v) => setState(() => _selectedBatchId = v),
+                      validator: (v) => v == null ? 'Select a batch' : null,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _Field(
+                      ctrl: _feesCtrl,
+                      label: 'Total Fees (₹)',
+                      icon: Icons.currency_rupee_rounded,
+                      keyboard: TextInputType.number,
+                      validator: (v) => v!.isEmpty ? 'Required' : null),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _submit,
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.person_add_rounded),
+                      label: Text(_isLoading ? 'Saving...' : 'Admit Student'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        textStyle: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                     ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _buildField('Student Full Name', _nameController, Icons.person_outline),
-                const SizedBox(height: 16),
-                _buildField('Parent Full Name', _parentNameController, Icons.family_restroom_outlined),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(child: _buildField('Email Address', _emailController, Icons.email_outlined, keyboardType: TextInputType.emailAddress)),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildField('Admission Fees', _feesController, Icons.currency_rupee_rounded, keyboardType: TextInputType.number)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(child: _buildField('Student Phone', _phoneController, Icons.phone_outlined, keyboardType: TextInputType.phone)),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildField('Parent Phone', _parentPhoneController, Icons.phone_android_outlined, keyboardType: TextInputType.phone)),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Academic Details',
-                  style: TextStyle(
-                    fontSize: Responsive.sp(context, 14),
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
                   ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  decoration: _inputDecoration('Select Batch', Icons.group_outlined),
-                  value: _selectedBatchId,
-                  items: widget.batches
-                      .map((b) => DropdownMenuItem(value: b.id, child: Text(b.name)))
-                      .toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      _selectedBatchId = val;
-                      // Auto-select subjects for this batch if not already selected
-                      final batch = widget.batches.firstWhere((b) => b.id == val);
-                      _selectedSubjectIds.clear();
-                      _selectedSubjectIds.addAll(batch.subjects);
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Subjects',
-                  style: TextStyle(
-                    fontSize: Responsive.sp(context, 12),
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textMid,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: widget.subjects.map((s) {
-                    final isSelected = _selectedSubjectIds.contains(s.id);
-                    return FilterChip(
-                      label: Text(s.name),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedSubjectIds.add(s.id);
-                          } else {
-                            _selectedSubjectIds.remove(s.id);
-                          }
-                        });
-                      },
-                      selectedColor: AppColors.primary.withOpacity(0.2),
-                      checkmarkColor: AppColors.primary,
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleRegister,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Text('Add Student to Database', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildField(String label, TextEditingController controller, IconData icon, {TextInputType keyboardType = TextInputType.text}) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: _inputDecoration(label, icon),
-      validator: (val) => val == null || val.isEmpty ? 'Required' : null,
-    );
+// ─── Create Batch Screen ───────────────────────────────────────────────────
+class _CreateBatchScreen extends StatefulWidget {
+  final VoidCallback onSaved;
+  const _CreateBatchScreen({required this.onSaved});
+  @override
+  State<_CreateBatchScreen> createState() => _CreateBatchScreenState();
+}
+
+class _CreateBatchScreenState extends State<_CreateBatchScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _dbService = DatabaseService();
+  final _nameCtrl = TextEditingController();
+  final _levelCtrl = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _levelCtrl.dispose();
+    super.dispose();
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon, size: 20),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-      filled: true,
-      fillColor: Colors.grey.shade50,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-    );
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+    try {
+      final batch = Batch(
+        id: '',
+        name: _nameCtrl.text.trim(),
+        level: _levelCtrl.text.trim(),
+        subjects: const [],
+        createdAt: DateTime.now(),
+      );
+      final ok = await _dbService.createBatch(batch);
+      if (!ok) throw Exception('Failed to create batch');
+      widget.onSaved();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Batch created successfully')));
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
-  Widget _credentialRow(String label, String value) {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: const Text('Create Batch',
+            style: TextStyle(
+                fontWeight: FontWeight.w700, color: AppColors.textDark)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.textDark),
+      ),
+      body: GradientScaffold(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SectionLabel('Batch Details'),
+                  const SizedBox(height: 12),
+                  _Field(
+                      ctrl: _nameCtrl,
+                      label: 'Batch Name (e.g. Class 10-A)',
+                      icon: Icons.class_rounded,
+                      validator: (v) => v!.isEmpty ? 'Required' : null),
+                  const SizedBox(height: 12),
+                  _Field(
+                      ctrl: _levelCtrl,
+                      label: 'Level (e.g. 10th, 11th)',
+                      icon: Icons.school_rounded,
+                      validator: (v) => v!.isEmpty ? 'Required' : null),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _submit,
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.add_rounded),
+                      label: Text(_isLoading ? 'Creating...' : 'Create Batch'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        textStyle: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Shared helpers ────────────────────────────────────────────────────────
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+  @override
+  Widget build(BuildContext context) => Text(text,
+      style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textDark));
+}
+
+class _Field extends StatelessWidget {
+  final TextEditingController ctrl;
+  final String label;
+  final IconData icon;
+  final TextInputType? keyboard;
+  final String? Function(String?)? validator;
+  const _Field(
+      {required this.ctrl,
+      required this.label,
+      required this.icon,
+      this.keyboard,
+      this.validator});
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: TextFormField(
+        controller: ctrl,
+        keyboardType: keyboard,
+        validator: validator,
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          labelText: label,
+          prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
+        ),
+      ),
+    );
+  }
+}
+
+class _CredRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _CredRow({required this.label, required this.value});
+  @override
+  Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: AppColors.textMid)),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'monospace')),
+        Text('$label: ',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+        Expanded(
+            child: Text(value,
+                style:
+                    const TextStyle(fontSize: 13, color: AppColors.primary))),
       ],
     );
   }
@@ -931,7 +1036,12 @@ class _TimeTablePageState extends State<_TimeTablePage> {
     final groupedTimeTable = <String, List<TimeTable>>{};
     for (final tt in _timetables) {
       final batch = _batches.firstWhere((b) => b.id == tt.batchId,
-          orElse: () => Batch(id: '', name: 'Unknown', level: '', subjects: [], createdAt: DateTime.now()));
+          orElse: () => Batch(
+              id: '',
+              name: 'Unknown',
+              level: '',
+              subjects: [],
+              createdAt: DateTime.now()));
       groupedTimeTable.putIfAbsent(batch.name, () => []).add(tt);
     }
 
@@ -943,7 +1053,10 @@ class _TimeTablePageState extends State<_TimeTablePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('TimeTable',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark)),
               const SizedBox(height: 16),
               if (groupedTimeTable.isEmpty)
                 const Center(child: Text('No timetable entries found.')),
@@ -952,11 +1065,19 @@ class _TimeTablePageState extends State<_TimeTablePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(entry.key,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                        style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary)),
                     const SizedBox(height: 8),
                     ...entry.value.map((tt) {
-                      final subject = _subjects.firstWhere((s) => s.id == tt.subjectId,
-                          orElse: () => Subject(id: '', name: 'Unknown', code: '', description: ''));
+                      final subject = _subjects.firstWhere(
+                          (s) => s.id == tt.subjectId,
+                          orElse: () => Subject(
+                              id: '',
+                              name: 'Unknown',
+                              code: '',
+                              description: ''));
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 10),
                         child: GlassCard(
@@ -964,12 +1085,14 @@ class _TimeTablePageState extends State<_TimeTablePage> {
                           child: Row(
                             children: [
                               Container(
-                                width: 50, height: 50,
+                                width: 50,
+                                height: 50,
                                 decoration: BoxDecoration(
                                   color: AppColors.primary.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Icon(Icons.schedule_rounded, color: AppColors.primary),
+                                child: const Icon(Icons.schedule_rounded,
+                                    color: AppColors.primary),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -977,12 +1100,20 @@ class _TimeTablePageState extends State<_TimeTablePage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(subject.name,
-                                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                                    Text('${tt.day} | ${tt.startTime} - ${tt.endTime}',
-                                        style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
+                                        style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textDark)),
+                                    Text(
+                                        '${tt.day} | ${tt.startTime} - ${tt.endTime}',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textLight)),
                                     if (tt.room != null)
                                       Text('Room: ${tt.room}',
-                                          style: const TextStyle(fontSize: 11, color: AppColors.textMid)),
+                                          style: const TextStyle(
+                                              fontSize: 11,
+                                              color: AppColors.textMid)),
                                   ],
                                 ),
                               ),
@@ -1005,7 +1136,9 @@ class _TimeTablePageState extends State<_TimeTablePage> {
             onPressed: _showAssignSheet,
             backgroundColor: AppColors.adminAccent,
             icon: const Icon(Icons.add_rounded, color: Colors.white),
-            label: const Text('Assign Class', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            label: const Text('Assign Class',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.w600)),
           ),
         ),
       ],
@@ -1018,7 +1151,11 @@ class _AssignClassSheet extends StatefulWidget {
   final List<Subject> subjects;
   final VoidCallback onSaved;
   final DatabaseService dbService;
-  const _AssignClassSheet({required this.batches, required this.subjects, required this.onSaved, required this.dbService});
+  const _AssignClassSheet(
+      {required this.batches,
+      required this.subjects,
+      required this.onSaved,
+      required this.dbService});
 
   @override
   State<_AssignClassSheet> createState() => _AssignClassSheetState();
@@ -1033,7 +1170,14 @@ class _AssignClassSheetState extends State<_AssignClassSheet> {
     {'id': 'teacher_5', 'name': 'Mr. Rajesh Verma'},
   ];
 
-  final _days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  final _days = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday'
+  ];
 
   String? _selectedBatchId;
   String? _selectedSubjectId;
@@ -1052,12 +1196,15 @@ class _AssignClassSheetState extends State<_AssignClassSheet> {
       context: context,
       initialTime: isStart ? _startTime : _endTime,
     );
-    if (picked != null) setState(() => isStart ? _startTime = picked : _endTime = picked);
+    if (picked != null)
+      setState(() => isStart ? _startTime = picked : _endTime = picked);
   }
 
   Future<void> _save() async {
-    if (_selectedBatchId == null || _selectedSubjectId == null ||
-        _selectedTeacherId == null || _selectedDay == null) {
+    if (_selectedBatchId == null ||
+        _selectedSubjectId == null ||
+        _selectedTeacherId == null ||
+        _selectedDay == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill all required fields')),
       );
@@ -1072,7 +1219,9 @@ class _AssignClassSheetState extends State<_AssignClassSheet> {
       day: _selectedDay!,
       startTime: _formatTime(_startTime),
       endTime: _formatTime(_endTime),
-      room: _roomController.text.trim().isEmpty ? null : _roomController.text.trim(),
+      room: _roomController.text.trim().isEmpty
+          ? null
+          : _roomController.text.trim(),
       createdAt: DateTime.now(),
     );
     try {
@@ -1084,7 +1233,8 @@ class _AssignClassSheetState extends State<_AssignClassSheet> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error saving: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error saving: $e')));
       }
     }
   }
@@ -1096,11 +1246,18 @@ class _AssignClassSheetState extends State<_AssignClassSheet> {
   }
 
   InputDecoration _inputDecoration() => InputDecoration(
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.divider)),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.divider)),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
-  );
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.divider)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.divider)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.primary)),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -1120,52 +1277,92 @@ class _AssignClassSheetState extends State<_AssignClassSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(child: Container(width: 40, height: 4,
-                  decoration: BoxDecoration(color: AppColors.divider, borderRadius: BorderRadius.circular(2)))),
+              Center(
+                  child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                          color: AppColors.divider,
+                          borderRadius: BorderRadius.circular(2)))),
               const SizedBox(height: 20),
-              const Text('Assign Class', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+              const Text('Assign Class',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark)),
               const SizedBox(height: 20),
-              const Text('Class', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textMid)),
+              const Text('Class',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMid)),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
-                value: _selectedBatchId,
+                initialValue: _selectedBatchId,
                 hint: const Text('Select class'),
                 decoration: _inputDecoration(),
-                items: widget.batches.map((b) => DropdownMenuItem(value: b.id, child: Text(b.name))).toList(),
+                items: widget.batches
+                    .map((b) =>
+                        DropdownMenuItem(value: b.id, child: Text(b.name)))
+                    .toList(),
                 onChanged: (v) => setState(() => _selectedBatchId = v),
               ),
               const SizedBox(height: 16),
-              const Text('Subject', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textMid)),
+              const Text('Subject',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMid)),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
-                value: _selectedSubjectId,
+                initialValue: _selectedSubjectId,
                 hint: const Text('Select subject'),
                 decoration: _inputDecoration(),
-                items: widget.subjects.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
+                items: widget.subjects
+                    .map((s) =>
+                        DropdownMenuItem(value: s.id, child: Text(s.name)))
+                    .toList(),
                 onChanged: (v) => setState(() => _selectedSubjectId = v),
               ),
               const SizedBox(height: 16),
-              const Text('Teacher', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textMid)),
+              const Text('Teacher',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMid)),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
-                value: _selectedTeacherId,
+                initialValue: _selectedTeacherId,
                 hint: const Text('Select teacher'),
                 decoration: _inputDecoration(),
-                items: _teachers.map((t) => DropdownMenuItem(value: t['id'], child: Text(t['name']!))).toList(),
+                items: _teachers
+                    .map((t) => DropdownMenuItem(
+                        value: t['id'], child: Text(t['name']!)))
+                    .toList(),
                 onChanged: (v) => setState(() => _selectedTeacherId = v),
               ),
               const SizedBox(height: 16),
-              const Text('Day', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textMid)),
+              const Text('Day',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMid)),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
-                value: _selectedDay,
+                initialValue: _selectedDay,
                 hint: const Text('Select day'),
                 decoration: _inputDecoration(),
-                items: _days.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                items: _days
+                    .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                    .toList(),
                 onChanged: (v) => setState(() => _selectedDay = v),
               ),
               const SizedBox(height: 16),
-              const Text('Timing', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textMid)),
+              const Text('Timing',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMid)),
               const SizedBox(height: 6),
               Row(
                 children: [
@@ -1173,27 +1370,42 @@ class _AssignClassSheetState extends State<_AssignClassSheet> {
                     child: GestureDetector(
                       onTap: () => _pickTime(true),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                        decoration: BoxDecoration(border: Border.all(color: AppColors.divider), borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 14),
+                        decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.divider),
+                            borderRadius: BorderRadius.circular(12)),
                         child: Row(children: [
-                          const Icon(Icons.access_time_rounded, size: 16, color: AppColors.textLight),
+                          const Icon(Icons.access_time_rounded,
+                              size: 16, color: AppColors.textLight),
                           const SizedBox(width: 8),
-                          Text(_formatTime(_startTime), style: const TextStyle(fontSize: 14, color: AppColors.textDark)),
+                          Text(_formatTime(_startTime),
+                              style: const TextStyle(
+                                  fontSize: 14, color: AppColors.textDark)),
                         ]),
                       ),
                     ),
                   ),
-                  const Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text('to', style: TextStyle(color: AppColors.textMid))),
+                  const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Text('to',
+                          style: TextStyle(color: AppColors.textMid))),
                   Expanded(
                     child: GestureDetector(
                       onTap: () => _pickTime(false),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                        decoration: BoxDecoration(border: Border.all(color: AppColors.divider), borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 14),
+                        decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.divider),
+                            borderRadius: BorderRadius.circular(12)),
                         child: Row(children: [
-                          const Icon(Icons.access_time_rounded, size: 16, color: AppColors.textLight),
+                          const Icon(Icons.access_time_rounded,
+                              size: 16, color: AppColors.textLight),
                           const SizedBox(width: 8),
-                          Text(_formatTime(_endTime), style: const TextStyle(fontSize: 14, color: AppColors.textDark)),
+                          Text(_formatTime(_endTime),
+                              style: const TextStyle(
+                                  fontSize: 14, color: AppColors.textDark)),
                         ]),
                       ),
                     ),
@@ -1201,9 +1413,16 @@ class _AssignClassSheetState extends State<_AssignClassSheet> {
                 ],
               ),
               const SizedBox(height: 16),
-              const Text('Room (optional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textMid)),
+              const Text('Room (optional)',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMid)),
               const SizedBox(height: 6),
-              TextField(controller: _roomController, decoration: _inputDecoration().copyWith(hintText: 'e.g. Room 204')),
+              TextField(
+                  controller: _roomController,
+                  decoration:
+                      _inputDecoration().copyWith(hintText: 'e.g. Room 204')),
               const SizedBox(height: 28),
               SizedBox(
                 width: double.infinity,
@@ -1213,11 +1432,18 @@ class _AssignClassSheetState extends State<_AssignClassSheet> {
                     backgroundColor: AppColors.adminAccent,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _isSaving
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Save Assignment', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : const Text('Save Assignment',
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w600)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -1274,7 +1500,9 @@ class _BroadcastPageState extends State<_BroadcastPage> {
           expand: false,
           builder: (_, scrollController) => Container(
             padding: EdgeInsets.only(
-              left: 24, right: 24, top: 24,
+              left: 24,
+              right: 24,
+              top: 24,
               bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
             ),
             decoration: const BoxDecoration(
@@ -1286,16 +1514,28 @@ class _BroadcastPageState extends State<_BroadcastPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(child: Container(
-                    width: 40, height: 4,
-                    decoration: BoxDecoration(color: AppColors.divider, borderRadius: BorderRadius.circular(2)),
+                  Center(
+                      child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: AppColors.divider,
+                        borderRadius: BorderRadius.circular(2)),
                   )),
                   const SizedBox(height: 20),
-                  const Text('New Broadcast', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  const Text('New Broadcast',
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark)),
                   const SizedBox(height: 20),
 
                   // Title
-                  const Text('Title', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textMid)),
+                  const Text('Title',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textMid)),
                   const SizedBox(height: 6),
                   TextField(
                     controller: titleController,
@@ -1304,7 +1544,11 @@ class _BroadcastPageState extends State<_BroadcastPage> {
                   const SizedBox(height: 16),
 
                   // Message
-                  const Text('Message', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textMid)),
+                  const Text('Message',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textMid)),
                   const SizedBox(height: 6),
                   TextField(
                     controller: messageController,
@@ -1314,83 +1558,113 @@ class _BroadcastPageState extends State<_BroadcastPage> {
                   const SizedBox(height: 16),
 
                   // Audience
-                  const Text('Send To', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textMid)),
+                  const Text('Send To',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textMid)),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
-                    value: selectedAudience,
+                    initialValue: selectedAudience,
                     decoration: _inputDeco(null),
                     items: const [
                       DropdownMenuItem(value: 'all', child: Text('Everyone')),
-                      DropdownMenuItem(value: 'students', child: Text('Students')),
-                      DropdownMenuItem(value: 'parents', child: Text('Parents')),
-                      DropdownMenuItem(value: 'teachers', child: Text('Teachers')),
+                      DropdownMenuItem(
+                          value: 'students', child: Text('Students')),
+                      DropdownMenuItem(
+                          value: 'parents', child: Text('Parents')),
+                      DropdownMenuItem(
+                          value: 'teachers', child: Text('Teachers')),
                     ],
-                    onChanged: (v) => setSheetState(() => selectedAudience = v!),
+                    onChanged: (v) =>
+                        setSheetState(() => selectedAudience = v!),
                   ),
                   const SizedBox(height: 16),
 
                   // Priority
-                  const Text('Priority', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textMid)),
+                  const Text('Priority',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textMid)),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
-                    value: selectedPriority,
+                    initialValue: selectedPriority,
                     decoration: _inputDeco(null),
                     items: const [
                       DropdownMenuItem(value: 'normal', child: Text('Normal')),
                       DropdownMenuItem(value: 'high', child: Text('High')),
                       DropdownMenuItem(value: 'urgent', child: Text('Urgent')),
                     ],
-                    onChanged: (v) => setSheetState(() => selectedPriority = v!),
+                    onChanged: (v) =>
+                        setSheetState(() => selectedPriority = v!),
                   ),
                   const SizedBox(height: 28),
 
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: isSending ? null : () async {
-                        final title = titleController.text.trim();
-                        final message = messageController.text.trim();
-                        if (title.isEmpty || message.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please fill in title and message')),
-                          );
-                          return;
-                        }
-                        setSheetState(() => isSending = true);
-                        final broadcast = Broadcast(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          title: title,
-                          message: message,
-                          sentBy: 'Admin Staff',
-                          sentDate: DateTime.now(),
-                          targetAudience: selectedAudience,
-                          priority: selectedPriority,
-                        );
-                        final success = await _dbService.createBroadcast(broadcast);
-                        if (mounted) {
-                          Navigator.pop(ctx);
-                          if (success) {
-                            _fetchBroadcasts();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Broadcast sent successfully')),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Failed to send broadcast')),
-                            );
-                          }
-                        }
-                      },
+                      onPressed: isSending
+                          ? null
+                          : () async {
+                              final title = titleController.text.trim();
+                              final message = messageController.text.trim();
+                              if (title.isEmpty || message.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          'Please fill in title and message')),
+                                );
+                                return;
+                              }
+                              setSheetState(() => isSending = true);
+                              final broadcast = Broadcast(
+                                id: DateTime.now()
+                                    .millisecondsSinceEpoch
+                                    .toString(),
+                                title: title,
+                                message: message,
+                                sentBy: 'Admin Staff',
+                                sentDate: DateTime.now(),
+                                targetAudience: selectedAudience,
+                                priority: selectedPriority,
+                              );
+                              final success =
+                                  await _dbService.createBroadcast(broadcast);
+                              if (mounted) {
+                                Navigator.pop(ctx);
+                                if (success) {
+                                  _fetchBroadcasts();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            'Broadcast sent successfully')),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                            Text('Failed to send broadcast')),
+                                  );
+                                }
+                              }
+                            },
                       icon: isSending
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2))
                           : const Icon(Icons.campaign_rounded),
                       label: Text(isSending ? 'Sending...' : 'Send Broadcast'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.adminAccent,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        textStyle: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -1405,12 +1679,19 @@ class _BroadcastPageState extends State<_BroadcastPage> {
   }
 
   InputDecoration _inputDeco(String? hint) => InputDecoration(
-    hintText: hint,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.divider)),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.divider)),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary)),
-  );
+        hintText: hint,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.divider)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.divider)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.primary)),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -1446,7 +1727,7 @@ class _BroadcastPageState extends State<_BroadcastPage> {
           ),
           const SizedBox(height: 16),
           if (_broadcasts.isEmpty)
-             const Center(child: Text('No broadcasts found.')),
+            const Center(child: Text('No broadcasts found.')),
           ..._broadcasts.map((broadcast) {
             final audienceColor = broadcast.targetAudience == 'all'
                 ? Colors.purple
@@ -1535,8 +1816,10 @@ class _FeesPage extends StatelessWidget {
         }
 
         final allStudents = snapshot.data ?? [];
-        final totalFees = allStudents.fold<double>(0, (sum, s) => sum + s.totalFees);
-        final totalPaid = allStudents.fold<double>(0, (sum, s) => sum + s.feesPaid);
+        final totalFees =
+            allStudents.fold<double>(0, (sum, s) => sum + s.totalFees);
+        final totalPaid =
+            allStudents.fold<double>(0, (sum, s) => sum + s.feesPaid);
         final totalPending = totalFees - totalPaid;
 
         return SingleChildScrollView(
@@ -1595,8 +1878,12 @@ class _FeesPage extends StatelessWidget {
                 const Center(child: Text('No students found.')),
               ...allStudents.map((student) {
                 final pending = student.totalFees - student.feesPaid;
-                final percentage = student.totalFees > 0 ? (student.feesPaid / student.totalFees * 100).toInt() : 0;
-                final valueIndicator = student.totalFees > 0 ? (student.feesPaid / student.totalFees) : 0.0;
+                final percentage = student.totalFees > 0
+                    ? (student.feesPaid / student.totalFees * 100).toInt()
+                    : 0;
+                final valueIndicator = student.totalFees > 0
+                    ? (student.feesPaid / student.totalFees)
+                    : 0.0;
 
                 return GlassCard(
                   padding: const EdgeInsets.all(12),
@@ -1637,7 +1924,8 @@ class _FeesPage extends StatelessWidget {
                                 children: [
                                   CircularProgressIndicator(
                                     value: valueIndicator,
-                                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                                    backgroundColor:
+                                        AppColors.primary.withOpacity(0.1),
                                     valueColor: AlwaysStoppedAnimation(
                                       student.feesPaid == student.totalFees
                                           ? Colors.green
@@ -1790,7 +2078,8 @@ class _StaffProfileRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _StaffProfileRow({required this.icon, required this.label, required this.value});
+  const _StaffProfileRow(
+      {required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -1801,8 +2090,14 @@ class _StaffProfileRow extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
-            Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+            Text(label,
+                style:
+                    const TextStyle(fontSize: 11, color: AppColors.textLight)),
+            Text(value,
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark)),
           ],
         ),
       ],

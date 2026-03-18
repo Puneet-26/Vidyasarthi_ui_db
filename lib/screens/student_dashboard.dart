@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
-import 'placeholder_screens.dart';
 
 class StudentDashboard extends StatefulWidget {
   const StudentDashboard({super.key});
@@ -81,15 +80,15 @@ class _StudentHomePage extends StatelessWidget {
                 const Text('Notices & Holidays',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textDark)),
                 const SizedBox(height: 16),
-                _HolidayNotice(title: 'Holi Holiday', date: 'March 14, 2026', icon: Icons.celebration_rounded, color: AppColors.warning),
+                const _HolidayNotice(title: 'Holi Holiday', date: 'March 14, 2026', icon: Icons.celebration_rounded, color: AppColors.warning),
                 const SizedBox(height: 10),
-                _HolidayNotice(title: 'Good Friday', date: 'April 3, 2026', icon: Icons.church_rounded, color: AppColors.info),
+                const _HolidayNotice(title: 'Good Friday', date: 'April 3, 2026', icon: Icons.church_rounded, color: AppColors.info),
                 const SizedBox(height: 10),
-                _HolidayNotice(title: 'Dr. Ambedkar Jayanti', date: 'April 14, 2026', icon: Icons.star_rounded, color: AppColors.primary),
+                const _HolidayNotice(title: 'Dr. Ambedkar Jayanti', date: 'April 14, 2026', icon: Icons.star_rounded, color: AppColors.primary),
                 const SizedBox(height: 10),
-                _HolidayNotice(title: 'Summer Vacation Begins', date: 'May 1, 2026', icon: Icons.wb_sunny_rounded, color: AppColors.error),
+                const _HolidayNotice(title: 'Summer Vacation Begins', date: 'May 1, 2026', icon: Icons.wb_sunny_rounded, color: AppColors.error),
                 const SizedBox(height: 10),
-                _HolidayNotice(title: 'Independence Day', date: 'August 15, 2026', icon: Icons.flag_rounded, color: AppColors.success),
+                const _HolidayNotice(title: 'Independence Day', date: 'August 15, 2026', icon: Icons.flag_rounded, color: AppColors.success),
                 const SizedBox(height: 16),
               ],
             ),
@@ -117,7 +116,7 @@ class _StudentHomePage extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Today's class banner
-              _TodayClassBanner(),
+              const _TodayClassBanner(),
               const SizedBox(height: 24),
 
               // Timetable Today
@@ -127,10 +126,10 @@ class _StudentHomePage extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Stats Row — Attendance & Pending Tasks only
-              Row(
+              const Row(
                 children: [
                   Expanded(
-                    child: const StatCard(
+                    child: StatCard(
                       title: 'Attendance',
                       value: '92%',
                       icon: Icons.how_to_reg_rounded,
@@ -138,9 +137,9 @@ class _StudentHomePage extends StatelessWidget {
                       subtitle: 'This month',
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
-                    child: const StatCard(
+                    child: StatCard(
                       title: 'Pending Tasks',
                       value: '4',
                       icon: Icons.pending_actions_rounded,
@@ -232,19 +231,19 @@ class _StudentSubjectsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+    return const SingleChildScrollView(
+      padding: EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'My Subjects'),
-          const SizedBox(height: 16),
+          SectionHeader(title: 'My Subjects'),
+          SizedBox(height: 16),
           _SubjectCard(name: 'Physics', code: 'PHY101', teacher: 'Mr. Arun Kumar', progress: 0.65, color: AppColors.primary, modules: _physicsModules),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _SubjectCard(name: 'Chemistry', code: 'CHM101', teacher: 'Mrs. Priya Sharma', progress: 0.72, color: AppColors.info, modules: _chemModules),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _SubjectCard(name: 'Mathematics', code: 'MTH101', teacher: 'Mr. Vikram Singh', progress: 0.85, color: AppColors.success, modules: _mathModules),
-          const SizedBox(height: 30),
+          SizedBox(height: 30),
         ],
       ),
     );
@@ -305,7 +304,7 @@ class _SubjectCard extends StatelessWidget {
                 ),
                 Text('${(progress * 100).round()}%', style: TextStyle(fontSize: Responsive.sp(context, 13), fontWeight: FontWeight.w700, color: color)),
                 const SizedBox(width: 6),
-                Icon(Icons.chevron_right_rounded, color: AppColors.textLight, size: 20),
+                const Icon(Icons.chevron_right_rounded, color: AppColors.textLight, size: 20),
               ],
             ),
             const SizedBox(height: 12),
@@ -496,25 +495,25 @@ class _StudentTasksPage extends StatelessWidget {
   const _StudentTasksPage();
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+    return const SingleChildScrollView(
+      padding: EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'Pending Homework'),
-          const SizedBox(height: 12),
+          SectionHeader(title: 'Pending Homework'),
+          SizedBox(height: 12),
           _TaskItem(title: 'Laws of Motion Problems', subject: 'Physics', due: 'Due in 3 days', urgent: false),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _TaskItem(title: 'Chemical Bonding Worksheet', subject: 'Chemistry', due: 'Due in 5 days', urgent: false),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _TaskItem(title: 'Integration Practice', subject: 'Mathematics', due: 'Due Tomorrow', urgent: true),
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Upcoming Tests'),
-          const SizedBox(height: 12),
+          SizedBox(height: 24),
+          SectionHeader(title: 'Upcoming Tests'),
+          SizedBox(height: 12),
           _TestItem(title: 'Mid-Term Physics Exam', date: 'Mar 28, 2026', marks: 100, color: AppColors.primary),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           _TestItem(title: 'Mid-Term Mathematics Exam', date: 'Apr 1, 2026', marks: 100, color: AppColors.studentAccent),
-          const SizedBox(height: 30),
+          SizedBox(height: 30),
         ],
       ),
     );
@@ -609,14 +608,14 @@ class _StudentResultsPage extends StatelessWidget {
   const _StudentResultsPage();
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+    return const SingleChildScrollView(
+      padding: EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'Test Results'),
-          const SizedBox(height: 16),
-          const GlassCard(
+          SectionHeader(title: 'Test Results'),
+          SizedBox(height: 16),
+          GlassCard(
             child: Column(
               children: [
                 LabeledProgressBar(label: 'Physics - Unit Test 1 (85/100)', value: 0.85, color: AppColors.primary),
@@ -627,7 +626,7 @@ class _StudentResultsPage extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 30),
+          SizedBox(height: 30),
         ],
       ),
     );
@@ -678,25 +677,25 @@ class _StudentProfilePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          Center(child: GradientAvatar(initials: 'AS', color: AppColors.studentAccent, size: 72)),
+          const Center(child: GradientAvatar(initials: 'AS', color: AppColors.studentAccent, size: 72)),
           const SizedBox(height: 12),
           const Center(child: Text('Aryan Sharma', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textDark))),
           const Center(child: Text('Student • Class 10-A', style: TextStyle(fontSize: 13, color: AppColors.textMid))),
           const SizedBox(height: 24),
 
           // Personal Info
-          GlassCard(
-            padding: const EdgeInsets.all(16),
+          const GlassCard(
+            padding: EdgeInsets.all(16),
             child: Column(
               children: [
                 _ProfileRow(icon: Icons.email_outlined, label: 'Email', value: 'aryan.sharma@students.com'),
-                const Divider(height: 20),
+                Divider(height: 20),
                 _ProfileRow(icon: Icons.phone_outlined, label: 'Phone', value: '+91-9876543210'),
-                const Divider(height: 20),
+                Divider(height: 20),
                 _ProfileRow(icon: Icons.people_outlined, label: 'Parent', value: 'Mr. Rajesh Sharma'),
-                const Divider(height: 20),
+                Divider(height: 20),
                 _ProfileRow(icon: Icons.class_outlined, label: 'Batch', value: 'Class 10-A'),
-                const Divider(height: 20),
+                Divider(height: 20),
                 _ProfileRow(icon: Icons.calendar_today_outlined, label: 'Enrolled', value: 'March 2025'),
               ],
             ),
@@ -712,7 +711,7 @@ class _StudentProfilePage extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Expanded(
+                    const Expanded(
                       child: _FeeSummaryTile(
                         label: 'Total Fees',
                         amount: totalFees,
@@ -721,7 +720,7 @@ class _StudentProfilePage extends StatelessWidget {
                       ),
                     ),
                     Container(width: 1, height: 48, color: AppColors.divider),
-                    Expanded(
+                    const Expanded(
                       child: _FeeSummaryTile(
                         label: 'Fees Paid',
                         amount: feesPaid,
@@ -730,7 +729,7 @@ class _StudentProfilePage extends StatelessWidget {
                       ),
                     ),
                     Container(width: 1, height: 48, color: AppColors.divider),
-                    Expanded(
+                    const Expanded(
                       child: _FeeSummaryTile(
                         label: 'Fees Due',
                         amount: feesDue,

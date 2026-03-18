@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
-import 'placeholder_screens.dart';
 
 class ParentDashboard extends StatefulWidget {
   const ParentDashboard({super.key});
@@ -20,18 +19,34 @@ class _ParentDashboardState extends State<ParentDashboard> {
   ];
 
   final List<BottomNavItem> _navItems = const [
-    BottomNavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
-    BottomNavItem(icon: Icons.child_care_outlined, activeIcon: Icons.child_care_rounded, label: 'Children'),
-    BottomNavItem(icon: Icons.payment_outlined, activeIcon: Icons.payment_rounded, label: 'Fees'),
-    BottomNavItem(icon: Icons.person_outline, activeIcon: Icons.person_rounded, label: 'Profile'),
+    BottomNavItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+        label: 'Home'),
+    BottomNavItem(
+        icon: Icons.child_care_outlined,
+        activeIcon: Icons.child_care_rounded,
+        label: 'Children'),
+    BottomNavItem(
+        icon: Icons.payment_outlined,
+        activeIcon: Icons.payment_rounded,
+        label: 'Fees'),
+    BottomNavItem(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person_rounded,
+        label: 'Profile'),
   ];
 
   List<Widget> get _pages => [
-    _ParentHomePage(children: _children, selectedChild: _selectedChild, onSelectChild: (i) => setState(() => _selectedChild = i), onNotification: () => _showNoticesSheet(context)),
-    const _ParentChildrenPage(),
-    const _ParentFeesPage(),
-    const _ParentProfilePage(),
-  ];
+        _ParentHomePage(
+            children: _children,
+            selectedChild: _selectedChild,
+            onSelectChild: (i) => setState(() => _selectedChild = i),
+            onNotification: () => _showNoticesSheet(context)),
+        const _ParentChildrenPage(),
+        const _ParentFeesPage(),
+        const _ParentProfilePage(),
+      ];
 
   void _showNoticesSheet(BuildContext context) {
     showModalBottomSheet(
@@ -56,15 +71,25 @@ class _ParentDashboardState extends State<ParentDashboard> {
               children: [
                 Center(
                   child: Container(
-                    width: 40, height: 4,
-                    decoration: BoxDecoration(color: AppColors.divider, borderRadius: BorderRadius.circular(2)),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: AppColors.divider,
+                        borderRadius: BorderRadius.circular(2)),
                   ),
                 ),
                 const SizedBox(height: 20),
                 const Text('Notices & Updates',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark)),
                 const SizedBox(height: 16),
-                _EventItem(title: 'Mid-Term Exams - March 28', date: 'March 28, 2026', icon: Icons.quiz_rounded, color: AppColors.warning),
+                const _EventItem(
+                    title: 'Mid-Term Exams - March 28',
+                    date: 'March 28, 2026',
+                    icon: Icons.quiz_rounded,
+                    color: AppColors.warning),
                 const SizedBox(height: 10),
               ],
             ),
@@ -98,7 +123,11 @@ class _ParentHomePage extends StatefulWidget {
   final int selectedChild;
   final ValueChanged<int> onSelectChild;
   final VoidCallback onNotification;
-  const _ParentHomePage({required this.children, required this.selectedChild, required this.onSelectChild, required this.onNotification});
+  const _ParentHomePage(
+      {required this.children,
+      required this.selectedChild,
+      required this.onSelectChild,
+      required this.onNotification});
   @override
   State<_ParentHomePage> createState() => _ParentHomePageState();
 }
@@ -190,11 +219,14 @@ class _ParentHomePageState extends State<_ParentHomePage> {
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppColors.parentAccent : Colors.white.withValues(alpha: 0.7),
+                          color: isSelected
+                              ? AppColors.parentAccent
+                              : Colors.white.withValues(alpha: 0.7),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.parentAccent.withValues(alpha: isSelected ? 0.3 : 0.05),
+                              color: AppColors.parentAccent
+                                  .withValues(alpha: isSelected ? 0.3 : 0.05),
                               blurRadius: 12,
                               offset: const Offset(0, 6),
                             ),
@@ -203,8 +235,11 @@ class _ParentHomePageState extends State<_ParentHomePage> {
                         child: Row(
                           children: [
                             GradientAvatar(
-                              initials: c['name']!.substring(0, 2),
-                              color: isSelected ? Colors.white.withValues(alpha: 0.5) : AppColors.parentAccent,
+                              initials: c['name']!
+                                  .substring(0, c['name']!.length.clamp(0, 2)),
+                              color: isSelected
+                                  ? Colors.white.withValues(alpha: 0.5)
+                                  : AppColors.parentAccent,
                               size: 38,
                             ),
                             const SizedBox(width: 10),
@@ -213,11 +248,18 @@ class _ParentHomePageState extends State<_ParentHomePage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(c['name']!.split(' ')[0],
-                                      style: TextStyle(fontSize: Responsive.sp(context, 13), fontWeight: FontWeight.w700,
-                                          color: isSelected ? Colors.white : AppColors.textDark)),
+                                      style: TextStyle(
+                                          fontSize: Responsive.sp(context, 13),
+                                          fontWeight: FontWeight.w700,
+                                          color: isSelected
+                                              ? Colors.white
+                                              : AppColors.textDark)),
                                   Text(c['class']!,
-                                      style: TextStyle(fontSize: Responsive.sp(context, 11),
-                                          color: isSelected ? Colors.white70 : AppColors.textLight)),
+                                      style: TextStyle(
+                                          fontSize: Responsive.sp(context, 11),
+                                          color: isSelected
+                                              ? Colors.white70
+                                              : AppColors.textLight)),
                                 ],
                               ),
                             ),
@@ -243,25 +285,46 @@ class _ParentHomePageState extends State<_ParentHomePage> {
             children: [
               SizedBox(
                 width: (MediaQuery.of(context).size.width - 52) / 2,
-                child: StatCard(title: 'Attendance', value: _childData[_selectedChild]['attendance'] as String, icon: Icons.how_to_reg_rounded, color: AppColors.success, subtitle: 'This month'),
+                child: StatCard(
+                    title: 'Attendance',
+                    value: _childData[_selectedChild]['attendance'] as String,
+                    icon: Icons.how_to_reg_rounded,
+                    color: AppColors.success,
+                    subtitle: 'This month'),
               ),
               SizedBox(
                 width: (MediaQuery.of(context).size.width - 52) / 2,
-                child: StatCard(title: 'Overall Grade', value: _childData[_selectedChild]['grade'] as String, icon: Icons.grade_rounded, color: AppColors.parentAccent, subtitle: 'Semester 2'),
+                child: StatCard(
+                    title: 'Overall Grade',
+                    value: _childData[_selectedChild]['grade'] as String,
+                    icon: Icons.grade_rounded,
+                    color: AppColors.parentAccent,
+                    subtitle: 'Semester 2'),
               ),
               SizedBox(
                 width: (MediaQuery.of(context).size.width - 52) / 2,
                 child: StatCard(
                   title: 'Fee Status',
                   value: _childData[_selectedChild]['feeStatus'] as String,
-                  icon: (_childData[_selectedChild]['feeStatus'] as String) == 'Paid' ? Icons.check_circle_rounded : Icons.pending_rounded,
-                  color: (_childData[_selectedChild]['feeStatus'] as String) == 'Paid' ? AppColors.success : AppColors.warning,
+                  icon: (_childData[_selectedChild]['feeStatus'] as String) ==
+                          'Paid'
+                      ? Icons.check_circle_rounded
+                      : Icons.pending_rounded,
+                  color: (_childData[_selectedChild]['feeStatus'] as String) ==
+                          'Paid'
+                      ? AppColors.success
+                      : AppColors.warning,
                   subtitle: 'March 2026',
                 ),
               ),
               SizedBox(
                 width: (MediaQuery.of(context).size.width - 52) / 2,
-                child: StatCard(title: 'Class Rank', value: _childData[_selectedChild]['rank'] as String, icon: Icons.leaderboard_rounded, color: AppColors.warning, subtitle: 'Out of ${_childData[_selectedChild]['rankOf']}'),
+                child: StatCard(
+                    title: 'Class Rank',
+                    value: _childData[_selectedChild]['rank'] as String,
+                    icon: Icons.leaderboard_rounded,
+                    color: AppColors.warning,
+                    subtitle: 'Out of ${_childData[_selectedChild]['rankOf']}'),
               ),
             ],
           ),
@@ -271,12 +334,20 @@ class _ParentHomePageState extends State<_ParentHomePage> {
           GlassCard(
             child: Column(
               children: [
-                for (int i = 0; i < (_childData[_selectedChild]['subjects'] as List).length; i++) ...[
+                for (int i = 0;
+                    i < (_childData[_selectedChild]['subjects'] as List).length;
+                    i++) ...[
                   if (i > 0) const SizedBox(height: 14),
                   LabeledProgressBar(
-                    label: (_childData[_selectedChild]['subjects'] as List)[i]['label'] as String,
-                    value: (_childData[_selectedChild]['subjects'] as List)[i]['value'] as double,
-                    color: i == 0 ? AppColors.primary : i == 1 ? AppColors.info : AppColors.success,
+                    label: (_childData[_selectedChild]['subjects'] as List)[i]
+                        ['label'] as String,
+                    value: (_childData[_selectedChild]['subjects'] as List)[i]
+                        ['value'] as double,
+                    color: i == 0
+                        ? AppColors.primary
+                        : i == 1
+                            ? AppColors.info
+                            : AppColors.success,
                   ),
                 ],
               ],
@@ -291,6 +362,32 @@ class _ParentHomePageState extends State<_ParentHomePage> {
 
 class _ParentChildrenPage extends StatelessWidget {
   const _ParentChildrenPage();
+
+  static const List<Map<String, dynamic>> _childrenData = [
+    {
+      'name': 'Aryan Sharma',
+      'class': 'Class 10-A',
+      'rollNo': '15',
+      'initials': 'AS',
+      'subjects': [
+        {'label': 'Physics', 'value': 0.85},
+        {'label': 'Chemistry', 'value': 0.91},
+        {'label': 'Mathematics', 'value': 0.76},
+      ],
+    },
+    {
+      'name': 'Priya Sharma',
+      'class': 'Class 6-B',
+      'rollNo': '08',
+      'initials': 'PS',
+      'subjects': [
+        {'label': 'English', 'value': 0.72},
+        {'label': 'Science', 'value': 0.68},
+        {'label': 'Mathematics', 'value': 0.75},
+      ],
+    },
+  ];
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -300,44 +397,93 @@ class _ParentChildrenPage extends StatelessWidget {
         children: [
           const SectionHeader(title: 'Children Progress'),
           const SizedBox(height: 16),
-          GlassCard(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const GradientAvatar(initials: 'AS', color: AppColors.parentAccent, size: 48),
-                    const SizedBox(width: 14),
-                    Expanded(child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Aryan Sharma', style: TextStyle(fontSize: Responsive.sp(context, 16), fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                        Text('Class 10-A • Roll No. 15', style: TextStyle(fontSize: Responsive.sp(context, 12), color: AppColors.textMid)),
-                      ],
-                    )),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const LabeledProgressBar(label: 'Physics (85%)', value: 0.85, color: AppColors.primary),
-                const SizedBox(height: 10),
-                const LabeledProgressBar(label: 'Chemistry (91%)', value: 0.91, color: AppColors.info),
-                const SizedBox(height: 10),
-                const LabeledProgressBar(label: 'Mathematics (76%)', value: 0.76, color: AppColors.success),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
+          ..._childrenData
+              .map((child) => Column(
+                    children: [
+                      GlassCard(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                GradientAvatar(
+                                    initials: child['initials'] as String,
+                                    color: AppColors.parentAccent,
+                                    size: 48),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                    child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(child['name'] as String,
+                                        style: TextStyle(
+                                            fontSize:
+                                                Responsive.sp(context, 16),
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.textDark)),
+                                    Text(
+                                        '${child['class']} • Roll No. ${child['rollNo']}',
+                                        style: TextStyle(
+                                            fontSize:
+                                                Responsive.sp(context, 12),
+                                            color: AppColors.textMid)),
+                                  ],
+                                )),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            ...(child['subjects'] as List)
+                                .asMap()
+                                .entries
+                                .map((e) {
+                              final idx = e.key;
+                              final subject = e.value;
+                              final colors = [
+                                AppColors.primary,
+                                AppColors.info,
+                                AppColors.success
+                              ];
+                              return Column(
+                                children: [
+                                  LabeledProgressBar(
+                                    label:
+                                        '${subject['label']} (${((subject['value'] as double) * 100).toInt()}%)',
+                                    value: subject['value'] as double,
+                                    color: colors[idx % colors.length],
+                                  ),
+                                  if (idx <
+                                      (child['subjects'] as List).length - 1)
+                                    const SizedBox(height: 10),
+                                ],
+                              );
+                            }).toList(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ))
+              .toList(),
           const SectionHeader(title: 'Recent Test Results'),
           const SizedBox(height: 12),
           const GlassCard(
             child: Column(
               children: [
-                LabeledProgressBar(label: 'Unit Test 1 - Physics (85/100)', value: 0.85, color: AppColors.primary),
+                LabeledProgressBar(
+                    label: 'Unit Test 1 - Physics (85/100)',
+                    value: 0.85,
+                    color: AppColors.primary),
                 SizedBox(height: 14),
-                LabeledProgressBar(label: 'Unit Test 1 - Chemistry (91/100)', value: 0.91, color: AppColors.info),
+                LabeledProgressBar(
+                    label: 'Unit Test 1 - Chemistry (91/100)',
+                    value: 0.91,
+                    color: AppColors.info),
                 SizedBox(height: 14),
-                LabeledProgressBar(label: 'Unit Test 1 - Mathematics (76/100)', value: 0.76, color: AppColors.success),
+                LabeledProgressBar(
+                    label: 'Unit Test 1 - Mathematics (76/100)',
+                    value: 0.76,
+                    color: AppColors.success),
               ],
             ),
           ),
@@ -363,9 +509,17 @@ class _ParentFeesPage extends StatelessWidget {
           const SizedBox(height: 24),
           const SectionHeader(title: 'Payment History'),
           const SizedBox(height: 12),
-          _PaymentHistoryTile(amount: '₹25,000', method: 'UPI', date: 'Jan 1, 2026', ref: 'UPI-20240101-001'),
+          const _PaymentHistoryTile(
+              amount: '₹25,000',
+              method: 'UPI',
+              date: 'Jan 1, 2026',
+              ref: 'UPI-20240101-001'),
           const SizedBox(height: 8),
-          _PaymentHistoryTile(amount: '₹25,000', method: 'Bank Transfer', date: 'Feb 1, 2026', ref: 'NEFT-20240201-001'),
+          const _PaymentHistoryTile(
+              amount: '₹25,000',
+              method: 'Bank Transfer',
+              date: 'Feb 1, 2026',
+              ref: 'NEFT-20240201-001'),
           const SizedBox(height: 30),
         ],
       ),
@@ -378,7 +532,11 @@ class _PaymentHistoryTile extends StatelessWidget {
   final String method;
   final String date;
   final String ref;
-  const _PaymentHistoryTile({required this.amount, required this.method, required this.date, required this.ref});
+  const _PaymentHistoryTile(
+      {required this.amount,
+      required this.method,
+      required this.date,
+      required this.ref});
   @override
   Widget build(BuildContext context) {
     return GlassCard(
@@ -387,21 +545,38 @@ class _PaymentHistoryTile extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
-            child: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 22),
+            decoration: BoxDecoration(
+                color: AppColors.success.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.check_circle_rounded,
+                color: AppColors.success, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(amount, style: TextStyle(fontSize: Responsive.sp(context, 15), fontWeight: FontWeight.w700, color: AppColors.textDark)),
-                Text('$method • $date', style: TextStyle(fontSize: Responsive.sp(context, 11), color: AppColors.textMid)),
-                Text('Ref: $ref', style: TextStyle(fontSize: Responsive.sp(context, 10), color: AppColors.textLight)),
+                Text(amount,
+                    style: TextStyle(
+                        fontSize: Responsive.sp(context, 15),
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark)),
+                Text('$method • $date',
+                    style: TextStyle(
+                        fontSize: Responsive.sp(context, 11),
+                        color: AppColors.textMid)),
+                Text('Ref: $ref',
+                    style: TextStyle(
+                        fontSize: Responsive.sp(context, 10),
+                        color: AppColors.textLight)),
               ],
             ),
           ),
-          const Text('Paid', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.success)),
+          const Text('Paid',
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.success)),
         ],
       ),
     );
@@ -412,40 +587,49 @@ class _ParentChatPage extends StatelessWidget {
   const _ParentChatPage();
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+    return const SingleChildScrollView(
+      padding: EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'Teacher Messages'),
-          const SizedBox(height: 14),
-          const _MessageItem(
+          SectionHeader(title: 'Teacher Messages'),
+          SizedBox(height: 14),
+          _MessageItem(
             teacher: 'Mr. Arun Kumar',
             subject: 'Physics',
             message: 'Aryan performed well in the recent test. Keep it up!',
             time: '1 day ago',
           ),
-          const SizedBox(height: 10),
-          const _MessageItem(
+          SizedBox(height: 10),
+          _MessageItem(
             teacher: 'Mrs. Priya Sharma',
             subject: 'Chemistry',
             message: 'Please ensure the lab report is submitted on time.',
             time: '2 days ago',
           ),
-          const SizedBox(height: 10),
-          const _MessageItem(
+          SizedBox(height: 10),
+          _MessageItem(
             teacher: 'Mr. Vikram Singh',
             subject: 'Mathematics',
-            message: 'Aryan has improved significantly in integration. Well done!',
+            message:
+                'Aryan has improved significantly in integration. Well done!',
             time: '3 days ago',
           ),
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Notices'),
-          const SizedBox(height: 14),
-          const _EventItem(title: 'Parent-Teacher Meeting - March 22', date: 'March 22, 2026', icon: Icons.people_rounded, color: AppColors.info),
-          const SizedBox(height: 8),
-          const _EventItem(title: 'Mid-Term Exams - March 28', date: 'March 28, 2026', icon: Icons.quiz_rounded, color: AppColors.warning),
-          const SizedBox(height: 30),
+          SizedBox(height: 24),
+          SectionHeader(title: 'Notices'),
+          SizedBox(height: 14),
+          _EventItem(
+              title: 'Parent-Teacher Meeting - March 22',
+              date: 'March 22, 2026',
+              icon: Icons.people_rounded,
+              color: AppColors.info),
+          SizedBox(height: 8),
+          _EventItem(
+              title: 'Mid-Term Exams - March 28',
+              date: 'March 28, 2026',
+              icon: Icons.quiz_rounded,
+              color: AppColors.warning),
+          SizedBox(height: 30),
         ],
       ),
     );
@@ -461,22 +645,42 @@ class _ParentProfilePage extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 20),
-          const GradientAvatar(initials: 'RS', color: AppColors.parentAccent, size: 72),
+          const GradientAvatar(
+              initials: 'RS', color: AppColors.parentAccent, size: 72),
           const SizedBox(height: 12),
-          Text('Mr. Rajesh Sharma', style: TextStyle(fontSize: Responsive.sp(context, 20), fontWeight: FontWeight.w800, color: AppColors.textDark)),
-          Text('Parent • 2 children enrolled', style: TextStyle(fontSize: Responsive.sp(context, 13), color: AppColors.textMid)),
+          Text('Mr. Rajesh Sharma',
+              style: TextStyle(
+                  fontSize: Responsive.sp(context, 20),
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark)),
+          Text('Parent • 2 children enrolled',
+              style: TextStyle(
+                  fontSize: Responsive.sp(context, 13),
+                  color: AppColors.textMid)),
           const SizedBox(height: 24),
-          GlassCard(
-            padding: const EdgeInsets.all(16),
+          const GlassCard(
+            padding: EdgeInsets.all(16),
             child: Column(
               children: [
-                _ProfileRow2(icon: Icons.email_outlined, label: 'Email', value: 'rajesh.sharma@parents.com'),
-                const Divider(height: 20),
-                _ProfileRow2(icon: Icons.phone_outlined, label: 'Phone', value: '+91-9876543200'),
-                const Divider(height: 20),
-                _ProfileRow2(icon: Icons.child_care_outlined, label: 'Child 1', value: 'Aryan Sharma • Class 10-A'),
-                const Divider(height: 20),
-                _ProfileRow2(icon: Icons.child_care_outlined, label: 'Child 2', value: 'Priya Sharma • Class 6-B'),
+                _ProfileRow2(
+                    icon: Icons.email_outlined,
+                    label: 'Email',
+                    value: 'rajesh.sharma@parents.com'),
+                Divider(height: 20),
+                _ProfileRow2(
+                    icon: Icons.phone_outlined,
+                    label: 'Phone',
+                    value: '+91-9876543200'),
+                Divider(height: 20),
+                _ProfileRow2(
+                    icon: Icons.child_care_outlined,
+                    label: 'Child 1',
+                    value: 'Aryan Sharma • Class 10-A'),
+                Divider(height: 20),
+                _ProfileRow2(
+                    icon: Icons.child_care_outlined,
+                    label: 'Child 2',
+                    value: 'Priya Sharma • Class 6-B'),
               ],
             ),
           ),
@@ -484,14 +688,16 @@ class _ParentProfilePage extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false),
+              onPressed: () => Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/login', (_) => false),
               icon: const Icon(Icons.logout_rounded),
               label: const Text('Logout'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
               ),
             ),
           ),
@@ -506,7 +712,8 @@ class _ProfileRow2 extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _ProfileRow2({required this.icon, required this.label, required this.value});
+  const _ProfileRow2(
+      {required this.icon, required this.label, required this.value});
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -516,8 +723,14 @@ class _ProfileRow2 extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textLight)),
-            Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+            Text(label,
+                style:
+                    const TextStyle(fontSize: 11, color: AppColors.textLight)),
+            Text(value,
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark)),
           ],
         ),
       ],
@@ -530,7 +743,8 @@ class _ChildPerformanceBanner extends StatelessWidget {
   final String tests;
   final String homework;
 
-  const _ChildPerformanceBanner({required this.childName, required this.tests, required this.homework});
+  const _ChildPerformanceBanner(
+      {required this.childName, required this.tests, required this.homework});
 
   @override
   Widget build(BuildContext context) {
@@ -587,7 +801,8 @@ class _ChildPerformanceBanner extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          const Icon(Icons.trending_up_rounded, size: 60, color: Colors.white24),
+          const Icon(Icons.trending_up_rounded,
+              size: 60, color: Colors.white24),
         ],
       ),
     );
@@ -638,7 +853,8 @@ class _FeeCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.success.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(8),
@@ -659,11 +875,8 @@ class _FeeCard extends StatelessWidget {
           const SizedBox(height: 12),
           const _FeeRow(label: 'Tuition Fee', amount: '₹45,000', paid: true),
           const SizedBox(height: 8),
-          const _FeeRow(label: 'Sports Fee', amount: '₹2,500', paid: true),
-          const SizedBox(height: 8),
-          const _FeeRow(label: 'Lab Fee', amount: '₹3,000', paid: true),
-          const SizedBox(height: 8),
-          const _FeeRow(label: 'Q4 Installment', amount: '₹12,500', paid: false),
+          const _FeeRow(
+              label: 'Q4 Installment', amount: '₹12,500', paid: false),
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
@@ -687,7 +900,8 @@ class _FeeRow extends StatelessWidget {
   final String amount;
   final bool paid;
 
-  const _FeeRow({required this.label, required this.amount, required this.paid});
+  const _FeeRow(
+      {required this.label, required this.amount, required this.paid});
 
   @override
   Widget build(BuildContext context) {
@@ -745,7 +959,10 @@ class _MessageItem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           GradientAvatar(
-            initials: teacher.split(' ').last.substring(0, 2),
+            initials: teacher
+                .split(' ')
+                .last
+                .substring(0, teacher.split(' ').last.length.clamp(0, 2)),
             color: AppColors.parentAccent,
             size: 42,
           ),

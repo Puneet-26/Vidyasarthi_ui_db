@@ -11,7 +11,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _emailFocusNode = FocusNode();
@@ -19,7 +20,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _rememberMe = false;
   String? _errorMessage;
   String? _emailError;
   String? _passwordError;
@@ -81,14 +81,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   bool _isValidEmail(String email) {
-    final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    final emailRegex =
+        RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
     return emailRegex.hasMatch(email);
   }
 
   PasswordStrength _getPasswordStrength(String password) {
     if (password.length < 6) return PasswordStrength.weak;
     if (password.length < 10) {
-      if (password.contains(RegExp(r'[a-z]')) && password.contains(RegExp(r'[0-9]'))) {
+      if (password.contains(RegExp(r'[a-z]')) &&
+          password.contains(RegExp(r'[0-9]'))) {
         return PasswordStrength.good;
       }
       return PasswordStrength.weak;
@@ -104,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   void _handleLogin() {
     _emailFocusNode.unfocus();
     _passwordFocusNode.unfocus();
-    
+
     setState(() => _errorMessage = null);
 
     final email = _emailController.text.trim();
@@ -139,7 +141,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       if (result['success'] == true) {
         if (mounted) {
           final role = result['role'] ?? 'student';
-          Navigator.of(context).pushReplacementNamed('/loading', arguments: role);
+          Navigator.of(context)
+              .pushReplacementNamed('/loading', arguments: role);
         }
       } else {
         if (mounted) {
@@ -160,8 +163,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return GradientScaffold(
@@ -174,312 +175,228 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               child: FadeTransition(
                 opacity: _fadeController,
                 child: SlideTransition(
-                  position: Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
-                      .animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut)),
+                  position: Tween<Offset>(
+                          begin: const Offset(0, 0.3), end: Offset.zero)
+                      .animate(CurvedAnimation(
+                          parent: _slideController, curve: Curves.easeOut)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                  const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                  // Logo Section
-                  Center(
-                    child: Column(
-                      children: [
-                        Hero(
-                          tag: 'logo',
-                          child: Container(
-                            width: Responsive.sp(context, 90),
-                            height: Responsive.sp(context, 90),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [AppColors.primary, AppColors.primaryLight],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(Responsive.sp(context, 24)),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withOpacity(0.4),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
+                      // Logo Section
+                      Center(
+                        child: Column(
+                          children: [
+                            Hero(
+                              tag: 'logo',
+                              child: Container(
+                                width: Responsive.sp(context, 90),
+                                height: Responsive.sp(context, 90),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      AppColors.primary,
+                                      AppColors.primaryLight
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(
+                                      Responsive.sp(context, 24)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withOpacity(0.4),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 10),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.auto_stories_rounded,
-                              color: Colors.white,
-                              size: Responsive.sp(context, 45),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'VIDYASARATHI',
-                          style: TextStyle(
-                            fontSize: Responsive.sp(context, 28),
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textDark,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Academic Management System',
-                          style: TextStyle(
-                            fontSize: Responsive.sp(context, 13),
-                            color: AppColors.textMid,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 48),
-
-                  // Welcome Section
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Welcome Back',
-                        style: TextStyle(
-                          fontSize: Responsive.sp(context, 22),
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Sign in to access your dashboard',
-                        style: TextStyle(
-                          fontSize: Responsive.sp(context, 14),
-                          color: AppColors.textLight,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  // Error Alert
-                  if (_errorMessage != null)
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.red.withOpacity(0.4),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.error_rounded,
-                            color: Colors.red.shade700,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              _errorMessage!,
-                              style: TextStyle(
-                                color: Colors.red.shade700,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                                child: Icon(
+                                  Icons.auto_stories_rounded,
+                                  color: Colors.white,
+                                  size: Responsive.sp(context, 45),
+                                ),
                               ),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              'VIDYASARATHI',
+                              style: TextStyle(
+                                fontSize: Responsive.sp(context, 28),
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textDark,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Academic Management System',
+                              style: TextStyle(
+                                fontSize: Responsive.sp(context, 13),
+                                color: AppColors.textMid,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 48),
+
+                      // Welcome Section
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Welcome Back',
+                            style: TextStyle(
+                              fontSize: Responsive.sp(context, 22),
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textDark,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Sign in to access your dashboard',
+                            style: TextStyle(
+                              fontSize: Responsive.sp(context, 14),
+                              color: AppColors.textLight,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                         ],
                       ),
-                    ),
 
-                  if (_errorMessage != null) const SizedBox(height: 20),
+                      const SizedBox(height: 28),
 
-                  // Email Input Field
-                  _buildInputField(
-                    controller: _emailController,
-                    focusNode: _emailFocusNode,
-                    label: 'Email Address',
-                    hint: 'student@vidya.com',
-                    icon: Icons.email_outlined,
-                    isLoading: _isLoading,
-                    error: _emailError,
-                    keyboardType: TextInputType.emailAddress,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                    ],
-                  ),
-
-                  const SizedBox(height: 18),
-
-                  // Password Input Field
-                  _buildPasswordField(),
-
-                  if (_passwordController.text.isNotEmpty && !_isLoading)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: _buildPasswordStrengthIndicator(
-                        _getPasswordStrength(_passwordController.text),
-                      ),
-                    ),
-
-                  const SizedBox(height: 18),
-
-                  // Remember Me & Forgot Password
-                  Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      GestureDetector(
-                        onTap: _isLoading ? null : () => setState(() => _rememberMe = !_rememberMe),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
+                      // Error Alert
+                      if (_errorMessage != null)
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.red.withOpacity(0.4),
+                              width: 1,
+                            ),
+                          ),
                           child: Row(
-                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Container(
-                                width: 20,
-                                height: 20,
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: _rememberMe
-                                        ? AppColors.primary
-                                        : AppColors.textLight.withOpacity(0.3),
-                                    width: 2,
-                                  ),
-                                  borderRadius: BorderRadius.circular(6),
-                                  color: _rememberMe ? AppColors.primary : Colors.transparent,
-                                ),
-                                child: _rememberMe
-                                    ? const Icon(
-                                        Icons.check_rounded,
-                                        color: Colors.white,
-                                        size: 14,
-                                      )
-                                    : null,
+                              Icon(
+                                Icons.error_rounded,
+                                color: Colors.red.shade700,
+                                size: 18,
                               ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Remember me',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textMid,
-                                  fontWeight: FontWeight.w500,
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: TextStyle(
+                                    color: Colors.red.shade700,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
+
+                      if (_errorMessage != null) const SizedBox(height: 20),
+
+                      // Email Input Field
+                      _buildInputField(
+                        controller: _emailController,
+                        focusNode: _emailFocusNode,
+                        label: 'Email Address',
+                        hint: 'student@vidya.com',
+                        icon: Icons.email_outlined,
+                        isLoading: _isLoading,
+                        error: _emailError,
+                        keyboardType: TextInputType.emailAddress,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                        ],
                       ),
-                      TextButton(
-                        onPressed: _isLoading
-                            ? null
-                            : () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Password reset link sent to your email'),
-                                    duration: Duration(seconds: 3),
-                                  ),
-                                );
-                              },
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const Text(
-                          'Forgot Password?',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
+
+                      const SizedBox(height: 18),
+
+                      // Password Input Field
+                      _buildPasswordField(),
+
+                      if (_passwordController.text.isNotEmpty && !_isLoading)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: _buildPasswordStrengthIndicator(
+                            _getPasswordStrength(_passwordController.text),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      const SizedBox(height: 28),
 
-                  const SizedBox(height: 28),
-
-                  // Sign In Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _handleLogin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        elevation: _isLoading ? 0 : 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  height: 18,
-                                  width: 18,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2.5,
-                                  ),
-                                ),
-                                SizedBox(width: 12),
-                                Text(
-                                  'Signing In...',
+                      // Sign In Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _handleLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            disabledBackgroundColor:
+                                AppColors.primary.withOpacity(0.5),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            elevation: _isLoading ? 0 : 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: _isLoading
+                              ? const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      height: 18,
+                                      width: 18,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Text(
+                                      'Signing In...',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : const Text(
+                                  'Sign In',
                                   style: TextStyle(
                                     fontSize: 15,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w700,
                                     color: Colors.white,
+                                    letterSpacing: 0.3,
                                   ),
                                 ),
-                              ],
-                            )
-                          : const Text(
-                              'Sign In',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                    ),
-                  ),
-
-
-
-                  // Footer
-                  Center(
-                    child: Text(
-                      'Secure login powered by Supabase',
-                      style: TextStyle(
-                        fontSize: Responsive.sp(context, 11),
-                        color: AppColors.textLight,
-                        fontWeight: FontWeight.w400,
+                        ),
                       ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 16),
-                ],
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  ),
-);
-}
+    );
+  }
 
   Widget _buildInputField({
     required TextEditingController controller,
@@ -519,7 +436,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 fontSize: Responsive.sp(context, 13),
               ),
               filled: true,
-              fillColor: error != null ? Colors.red.withOpacity(0.05) : Colors.white,
+              fillColor:
+                  error != null ? Colors.red.withOpacity(0.05) : Colors.white,
               prefixIcon: Icon(
                 icon,
                 color: error != null ? Colors.red : AppColors.primary,
@@ -535,23 +453,30 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: error != null ? Colors.red.withOpacity(0.3) : Colors.transparent,
+                  color: error != null
+                      ? Colors.red.withOpacity(0.3)
+                      : Colors.transparent,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: error != null ? Colors.red.withOpacity(0.3) : Colors.transparent,
+                  color: error != null
+                      ? Colors.red.withOpacity(0.3)
+                      : Colors.transparent,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: error != null ? Colors.red.withOpacity(0.5) : AppColors.primary,
+                  color: error != null
+                      ? Colors.red.withOpacity(0.5)
+                      : AppColors.primary,
                   width: 2,
                 ),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               errorText: null,
             ),
           ),
@@ -599,16 +524,21 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 fontSize: 13,
               ),
               filled: true,
-              fillColor: _passwordError != null ? Colors.red.withOpacity(0.05) : Colors.white,
+              fillColor: _passwordError != null
+                  ? Colors.red.withOpacity(0.05)
+                  : Colors.white,
               prefixIcon: Icon(
                 Icons.lock_outlined,
                 color: _passwordError != null ? Colors.red : AppColors.primary,
                 size: 20,
               ),
               suffixIcon: GestureDetector(
-                onTap: () => setState(() => _obscurePassword = !_obscurePassword),
+                onTap: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
                 child: Icon(
-                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  _obscurePassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   color: AppColors.primary,
                   size: 20,
                 ),
@@ -616,23 +546,30 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: _passwordError != null ? Colors.red.withOpacity(0.3) : Colors.transparent,
+                  color: _passwordError != null
+                      ? Colors.red.withOpacity(0.3)
+                      : Colors.transparent,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: _passwordError != null ? Colors.red.withOpacity(0.3) : Colors.transparent,
+                  color: _passwordError != null
+                      ? Colors.red.withOpacity(0.3)
+                      : Colors.transparent,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: _passwordError != null ? Colors.red.withOpacity(0.5) : AppColors.primary,
+                  color: _passwordError != null
+                      ? Colors.red.withOpacity(0.5)
+                      : AppColors.primary,
                   width: 2,
                 ),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               errorText: null,
             ),
           ),

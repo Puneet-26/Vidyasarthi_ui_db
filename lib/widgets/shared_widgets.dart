@@ -3,16 +3,18 @@ import '../theme/app_theme.dart';
 
 // ─── Responsive Helper ──────────────────────────────────────────────────────
 class Responsive {
-  static double screenWidth(BuildContext context) => MediaQuery.of(context).size.width;
-  static double screenHeight(BuildContext context) => MediaQuery.of(context).size.height;
+  static double screenWidth(BuildContext context) =>
+      MediaQuery.of(context).size.width;
+  static double screenHeight(BuildContext context) =>
+      MediaQuery.of(context).size.height;
 
   // Scale based on a standard mobile width of 375
   // Clamped to avoid extreme scaling on very large or very small screens
   static double scale(BuildContext context) {
     double w = screenWidth(context);
     if (w > 1200) return 1.6; // Large Desktop
-    if (w > 900) return 1.4;  // Desktop
-    if (w > 600) return 1.2;  // Tablet
+    if (w > 900) return 1.4; // Desktop
+    if (w > 600) return 1.2; // Tablet
     return (w / 375).clamp(0.9, 1.1); // Mobile
   }
 
@@ -20,8 +22,10 @@ class Responsive {
   static double sp(BuildContext context, double size) => size * scale(context);
 
   // Relative Width/Height
-  static double w(BuildContext context, double percentage) => screenWidth(context) * (percentage / 100);
-  static double h(BuildContext context, double percentage) => screenHeight(context) * (percentage / 100);
+  static double w(BuildContext context, double percentage) =>
+      screenWidth(context) * (percentage / 100);
+  static double h(BuildContext context, double percentage) =>
+      screenHeight(context) * (percentage / 100);
 }
 
 // ─── Gradient Background Scaffold ──────────────────────────────────────────
@@ -356,9 +360,12 @@ class VidyaBottomNav extends StatelessWidget {
                 onTap: () => onTap(i),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isActive ? activeColor.withOpacity(0.12) : Colors.transparent,
+                    color: isActive
+                        ? activeColor.withOpacity(0.12)
+                        : Colors.transparent,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
@@ -408,7 +415,7 @@ class BottomNavItem {
 class DashboardHeader extends StatelessWidget {
   final String name;
   final String role;
-  final String subtitle;
+  final String? subtitle;
   final Color roleColor;
   final VoidCallback? onNotification;
   final int notificationCount;
@@ -418,7 +425,7 @@ class DashboardHeader extends StatelessWidget {
     super.key,
     required this.name,
     required this.role,
-    required this.subtitle,
+    this.subtitle,
     required this.roleColor,
     this.onNotification,
     this.notificationCount = 0,
@@ -439,14 +446,15 @@ class DashboardHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: Responsive.sp(context, 12),
-                  color: AppColors.textLight,
+              if (subtitle != null)
+                Text(
+                  subtitle!,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: Responsive.sp(context, 12),
+                    color: AppColors.textLight,
+                  ),
                 ),
-              ),
               Text(
                 name,
                 style: TextStyle(
@@ -476,38 +484,39 @@ class DashboardHeader extends StatelessWidget {
           ),
         ),
         if (showNotification)
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            GestureDetector(
-              onTap: onNotification,
-              child: const GlassCard(
-                padding: EdgeInsets.all(10),
-                child: Icon(Icons.notifications_outlined, color: AppColors.textDark, size: 22),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              GestureDetector(
+                onTap: onNotification,
+                child: const GlassCard(
+                  padding: EdgeInsets.all(10),
+                  child: Icon(Icons.notifications_outlined,
+                      color: AppColors.textDark, size: 22),
+                ),
               ),
-            ),
-            if (notificationCount > 0)
-              Positioned(
-                top: -4,
-                right: -4,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: AppColors.error,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    '$notificationCount',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
+              if (notificationCount > 0)
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: AppColors.error,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '$notificationCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
-              ),
-          ],
-        ),
+            ],
+          ),
       ],
     );
   }
