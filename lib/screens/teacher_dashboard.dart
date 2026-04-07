@@ -844,8 +844,9 @@ class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
                     width: 48,
                     margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
-                      color:
-                          isSelected ? AppColors.teacherAccent : Colors.white,
+                      color: isSelected
+                          ? AppColors.teacherAccent.withValues(alpha: 0.12)
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected
@@ -869,7 +870,7 @@ class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
                           style: TextStyle(
                               fontSize: 10,
                               color: isSelected
-                                  ? Colors.white70
+                                  ? AppColors.teacherAccent
                                   : AppColors.textLight),
                         ),
                         Text(
@@ -878,7 +879,7 @@ class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: isSelected
-                                  ? Colors.white
+                                  ? AppColors.teacherAccent
                                   : AppColors.textDark),
                         ),
                         if (hasRecord)
@@ -887,7 +888,7 @@ class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
                               height: 6,
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? Colors.white
+                                    ? AppColors.teacherAccent
                                     : AppColors.success,
                                 shape: BoxShape.circle,
                               )),
@@ -1023,7 +1024,9 @@ class _ToggleBtn extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? AppColors.teacherAccent : Colors.transparent,
+            color: selected
+                ? AppColors.teacherAccent.withValues(alpha: 0.12)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -1032,7 +1035,7 @@ class _ToggleBtn extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : AppColors.textMid,
+              color: selected ? AppColors.teacherAccent : AppColors.textMid,
             ),
           ),
         ),

@@ -47,9 +47,26 @@ class AuthService {
       }
 
       // Authentication successful
+      // Map credential -> user row (used by FK relations like students.user_id).
+      String? userId;
+      try {
+        final userRow = await _client
+            .from('users')
+            .select('id')
+            .eq('credential_id', response['id'])
+            .maybeSingle();
+        userId = userRow?['id'];
+      } catch (_) {
+        // If users table isn't set up, we can still allow role-based routing.
+      }
+
       return {
         'success': true,
-        'userId': response['id'],
+        // Backwards compatible:
+        // - credentialId: auth_credentials.id
+        // - userId: users.id (UUID) when available
+        'credentialId': response['id'],
+        'userId': userId ?? response['id'],
         'email': response['email'],
         'role': response['role'],
         'name': response['name'],
@@ -71,9 +88,9 @@ class AuthService {
     String? phoneNumber,
   }) async {
     try {
-      final id = _generateUuid();
-      final response = await _client.from('auth_credentials').insert({
-        'id': id,
+      final credentialId = _generateUuid();
+      final insertedCreds = await _client.from('auth_credentials').insert({
+        'id': credentialId,
         'email': email.trim().toLowerCase(),
         'password_hash': password,
         'name': name,
@@ -81,13 +98,36 @@ class AuthService {
         'created_at': DateTime.now().toIso8601String(),
       }).select();
 
-      if (response.isEmpty) {
+      if (insertedCreds.isEmpty) {
         throw Exception('Sign up failed');
+      }
+
+      // Create matching users row (needed by schema FKs like students.user_id -> users.id).
+      // If the users table doesn't exist in a given environment, we still consider signup ok.
+      String? userId;
+      try {
+        final insertedUsers = await _client.from('users').insert({
+          // Use the same UUID string; Postgres can cast it into UUID.
+          'id': credentialId,
+          'email': email.trim().toLowerCase(),
+          'name': name,
+          'role': role,
+          'phone_number': phoneNumber,
+          'is_active': true,
+          'credential_id': credentialId,
+          'created_at': DateTime.now().toIso8601String(),
+        }).select();
+        if (insertedUsers.isNotEmpty) {
+          userId = insertedUsers[0]['id'];
+        }
+      } catch (_) {
+        // Ignore if users table isn't set up; some environments may only use auth_credentials.
       }
 
       return {
         'success': true,
-        'userId': response[0]['id'],
+        'credentialId': insertedCreds[0]['id'],
+        'userId': userId ?? insertedCreds[0]['id'],
         'email': email,
         'role': role,
       };

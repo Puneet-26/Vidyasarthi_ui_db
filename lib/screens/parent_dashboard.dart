@@ -374,6 +374,11 @@ class _ParentChildrenPage extends StatelessWidget {
         {'label': 'Chemistry', 'value': 0.91},
         {'label': 'Mathematics', 'value': 0.76},
       ],
+      'tests': [
+        {'label': 'Unit Test 1 - Physics (85/100)', 'value': 0.85},
+        {'label': 'Unit Test 1 - Chemistry (91/100)', 'value': 0.91},
+        {'label': 'Unit Test 1 - Mathematics (76/100)', 'value': 0.76},
+      ],
     },
     {
       'name': 'Priya Sharma',
@@ -385,11 +390,21 @@ class _ParentChildrenPage extends StatelessWidget {
         {'label': 'Science', 'value': 0.68},
         {'label': 'Mathematics', 'value': 0.75},
       ],
+      'tests': [
+        {'label': 'Unit Test 1 - English (72/100)', 'value': 0.72},
+        {'label': 'Unit Test 1 - Science (68/100)', 'value': 0.68},
+        {'label': 'Unit Test 1 - Mathematics (75/100)', 'value': 0.75},
+      ],
     },
   ];
 
   @override
   Widget build(BuildContext context) {
+    final subjectColors = [
+      AppColors.primary,
+      AppColors.info,
+      AppColors.success
+    ];
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -399,6 +414,7 @@ class _ParentChildrenPage extends StatelessWidget {
           const SizedBox(height: 16),
           ..._childrenData
               .map((child) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       GlassCard(
                         padding: const EdgeInsets.all(16),
@@ -413,50 +429,76 @@ class _ParentChildrenPage extends StatelessWidget {
                                     size: 48),
                                 const SizedBox(width: 14),
                                 Expanded(
-                                    child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(child['name'] as String,
-                                        style: TextStyle(
-                                            fontSize:
-                                                Responsive.sp(context, 16),
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColors.textDark)),
-                                    Text(
-                                        '${child['class']} • Roll No. ${child['rollNo']}',
-                                        style: TextStyle(
-                                            fontSize:
-                                                Responsive.sp(context, 12),
-                                            color: AppColors.textMid)),
-                                  ],
-                                )),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(child['name'] as String,
+                                          style: TextStyle(
+                                              fontSize:
+                                                  Responsive.sp(context, 16),
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.textDark)),
+                                      Text(
+                                          '${child['class']} • Roll No. ${child['rollNo']}',
+                                          style: TextStyle(
+                                              fontSize:
+                                                  Responsive.sp(context, 12),
+                                              color: AppColors.textMid)),
+                                    ],
+                                  ),
+                                ),
                               ],
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 14),
+                            Text('Academic Progress',
+                                style: TextStyle(
+                                    fontSize: Responsive.sp(context, 12),
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textMid)),
+                            const SizedBox(height: 10),
                             ...(child['subjects'] as List)
                                 .asMap()
                                 .entries
                                 .map((e) {
-                              final idx = e.key;
                               final subject = e.value;
-                              final colors = [
-                                AppColors.primary,
-                                AppColors.info,
-                                AppColors.success
-                              ];
-                              return Column(
-                                children: [
-                                  LabeledProgressBar(
-                                    label:
-                                        '${subject['label']} (${((subject['value'] as double) * 100).toInt()}%)',
-                                    value: subject['value'] as double,
-                                    color: colors[idx % colors.length],
-                                  ),
-                                  if (idx <
-                                      (child['subjects'] as List).length - 1)
-                                    const SizedBox(height: 10),
-                                ],
-                              );
+                              return Column(children: [
+                                LabeledProgressBar(
+                                  label:
+                                      '${subject['label']} (${((subject['value'] as double) * 100).toInt()}%)',
+                                  value: subject['value'] as double,
+                                  color: subjectColors[
+                                      e.key % subjectColors.length],
+                                ),
+                                if (e.key <
+                                    (child['subjects'] as List).length - 1)
+                                  const SizedBox(height: 10),
+                              ]);
+                            }).toList(),
+                            const SizedBox(height: 16),
+                            const Divider(color: AppColors.divider),
+                            const SizedBox(height: 12),
+                            Text('Unit Test Results',
+                                style: TextStyle(
+                                    fontSize: Responsive.sp(context, 12),
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textMid)),
+                            const SizedBox(height: 10),
+                            ...(child['tests'] as List)
+                                .asMap()
+                                .entries
+                                .map((e) {
+                              final test = e.value;
+                              return Column(children: [
+                                LabeledProgressBar(
+                                  label: test['label'] as String,
+                                  value: test['value'] as double,
+                                  color: subjectColors[
+                                      e.key % subjectColors.length],
+                                ),
+                                if (e.key < (child['tests'] as List).length - 1)
+                                  const SizedBox(height: 10),
+                              ]);
                             }).toList(),
                           ],
                         ),
@@ -465,39 +507,88 @@ class _ParentChildrenPage extends StatelessWidget {
                     ],
                   ))
               .toList(),
-          const SectionHeader(title: 'Recent Test Results'),
-          const SizedBox(height: 12),
-          const GlassCard(
-            child: Column(
-              children: [
-                LabeledProgressBar(
-                    label: 'Unit Test 1 - Physics (85/100)',
-                    value: 0.85,
-                    color: AppColors.primary),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'Unit Test 1 - Chemistry (91/100)',
-                    value: 0.91,
-                    color: AppColors.info),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'Unit Test 1 - Mathematics (76/100)',
-                    value: 0.76,
-                    color: AppColors.success),
-              ],
-            ),
-          ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 14),
         ],
       ),
     );
   }
 }
 
-class _ParentFeesPage extends StatelessWidget {
+class _ParentFeesPage extends StatefulWidget {
   const _ParentFeesPage();
   @override
+  State<_ParentFeesPage> createState() => _ParentFeesPageState();
+}
+
+class _ParentFeesPageState extends State<_ParentFeesPage> {
+  int _selectedChild = 0;
+
+  static const _children = [
+    {'name': 'Aryan Sharma', 'initials': 'AS', 'class': 'Class 10-A'},
+    {'name': 'Priya Sharma', 'initials': 'PS', 'class': 'Class 6-B'},
+  ];
+
+  static const _feeData = [
+    {
+      'title': 'Annual Fee 2025-26',
+      'status': 'PARTIAL',
+      'statusColor': 'warning',
+      'rows': [
+        {'label': 'Tuition Fee', 'amount': '₹45,000', 'paid': true},
+        {'label': 'Q4 Installment', 'amount': '₹12,500', 'paid': false},
+      ],
+      'payLabel': 'Pay Q4 Now',
+    },
+    {
+      'title': 'Annual Fee 2025-26',
+      'status': 'DUE',
+      'statusColor': 'error',
+      'rows': [
+        {'label': 'Tuition Fee', 'amount': '₹30,000', 'paid': true},
+        {'label': 'Q3 Installment', 'amount': '₹8,500', 'paid': false},
+      ],
+      'payLabel': 'Pay Q3 Now',
+    },
+  ];
+
+  static const _paymentHistory = [
+    [
+      {
+        'amount': '₹25,000',
+        'method': 'UPI',
+        'date': 'Jan 1, 2026',
+        'ref': 'UPI-20260101-001'
+      },
+      {
+        'amount': '₹20,000',
+        'method': 'Bank Transfer',
+        'date': 'Feb 1, 2026',
+        'ref': 'NEFT-20260201-001'
+      },
+    ],
+    [
+      {
+        'amount': '₹15,000',
+        'method': 'UPI',
+        'date': 'Jan 5, 2026',
+        'ref': 'UPI-20260105-002'
+      },
+      {
+        'amount': '₹15,000',
+        'method': 'Cash',
+        'date': 'Feb 5, 2026',
+        'ref': 'CASH-20260205-002'
+      },
+    ],
+  ];
+
+  @override
   Widget build(BuildContext context) {
+    final fee = _feeData[_selectedChild];
+    final history = _paymentHistory[_selectedChild];
+    final isWarning = fee['statusColor'] == 'warning';
+    final statusColor = isWarning ? AppColors.warning : AppColors.error;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -505,21 +596,139 @@ class _ParentFeesPage extends StatelessWidget {
         children: [
           const SectionHeader(title: 'Fee Details'),
           const SizedBox(height: 14),
-          _FeeCard(),
+          // Child selector
+          Row(
+            children: List.generate(_children.length, (i) {
+              final isSelected = i == _selectedChild;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedChild = i),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: EdgeInsets.only(right: i == 0 ? 8 : 0),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 10, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.parentAccent
+                          : Colors.white.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.parentAccent
+                              .withValues(alpha: isSelected ? 0.25 : 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        GradientAvatar(
+                          initials: _children[i]['initials']!,
+                          color: isSelected
+                              ? Colors.white.withValues(alpha: 0.4)
+                              : AppColors.parentAccent,
+                          size: 32,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(_children[i]['name']!.split(' ')[0],
+                                  style: TextStyle(
+                                      fontSize: Responsive.sp(context, 13),
+                                      fontWeight: FontWeight.w700,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : AppColors.textDark)),
+                              Text(_children[i]['class']!,
+                                  style: TextStyle(
+                                      fontSize: Responsive.sp(context, 10),
+                                      color: isSelected
+                                          ? Colors.white70
+                                          : AppColors.textLight)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 16),
+          // Fee card
+          GlassCard(
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(fee['title'] as String,
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textDark)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(fee['status'] as String,
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: statusColor)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Divider(color: AppColors.divider),
+                const SizedBox(height: 12),
+                ...(fee['rows'] as List)
+                    .map((row) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _FeeRow(
+                            label: row['label'] as String,
+                            amount: row['amount'] as String,
+                            paid: row['paid'] as bool,
+                          ),
+                        ))
+                    .toList(),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {},
+                    icon: const Icon(Icons.payment_rounded, size: 18),
+                    label: Text(fee['payLabel'] as String),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.parentAccent,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 24),
           const SectionHeader(title: 'Payment History'),
           const SizedBox(height: 12),
-          const _PaymentHistoryTile(
-              amount: '₹25,000',
-              method: 'UPI',
-              date: 'Jan 1, 2026',
-              ref: 'UPI-20240101-001'),
-          const SizedBox(height: 8),
-          const _PaymentHistoryTile(
-              amount: '₹25,000',
-              method: 'Bank Transfer',
-              date: 'Feb 1, 2026',
-              ref: 'NEFT-20240201-001'),
+          ...history
+              .map((p) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _PaymentHistoryTile(
+                      amount: p['amount']!,
+                      method: p['method']!,
+                      date: p['date']!,
+                      ref: p['ref']!,
+                    ),
+                  ))
+              .toList(),
           const SizedBox(height: 30),
         ],
       ),
@@ -830,66 +1039,6 @@ class _PillStat extends StatelessWidget {
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
-      ),
-    );
-  }
-}
-
-class _FeeCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Annual Fee 2025-26',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'PAID',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.success,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(color: AppColors.divider),
-          const SizedBox(height: 12),
-          const _FeeRow(label: 'Tuition Fee', amount: '₹45,000', paid: true),
-          const SizedBox(height: 8),
-          const _FeeRow(
-              label: 'Q4 Installment', amount: '₹12,500', paid: false),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.payment_rounded, size: 18),
-              label: const Text('Pay Q4 Now'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.parentAccent,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

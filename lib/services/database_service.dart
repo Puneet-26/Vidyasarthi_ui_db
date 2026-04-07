@@ -13,6 +13,9 @@ class DatabaseService {
   SupabaseClient get _client => Supabase.instance.client;
   SupabaseClient get client => _client;
 
+  String _tsId(String prefix) =>
+      '${prefix}_${DateTime.now().microsecondsSinceEpoch}';
+
   // ==================== SUBJECTS ====================
   Future<List<Subject>> getAllSubjects() async {
     try {
@@ -89,8 +92,12 @@ class DatabaseService {
   Future<bool> createStudent(Student student) async {
     try {
       final json = student.toJson();
-      if ((json['id'] as String).isEmpty) json.remove('id');
-      if ((json['user_id'] as String).isEmpty) json.remove('user_id');
+      // DB schema expects TEXT PK with no default, so always provide an id.
+      if ((json['id'] as String).isEmpty) json['id'] = _tsId('stu');
+      // user_id is NOT NULL in schema; if missing, fail fast with a clearer error.
+      if ((json['user_id'] as String).isEmpty) {
+        throw Exception('Missing user_id for student (users row not created)');
+      }
       await _client.from('students').insert(json);
       return true;
     } catch (e) {
@@ -102,7 +109,8 @@ class DatabaseService {
   Future<bool> createBatch(Batch batch) async {
     try {
       final json = batch.toJson();
-      if ((json['id'] as String).isEmpty) json.remove('id');
+      // DB schema expects TEXT PK with no default, so always provide an id.
+      if ((json['id'] as String).isEmpty) json['id'] = _tsId('batch');
       await _client.from('batches').insert(json);
       return true;
     } catch (e) {
