@@ -32,20 +32,21 @@ class AppUser {
       phoneNumber: json['phone_number'] ?? '',
       profileImage: json['profile_image'],
       isActive: json['is_active'] ?? true,
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+          json['created_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'email': email,
-    'name': name,
-    'role': role,
-    'phone_number': phoneNumber,
-    'profile_image': profileImage,
-    'is_active': isActive,
-    'created_at': createdAt.toIso8601String(),
-  };
+        'id': id,
+        'email': email,
+        'name': name,
+        'role': role,
+        'phone_number': phoneNumber,
+        'profile_image': profileImage,
+        'is_active': isActive,
+        'created_at': createdAt.toIso8601String(),
+      };
 }
 
 // Subject Model
@@ -72,11 +73,11 @@ class Subject {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'code': code,
-    'description': description,
-  };
+        'id': id,
+        'name': name,
+        'code': code,
+        'description': description,
+      };
 }
 
 // Batch/Class Model
@@ -101,17 +102,18 @@ class Batch {
       name: json['name'] ?? '',
       level: json['level'] ?? '',
       subjects: List<String>.from(json['subject_ids'] ?? []),
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+          json['created_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'level': level,
-    'subject_ids': subjects,
-    'created_at': createdAt.toIso8601String(),
-  };
+        'id': id,
+        'name': name,
+        'level': level,
+        'subject_ids': subjects,
+        'created_at': createdAt.toIso8601String(),
+      };
 }
 
 // Student Model
@@ -132,6 +134,11 @@ class Student {
   final String enrollmentStatus; // active, inactive, dropped
   final DateTime enrollmentDate;
   final String? profileImage;
+  final String rollNumber;
+  final DateTime dateOfBirth;
+  final String address;
+  final DateTime admissionDate;
+  final bool isActive;
 
   Student({
     required this.id,
@@ -149,6 +156,11 @@ class Student {
     required this.feeStatus,
     required this.enrollmentStatus,
     required this.enrollmentDate,
+    required this.rollNumber,
+    required this.dateOfBirth,
+    required this.address,
+    required this.admissionDate,
+    required this.isActive,
     this.profileImage,
   });
 
@@ -158,7 +170,7 @@ class Student {
       userId: json['user_id'] ?? '',
       name: json['name'] ?? '',
       email: json['email'] ?? '',
-      phoneNumber: json['phone'] ?? '',
+      phoneNumber: json['phone_number'] ?? '',
       parentPhone: json['parent_phone'] ?? '',
       parentName: json['parent_name'] ?? '',
       parentEmail: json['parent_email'] ?? '',
@@ -168,29 +180,44 @@ class Student {
       feesPaid: (json['fees_paid'] ?? 0).toDouble(),
       feeStatus: json['fee_status'] ?? 'pending',
       enrollmentStatus: json['enrollment_status'] ?? 'active',
-      enrollmentDate: DateTime.parse(json['enrollment_date'] ?? DateTime.now().toIso8601String()),
+      enrollmentDate: DateTime.parse(json['enrollment_date'] ??
+          json['admission_date'] ??
+          DateTime.now().toIso8601String()),
+      rollNumber: json['roll_number'] ?? '',
+      dateOfBirth: DateTime.parse(
+          json['date_of_birth'] ?? DateTime.now().toIso8601String()),
+      address: json['address'] ?? '',
+      admissionDate: DateTime.parse(
+          json['admission_date'] ?? DateTime.now().toIso8601String()),
+      isActive: json['is_active'] ?? true,
       profileImage: json['profile_image'],
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'user_id': userId,
-    'name': name,
-    'email': email,
-    'phone': phoneNumber,
-    'parent_phone': parentPhone,
-    'parent_name': parentName,
-    'parent_email': parentEmail,
-    'batch_id': batchId,
-    'subject_ids': subjectIds,
-    'total_fees': totalFees.toInt(),
-    'fees_paid': feesPaid.toInt(),
-    'fee_status': feeStatus,
-    'enrollment_status': enrollmentStatus,
-    'enrollment_date': enrollmentDate.toIso8601String(),
-    'profile_image': profileImage,
-  };
+        'id': id,
+        'user_id': userId,
+        'name': name,
+        'email': email,
+        'phone_number': phoneNumber,
+        'parent_phone': parentPhone,
+        'parent_name': parentName,
+        'parent_email': parentEmail,
+        'batch_id': batchId,
+        'subject_ids': subjectIds,
+        'total_fees': totalFees.toInt(),
+        'fees_paid': feesPaid.toInt(),
+        'fee_status': feeStatus,
+        'enrollment_status': enrollmentStatus,
+        'roll_number': rollNumber,
+        'date_of_birth':
+            dateOfBirth.toIso8601String().split('T')[0], // Date only
+        'address': address,
+        'admission_date':
+            admissionDate.toIso8601String().split('T')[0], // Date only
+        'is_active': isActive,
+        if (profileImage != null) 'profile_image': profileImage,
+      };
 }
 
 // Admission Model
@@ -230,26 +257,28 @@ class Admission {
       phoneNumber: json['phone'] ?? '',
       parentPhone: json['parent_phone'] ?? '',
       appliedBatchId: json['applied_batch_id'] ?? '',
-      requestedSubjectIds: List<String>.from(json['requested_subject_ids'] ?? []),
+      requestedSubjectIds:
+          List<String>.from(json['requested_subject_ids'] ?? []),
       status: json['status'] ?? 'pending',
-      appliedDate: DateTime.parse(json['applied_date'] ?? DateTime.now().toIso8601String()),
+      appliedDate: DateTime.parse(
+          json['applied_date'] ?? DateTime.now().toIso8601String()),
       notes: json['notes'],
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'student_name': studentName,
-    'parent_name': parentName,
-    'email': email,
-    'phone': phoneNumber,
-    'parent_phone': parentPhone,
-    'applied_batch_id': appliedBatchId,
-    'requested_subject_ids': requestedSubjectIds,
-    'status': status,
-    'applied_date': appliedDate.toIso8601String(),
-    'notes': notes,
-  };
+        'id': id,
+        'student_name': studentName,
+        'parent_name': parentName,
+        'email': email,
+        'phone': phoneNumber,
+        'parent_phone': parentPhone,
+        'applied_batch_id': appliedBatchId,
+        'requested_subject_ids': requestedSubjectIds,
+        'status': status,
+        'applied_date': appliedDate.toIso8601String(),
+        'notes': notes,
+      };
 }
 
 // TimeTable Model
@@ -289,22 +318,23 @@ class TimeTable {
       endTime: json['end_time'] ?? '',
       room: json['room'],
       proxyTeacherId: json['proxy_teacher_id'],
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+          json['created_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'batch_id': batchId,
-    'subject_id': subjectId,
-    'teacher_id': teacherId,
-    'day': day,
-    'start_time': startTime,
-    'end_time': endTime,
-    'room': room,
-    'proxy_teacher_id': proxyTeacherId,
-    'created_at': createdAt.toIso8601String(),
-  };
+        'id': id,
+        'batch_id': batchId,
+        'subject_id': subjectId,
+        'teacher_id': teacherId,
+        'day': day,
+        'start_time': startTime,
+        'end_time': endTime,
+        'room': room,
+        'proxy_teacher_id': proxyTeacherId,
+        'created_at': createdAt.toIso8601String(),
+      };
 }
 
 // Syllabus/Portion Model
@@ -335,19 +365,21 @@ class SyllabusItem {
       description: json['description'] ?? '',
       order: json['ordering'] ?? 0,
       isCompleted: json['is_completed'] ?? false,
-      completedDate: json['completed_date'] != null ? DateTime.parse(json['completed_date']) : null,
+      completedDate: json['completed_date'] != null
+          ? DateTime.parse(json['completed_date'])
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'subject_id': subjectId,
-    'topic': topic,
-    'description': description,
-    'ordering': order,
-    'is_completed': isCompleted,
-    'completed_date': completedDate?.toIso8601String(),
-  };
+        'id': id,
+        'subject_id': subjectId,
+        'topic': topic,
+        'description': description,
+        'ordering': order,
+        'is_completed': isCompleted,
+        'completed_date': completedDate?.toIso8601String(),
+      };
 }
 
 // Homework Model
@@ -382,23 +414,24 @@ class Homework {
       teacherId: json['teacher_id'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      dueDate: DateTime.parse(json['due_date'] ?? DateTime.now().toIso8601String()),
+      dueDate:
+          DateTime.parse(json['due_date'] ?? DateTime.now().toIso8601String()),
       assignedStudents: List<String>.from(json['assigned_students'] ?? []),
       status: json['status'] ?? 'active',
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'batch_id': batchId,
-    'subject_id': subjectId,
-    'teacher_id': teacherId,
-    'title': title,
-    'description': description,
-    'due_date': dueDate.toIso8601String(),
-    'assigned_students': assignedStudents,
-    'status': status,
-  };
+        'id': id,
+        'batch_id': batchId,
+        'subject_id': subjectId,
+        'teacher_id': teacherId,
+        'title': title,
+        'description': description,
+        'due_date': dueDate.toIso8601String(),
+        'assigned_students': assignedStudents,
+        'status': status,
+      };
 }
 
 // Homework Submission Model
@@ -425,19 +458,21 @@ class HomeworkSubmission {
       homeworkId: json['homework_id'] ?? '',
       studentId: json['student_id'] ?? '',
       status: json['status'] ?? 'pending',
-      submittedDate: json['submitted_date'] != null ? DateTime.parse(json['submitted_date']) : null,
+      submittedDate: json['submitted_date'] != null
+          ? DateTime.parse(json['submitted_date'])
+          : null,
       remarks: json['remarks'],
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'homework_id': homeworkId,
-    'student_id': studentId,
-    'status': status,
-    'submitted_date': submittedDate?.toIso8601String(),
-    'remarks': remarks,
-  };
+        'id': id,
+        'homework_id': homeworkId,
+        'student_id': studentId,
+        'status': status,
+        'submitted_date': submittedDate?.toIso8601String(),
+        'remarks': remarks,
+      };
 }
 
 // Test/Exam Model
@@ -469,22 +504,23 @@ class Test {
       subjectId: json['subject_id'] ?? '',
       teacherId: json['teacher_id'] ?? '',
       title: json['title'] ?? '',
-      testDate: DateTime.parse(json['test_date'] ?? DateTime.now().toIso8601String()),
+      testDate:
+          DateTime.parse(json['test_date'] ?? DateTime.now().toIso8601String()),
       totalMarks: json['total_marks'] ?? 100,
       status: json['status'] ?? 'scheduled',
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'batch_id': batchId,
-    'subject_id': subjectId,
-    'teacher_id': teacherId,
-    'title': title,
-    'test_date': testDate.toIso8601String(),
-    'total_marks': totalMarks,
-    'status': status,
-  };
+        'id': id,
+        'batch_id': batchId,
+        'subject_id': subjectId,
+        'teacher_id': teacherId,
+        'title': title,
+        'test_date': testDate.toIso8601String(),
+        'total_marks': totalMarks,
+        'status': status,
+      };
 }
 
 // Test Result Model
@@ -514,12 +550,12 @@ class TestResult {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'test_id': testId,
-    'student_id': studentId,
-    'marks_obtained': marksObtained,
-    'status': status,
-  };
+        'id': id,
+        'test_id': testId,
+        'student_id': studentId,
+        'marks_obtained': marksObtained,
+        'status': status,
+      };
 }
 
 // Fee Payment Model
@@ -548,21 +584,22 @@ class FeePayment {
       studentId: json['student_id'] ?? '',
       amount: (json['amount'] ?? 0).toDouble(),
       paymentMethod: json['payment_method'] ?? 'cash',
-      paymentDate: DateTime.parse(json['payment_date'] ?? DateTime.now().toIso8601String()),
+      paymentDate: DateTime.parse(
+          json['payment_date'] ?? DateTime.now().toIso8601String()),
       status: json['status'] ?? 'pending',
       reference: json['reference'] ?? '',
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'student_id': studentId,
-    'amount': amount.toInt(),
-    'payment_method': paymentMethod,
-    'payment_date': paymentDate.toIso8601String(),
-    'status': status,
-    'reference': reference,
-  };
+        'id': id,
+        'student_id': studentId,
+        'amount': amount.toInt(),
+        'payment_method': paymentMethod,
+        'payment_date': paymentDate.toIso8601String(),
+        'status': status,
+        'reference': reference,
+      };
 }
 
 // Broadcast/Notice Model
@@ -591,21 +628,22 @@ class Broadcast {
       title: json['title'] ?? '',
       message: json['message'] ?? '',
       sentBy: json['sent_by'] ?? '',
-      sentDate: DateTime.parse(json['sent_date'] ?? DateTime.now().toIso8601String()),
+      sentDate:
+          DateTime.parse(json['sent_date'] ?? DateTime.now().toIso8601String()),
       targetAudience: json['target_audience'] ?? 'all',
       priority: json['priority'] ?? 'normal',
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'message': message,
-    'sent_by': sentBy,
-    'sent_date': sentDate.toIso8601String(),
-    'target_audience': targetAudience,
-    'priority': priority,
-  };
+        'id': id,
+        'title': title,
+        'message': message,
+        'sent_by': sentBy,
+        'sent_date': sentDate.toIso8601String(),
+        'target_audience': targetAudience,
+        'priority': priority,
+      };
 }
 
 // Doubt/Query Model
@@ -639,7 +677,8 @@ class Doubt {
       subjectId: json['subject_id'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      raisedDate: DateTime.parse(json['raised_date'] ?? DateTime.now().toIso8601String()),
+      raisedDate: DateTime.parse(
+          json['raised_date'] ?? DateTime.now().toIso8601String()),
       status: json['status'] ?? 'open',
       resolvedBy: json['resolved_by'],
       resolution: json['resolution'],
@@ -647,19 +686,19 @@ class Doubt {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'student_id': studentId,
-    'subject_id': subjectId,
-    'title': title,
-    'description': description,
-    'raised_date': raisedDate.toIso8601String(),
-    'status': status,
-    'resolved_by': resolvedBy,
-    'resolution': resolution,
-  };
+        'id': id,
+        'student_id': studentId,
+        'subject_id': subjectId,
+        'title': title,
+        'description': description,
+        'raised_date': raisedDate.toIso8601String(),
+        'status': status,
+        'resolved_by': resolvedBy,
+        'resolution': resolution,
+      };
 }
 
-// Feedback Model
+// Feedback Model (parent -> admin)
 class Feedback {
   final String id;
   final String? studentId;
@@ -685,19 +724,76 @@ class Feedback {
       studentId: json['student_id'],
       parentId: json['parent_id'] ?? '',
       message: json['message'] ?? '',
-      submittedDate: DateTime.parse(json['submitted_date'] ?? DateTime.now().toIso8601String()),
+      submittedDate: DateTime.parse(
+          json['submitted_date'] ?? DateTime.now().toIso8601String()),
       status: json['status'] ?? 'submitted',
       adminNotes: json['admin_notes'],
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'student_id': studentId,
-    'parent_id': parentId,
-    'message': message,
-    'submitted_date': submittedDate.toIso8601String(),
-    'status': status,
-    'admin_notes': adminNotes,
-  };
+        'id': id,
+        'student_id': studentId,
+        'parent_id': parentId,
+        'message': message,
+        'submitted_date': submittedDate.toIso8601String(),
+        'status': status,
+        'admin_notes': adminNotes,
+      };
+}
+
+// Teacher Feedback Model (teacher -> parent about student)
+class TeacherFeedback {
+  final String id;
+  final String teacherId;
+  final String teacherName;
+  final String studentId;
+  final String studentName;
+  final String subjectId;
+  final String subjectName;
+  final String message;
+  final String category; // academic, behaviour, attendance, general
+  final DateTime createdAt;
+
+  TeacherFeedback({
+    required this.id,
+    required this.teacherId,
+    required this.teacherName,
+    required this.studentId,
+    required this.studentName,
+    required this.subjectId,
+    required this.subjectName,
+    required this.message,
+    required this.category,
+    required this.createdAt,
+  });
+
+  factory TeacherFeedback.fromJson(Map<String, dynamic> json) {
+    return TeacherFeedback(
+      id: json['id'] ?? '',
+      teacherId: json['teacher_id'] ?? '',
+      teacherName: json['teacher_name'] ?? '',
+      studentId: json['student_id'] ?? '',
+      studentName: json['student_name'] ?? '',
+      subjectId: json['subject_id'] ?? '',
+      subjectName: json['subject_name'] ?? '',
+      message: json['message'] ?? '',
+      category: json['category'] ?? 'general',
+      createdAt: DateTime.parse(
+          json['created_at'] ?? DateTime.now().toIso8601String()),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'teacher_id': teacherId,
+        'teacher_name': teacherName,
+        'student_id': studentId,
+        'student_name': studentName,
+        'subject_id': subjectId,
+        'subject_name': subjectName,
+        'message': message,
+        'category': category,
+        'created_at': createdAt.toIso8601String(),
+      };
 }

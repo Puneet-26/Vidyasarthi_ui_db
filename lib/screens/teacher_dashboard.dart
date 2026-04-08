@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
+import '../services/database_service.dart';
+import '../models/models.dart';
 import 'login_screen.dart';
 import 'placeholder_screens.dart';
 
@@ -475,7 +477,7 @@ class _ClassDetailPageState extends State<_ClassDetailPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -515,6 +517,7 @@ class _ClassDetailPageState extends State<_ClassDetailPage>
           tabs: const [
             Tab(icon: Icon(Icons.fact_check_outlined), text: 'Attendance'),
             Tab(icon: Icon(Icons.assessment_outlined), text: 'Marks'),
+            Tab(icon: Icon(Icons.feedback_outlined), text: 'Feedback'),
           ],
         ),
       ),
@@ -527,6 +530,7 @@ class _ClassDetailPageState extends State<_ClassDetailPage>
               present: widget.present,
               status: widget.attendanceStatus),
           _ClassMarksTab(batch: widget.batch),
+          _ClassFeedbackTab(batch: widget.batch),
         ],
       ),
     );
@@ -2239,6 +2243,260 @@ class _SubmissionItem extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ─── Teacher Feedback Tab ─────────────────────────────────────────────────────
+class _ClassFeedbackTab extends StatefulWidget {
+  final String batch;
+  const _ClassFeedbackTab({required this.batch});
+  @override
+  State<_ClassFeedbackTab> createState() => _ClassFeedbackTabState();
+}
+
+class _ClassFeedbackTabState extends State<_ClassFeedbackTab> {
+  final _db = DatabaseService();
+
+  // Sample students for this class (in real app, load from DB by batch)
+  final List<Map<String, String>> _students = const [
+    {'id': 'stu_001', 'name': 'Aryan Sharma'},
+    {'id': 'stu_002', 'name': 'Priya Singh'},
+  ];
+
+  List<TeacherFeedback> _feedbacks = [];
+  bool _loading = true;
+
+  // Teacher info (in real app, pass from login session)
+  static const _teacherId = 'a0000001-0000-0000-0000-000000000005';
+  static const _teacherName = 'Mrs. Priya Sharma';
+  static const _subjectId = 'subj_chemistry';
+  static const _subjectName = 'Chemistry';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFeedbacks();
+  }
+
+  Future<void> _loadFeedbacks() async {
+    setState(() => _loading = true);
+    // Load feedback for all students in this batch
+    final List<TeacherFeedback> all = [];
+    for (final s in _students) {
+      final f = await _db.getTeacherFeedbackForStudent(s['id']!);
+      all.addAll(f);
+    }
+    all.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    if (mounted)
+      setState(() {
+        _feedbacks = all;
+        _loading = false;
+      });
+  }
+
+  void _showAddFeedbackDialog() {
+    String? selectedStudentId;
+    String selectedCategory = 'academic';
+    final msgCtrl = TextEditingController();
+
+    showDialog(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
+              builder: (ctx, setS) => AlertDialog(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                title: const Text('Send Feedback to Parent',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                content: SingleChildScrollView(
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                        labelText: 'Student', border: OutlineInputBorder()),
+                    items: _students
+                        .map((s) => DropdownMenuItem(
+                            value: s['id'], child: Text(s['name']!)))
+                        .toList(),
+                    onChanged: (v) => setS(() => selectedStudentId = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory,
+                    decoration: const InputDecoration(
+                        labelText: 'Category', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(
+                          value: 'academic', child: Text('Academic')),
+                      DropdownMenuItem(
+                          value: 'behaviour', child: Text('Behaviour')),
+                      DropdownMenuItem(
+                          value: 'attendance', child: Text('Attendance')),
+                      DropdownMenuItem(
+                          value: 'general', child: Text('General')),
+                    ],
+                    onChanged: (v) => setS(() => selectedCategory = v!),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: msgCtrl,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                        labelText: 'Message to Parent',
+                        border: OutlineInputBorder(),
+                        alignLabelWithHint: true),
+                  ),
+                ])),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancel')),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.teacherAccent,
+                        foregroundColor: Colors.white),
+                    onPressed: () async {
+                      if (selectedStudentId == null ||
+                          msgCtrl.text.trim().isEmpty) return;
+                      final studentName = _students.firstWhere(
+                          (s) => s['id'] == selectedStudentId)['name']!;
+                      final feedback = TeacherFeedback(
+                        id: 'tf_${DateTime.now().microsecondsSinceEpoch}',
+                        teacherId: _teacherId,
+                        teacherName: _teacherName,
+                        studentId: selectedStudentId!,
+                        studentName: studentName,
+                        subjectId: _subjectId,
+                        subjectName: _subjectName,
+                        message: msgCtrl.text.trim(),
+                        category: selectedCategory,
+                        createdAt: DateTime.now(),
+                      );
+                      Navigator.pop(ctx);
+                      final ok = await _db.createTeacherFeedback(feedback);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(ok
+                              ? 'Feedback sent to parent'
+                              : 'Failed to send feedback'),
+                          backgroundColor:
+                              ok ? AppColors.success : AppColors.error,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ));
+                        if (ok) _loadFeedbacks();
+                      }
+                    },
+                    child: const Text('Send'),
+                  ),
+                ],
+              ),
+            ));
+  }
+
+  Color _categoryColor(String cat) {
+    switch (cat) {
+      case 'academic':
+        return AppColors.primary;
+      case 'behaviour':
+        return AppColors.warning;
+      case 'attendance':
+        return AppColors.error;
+      default:
+        return AppColors.info;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+        child: Row(children: [
+          const Expanded(
+              child: Text('Feedback Sent to Parents',
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark))),
+          ElevatedButton.icon(
+            onPressed: _showAddFeedbackDialog,
+            icon: const Icon(Icons.add_rounded, size: 16),
+            label: const Text('Add'),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.teacherAccent,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10))),
+          ),
+        ]),
+      ),
+      const SizedBox(height: 12),
+      Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _feedbacks.isEmpty
+                  ? const Center(
+                      child: Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Text(
+                              'No feedback sent yet.\nTap Add to send feedback to a parent.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  color: AppColors.textLight, fontSize: 13))))
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: _feedbacks.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (_, i) {
+                        final f = _feedbacks[i];
+                        final color = _categoryColor(f.category);
+                        return GlassCard(
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(children: [
+                                    Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                            color:
+                                                color.withValues(alpha: 0.12),
+                                            borderRadius:
+                                                BorderRadius.circular(6)),
+                                        child: Text(
+                                            f.category[0].toUpperCase() +
+                                                f.category.substring(1),
+                                            style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w700,
+                                                color: color))),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                        child: Text(f.studentName,
+                                            style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.textDark))),
+                                    Text(
+                                        '${f.createdAt.day}/${f.createdAt.month}/${f.createdAt.year}',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textLight)),
+                                  ]),
+                                  const SizedBox(height: 6),
+                                  Text(f.message,
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.textMid,
+                                          height: 1.4)),
+                                ]));
+                      },
+                    )),
+    ]);
   }
 }
 

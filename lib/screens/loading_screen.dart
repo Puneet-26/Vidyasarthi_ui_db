@@ -4,7 +4,7 @@ import '../screens/student_dashboard.dart';
 import '../screens/teacher_dashboard.dart';
 import '../screens/parent_dashboard.dart';
 import '../screens/admin_dashboard.dart';
-import '../screens/non_teaching_staff_dashboard.dart';
+import '../screens/reception_dashboard.dart';
 import '../widgets/shared_widgets.dart';
 
 class LoadingScreen extends StatefulWidget {
@@ -53,7 +53,7 @@ class _LoadingScreenState extends State<LoadingScreen>
         destination = const AdminDashboard();
         break;
       case 'admin_staff':
-        destination = const NonTeachingStaffDashboard();
+        destination = const ReceptionDashboard();
         break;
       case 'teacher':
         destination = const TeacherDashboard();
@@ -121,7 +121,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.4),
+                          color: AppColors.primary.withValues(alpha: 0.4),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),

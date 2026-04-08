@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/auth_service.dart';
+import '../services/app_errors.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -55,59 +56,22 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _validateEmail() {
-    final email = _emailController.text.trim();
-    setState(() {
-      if (email.isEmpty) {
-        _emailError = null;
-      } else if (!_isValidEmail(email)) {
-        _emailError = 'Please enter a valid email';
-      } else {
-        _emailError = null;
-      }
-    });
+    // Only clear errors while typing — never show red during input
+    if (_emailError != null) setState(() => _emailError = null);
   }
 
   void _validatePassword() {
-    final password = _passwordController.text;
-    setState(() {
-      if (password.isEmpty) {
-        _passwordError = null;
-      } else if (password.length < 6) {
-        _passwordError = 'Password must be at least 6 characters';
-      } else {
-        _passwordError = null;
-      }
-    });
-  }
-
-  bool _isValidEmail(String email) {
-    final emailRegex =
-        RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-    return emailRegex.hasMatch(email);
-  }
-
-  PasswordStrength _getPasswordStrength(String password) {
-    if (password.length < 6) return PasswordStrength.weak;
-    if (password.length < 10) {
-      if (password.contains(RegExp(r'[a-z]')) &&
-          password.contains(RegExp(r'[0-9]'))) {
-        return PasswordStrength.good;
-      }
-      return PasswordStrength.weak;
-    }
-    if (password.contains(RegExp(r'[a-z]')) &&
-        password.contains(RegExp(r'[A-Z]')) &&
-        password.contains(RegExp(r'[0-9]'))) {
-      return PasswordStrength.strong;
-    }
-    return PasswordStrength.good;
+    if (_passwordError != null) setState(() => _passwordError = null);
   }
 
   void _handleLogin() {
     _emailFocusNode.unfocus();
     _passwordFocusNode.unfocus();
-
-    setState(() => _errorMessage = null);
+    setState(() {
+      _errorMessage = null;
+      _emailError = null;
+      _passwordError = null;
+    });
 
     final email = _emailController.text.trim();
     final password = _passwordController.text;
@@ -116,16 +80,8 @@ class _LoginScreenState extends State<LoginScreen>
       setState(() => _emailError = 'Email is required');
       return;
     }
-    if (!_isValidEmail(email)) {
-      setState(() => _emailError = 'Please enter a valid email');
-      return;
-    }
     if (password.isEmpty) {
       setState(() => _passwordError = 'Password is required');
-      return;
-    }
-    if (password.length < 6) {
-      setState(() => _passwordError = 'Password must be at least 6 characters');
       return;
     }
 
@@ -135,31 +91,26 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _attemptLogin(String email, String password) async {
     try {
-      final authService = AuthService();
-      final result = await authService.signIn(email: email, password: password);
+      final result =
+          await AuthService().signIn(email: email, password: password);
+      if (!mounted) return;
 
       if (result['success'] == true) {
-        if (mounted) {
-          final role = result['role'] ?? 'student';
-          Navigator.of(context)
-              .pushReplacementNamed('/loading', arguments: role);
-        }
+        final role = result['role'] ?? 'student';
+        Navigator.of(context).pushReplacementNamed('/loading', arguments: role);
       } else {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-            _errorMessage = result['error'] ?? 'Email or password is incorrect';
-          });
-        }
-      }
-    } catch (e) {
-      if (mounted) {
+        // error is already a clean user-facing string from AuthService / AppErrors
         setState(() {
           _isLoading = false;
-          _errorMessage = 'An error occurred. Please try again later.';
+          _errorMessage = result['error'] ?? AppErrors.unknown;
         });
       }
-      print('Login error: $e');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = AppErrors.fromRaw(e.toString());
+      });
     }
   }
 
@@ -206,7 +157,8 @@ class _LoginScreenState extends State<LoginScreen>
                                       Responsive.sp(context, 24)),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.primary.withOpacity(0.4),
+                                      color: AppColors.primary
+                                          .withValues(alpha: 0.4),
                                       blurRadius: 20,
                                       offset: const Offset(0, 10),
                                     ),
@@ -276,10 +228,10 @@ class _LoginScreenState extends State<LoginScreen>
                           duration: const Duration(milliseconds: 300),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.12),
+                            color: Colors.red.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Colors.red.withOpacity(0.4),
+                              color: Colors.red.withValues(alpha: 0.4),
                               width: 1,
                             ),
                           ),
@@ -327,13 +279,6 @@ class _LoginScreenState extends State<LoginScreen>
                       // Password Input Field
                       _buildPasswordField(),
 
-                      if (_passwordController.text.isNotEmpty && !_isLoading)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: _buildPasswordStrengthIndicator(
-                            _getPasswordStrength(_passwordController.text),
-                          ),
-                        ),
                       const SizedBox(height: 28),
 
                       // Sign In Button
@@ -344,7 +289,7 @@ class _LoginScreenState extends State<LoginScreen>
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             disabledBackgroundColor:
-                                AppColors.primary.withOpacity(0.5),
+                                AppColors.primary.withValues(alpha: 0.5),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             elevation: _isLoading ? 0 : 4,
                             shape: RoundedRectangleBorder(
@@ -412,86 +357,48 @@ class _LoginScreenState extends State<LoginScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: Responsive.sp(context, 13),
-            fontWeight: FontWeight.w600,
-            color: AppColors.textDark,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Focus(
-          onFocusChange: (hasFocus) => setState(() {}),
-          child: TextField(
-            controller: controller,
-            focusNode: focusNode,
-            enabled: !isLoading,
-            keyboardType: keyboardType,
-            inputFormatters: inputFormatters,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(
-                color: AppColors.textLight.withOpacity(0.6),
+        Text(label,
+            style: TextStyle(
                 fontSize: Responsive.sp(context, 13),
-              ),
-              filled: true,
-              fillColor:
-                  error != null ? Colors.red.withOpacity(0.05) : Colors.white,
-              prefixIcon: Icon(
-                icon,
-                color: error != null ? Colors.red : AppColors.primary,
-                size: 20,
-              ),
-              suffixIcon: error != null
-                  ? Icon(
-                      Icons.error_rounded,
-                      color: Colors.red.withOpacity(0.7),
-                      size: 18,
-                    )
-                  : null,
-              border: OutlineInputBorder(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textDark)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          focusNode: focusNode,
+          enabled: !isLoading,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+                color: AppColors.textLight.withValues(alpha: 0.6),
+                fontSize: Responsive.sp(context, 13)),
+            filled: true,
+            fillColor: Colors.white,
+            prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
+            border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: error != null
-                      ? Colors.red.withOpacity(0.3)
-                      : Colors.transparent,
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
+                borderSide: const BorderSide(color: Colors.transparent)),
+            enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: error != null
-                      ? Colors.red.withOpacity(0.3)
-                      : Colors.transparent,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
+                borderSide: const BorderSide(color: Colors.transparent)),
+            focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: error != null
-                      ? Colors.red.withOpacity(0.5)
-                      : AppColors.primary,
-                  width: 2,
-                ),
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              errorText: null,
-            ),
+                borderSide:
+                    const BorderSide(color: AppColors.primary, width: 2)),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           ),
         ),
         if (error != null)
           Padding(
             padding: const EdgeInsets.only(top: 6),
-            child: Text(
-              error,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.red.shade700,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            child: Text(error,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.w500)),
           ),
       ],
     );
@@ -501,140 +408,59 @@ class _LoginScreenState extends State<LoginScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Password',
-          style: TextStyle(
-            fontSize: Responsive.sp(context, 13),
-            fontWeight: FontWeight.w600,
-            color: AppColors.textDark,
-          ),
-        ),
+        Text('Password',
+            style: TextStyle(
+                fontSize: Responsive.sp(context, 13),
+                fontWeight: FontWeight.w600,
+                color: AppColors.textDark)),
         const SizedBox(height: 8),
-        Focus(
-          onFocusChange: (hasFocus) => setState(() {}),
-          child: TextField(
-            controller: _passwordController,
-            focusNode: _passwordFocusNode,
-            enabled: !_isLoading,
-            obscureText: _obscurePassword,
-            decoration: InputDecoration(
-              hintText: '••••••••',
-              hintStyle: TextStyle(
-                color: AppColors.textLight.withOpacity(0.6),
-                fontSize: 13,
-              ),
-              filled: true,
-              fillColor: _passwordError != null
-                  ? Colors.red.withOpacity(0.05)
-                  : Colors.white,
-              prefixIcon: Icon(
-                Icons.lock_outlined,
-                color: _passwordError != null ? Colors.red : AppColors.primary,
-                size: 20,
-              ),
-              suffixIcon: GestureDetector(
-                onTap: () =>
-                    setState(() => _obscurePassword = !_obscurePassword),
-                child: Icon(
+        TextField(
+          controller: _passwordController,
+          focusNode: _passwordFocusNode,
+          enabled: !_isLoading,
+          obscureText: _obscurePassword,
+          decoration: InputDecoration(
+            hintText: '••••••••',
+            hintStyle: TextStyle(
+                color: AppColors.textLight.withValues(alpha: 0.6),
+                fontSize: 13),
+            filled: true,
+            fillColor: Colors.white,
+            prefixIcon: const Icon(Icons.lock_outlined,
+                color: AppColors.primary, size: 20),
+            suffixIcon: GestureDetector(
+              onTap: () => setState(() => _obscurePassword = !_obscurePassword),
+              child: Icon(
                   _obscurePassword
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
                   color: AppColors.primary,
-                  size: 20,
-                ),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: _passwordError != null
-                      ? Colors.red.withOpacity(0.3)
-                      : Colors.transparent,
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: _passwordError != null
-                      ? Colors.red.withOpacity(0.3)
-                      : Colors.transparent,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: _passwordError != null
-                      ? Colors.red.withOpacity(0.5)
-                      : AppColors.primary,
-                  width: 2,
-                ),
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              errorText: null,
+                  size: 20),
             ),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.transparent)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.transparent)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide:
+                    const BorderSide(color: AppColors.primary, width: 2)),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           ),
         ),
         if (_passwordError != null)
           Padding(
             padding: const EdgeInsets.only(top: 6),
-            child: Text(
-              _passwordError!,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.red.shade700,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            child: Text(_passwordError!,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.w500)),
           ),
       ],
     );
   }
-
-  Widget _buildPasswordStrengthIndicator(PasswordStrength strength) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: strength.index / 2,
-                  minHeight: 4,
-                  backgroundColor: Colors.grey.withOpacity(0.2),
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    strength == PasswordStrength.weak
-                        ? Colors.red
-                        : strength == PasswordStrength.good
-                            ? Colors.orange
-                            : Colors.green,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              strength == PasswordStrength.weak
-                  ? 'Weak'
-                  : strength == PasswordStrength.good
-                      ? 'Good'
-                      : 'Strong',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: strength == PasswordStrength.weak
-                    ? Colors.red
-                    : strength == PasswordStrength.good
-                        ? Colors.orange
-                        : Colors.green,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
 }
-
-enum PasswordStrength { weak, good, strong }

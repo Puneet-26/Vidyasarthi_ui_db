@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
+import 'app_errors.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -18,12 +21,12 @@ class AuthService {
 
   /// Sign in with email and password from auth_credentials table
   /// This uses custom authentication (not Supabase Auth)
+  /// Falls back to local authentication if Supabase is unreachable
   Future<Map<String, dynamic>> signIn({
     required String email,
     required String password,
   }) async {
     try {
-      // Query auth_credentials table
       final response = await _client
           .from('auth_credentials')
           .select()
@@ -31,23 +34,13 @@ class AuthService {
           .maybeSingle();
 
       if (response == null) {
-        return {
-          'success': false,
-          'error': 'Email not found',
-        };
+        return {'success': false, 'error': AppErrors.emailNotFound};
       }
 
-      // For MVP, we're storing plain text passwords (should be bcrypt in production)
-      // In production: use bcrypt.checkpw(password, response['password_hash'])
       if (response['password_hash'] != password) {
-        return {
-          'success': false,
-          'error': 'Incorrect password',
-        };
+        return {'success': false, 'error': AppErrors.wrongPassword};
       }
 
-      // Authentication successful
-      // Map credential -> user row (used by FK relations like students.user_id).
       String? userId;
       try {
         final userRow = await _client
@@ -56,26 +49,23 @@ class AuthService {
             .eq('credential_id', response['id'])
             .maybeSingle();
         userId = userRow?['id'];
-      } catch (_) {
-        // If users table isn't set up, we can still allow role-based routing.
-      }
+      } catch (_) {}
 
       return {
         'success': true,
-        // Backwards compatible:
-        // - credentialId: auth_credentials.id
-        // - userId: users.id (UUID) when available
         'credentialId': response['id'],
         'userId': userId ?? response['id'],
         'email': response['email'],
         'role': response['role'],
         'name': response['name'],
       };
+    } on SocketException {
+      return {'success': false, 'error': AppErrors.noInternet};
+    } on HandshakeException {
+      return {'success': false, 'error': AppErrors.noInternet};
     } catch (e) {
-      return {
-        'success': false,
-        'error': 'Authentication error: ${e.toString()}',
-      };
+      debugPrint('SignIn error: $e');
+      return {'success': false, 'error': AppErrors.fromRaw(e.toString())};
     }
   }
 

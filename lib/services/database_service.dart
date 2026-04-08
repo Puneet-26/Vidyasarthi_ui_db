@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 
@@ -22,7 +23,7 @@ class DatabaseService {
       final response = await _client.from('subjects').select();
       return (response as List).map((s) => Subject.fromJson(s)).toList();
     } catch (e) {
-      print('Error fetching subjects: $e');
+      debugPrint('Error fetching subjects: $e');
       return [];
     }
   }
@@ -43,7 +44,7 @@ class DatabaseService {
       final response = await _client.from('batches').select();
       return (response as List).map((b) => Batch.fromJson(b)).toList();
     } catch (e) {
-      print('Error fetching batches: $e');
+      debugPrint('Error fetching batches: $e');
       return [];
     }
   }
@@ -61,19 +62,26 @@ class DatabaseService {
   // ==================== STUDENTS ====================
   Future<List<Student>> getAllStudents() async {
     try {
-      final response = await _client.from('students').select();
-      return (response as List).map((s) => Student.fromJson(s)).toList();
+      // Use the student_details view for normalized data
+      final response = await _client.from('student_details').select();
+      return (response as List)
+          .map((s) => _convertStudentDetailsToStudent(s))
+          .toList();
     } catch (e) {
-      print('Error fetching students: $e');
+      debugPrint('Error fetching students: $e');
       return [];
     }
   }
 
   Future<List<Student>> getStudentsByBatch(String batchId) async {
     try {
-      final response =
-          await _client.from('students').select().eq('batch_id', batchId);
-      return (response as List).map((s) => Student.fromJson(s)).toList();
+      final response = await _client
+          .from('student_details')
+          .select()
+          .eq('batch_id', batchId);
+      return (response as List)
+          .map((s) => _convertStudentDetailsToStudent(s))
+          .toList();
     } catch (e) {
       return [];
     }
@@ -81,27 +89,128 @@ class DatabaseService {
 
   Future<Student?> getStudentById(String studentId) async {
     try {
-      final response =
-          await _client.from('students').select().eq('id', studentId).single();
-      return Student.fromJson(response);
+      final response = await _client
+          .from('student_details')
+          .select()
+          .eq('id', studentId)
+          .single();
+      return _convertStudentDetailsToStudent(response);
     } catch (e) {
       return null;
     }
   }
 
+  // Helper method to convert student_details view to Student model
+  Student _convertStudentDetailsToStudent(Map<String, dynamic> data) {
+    return Student(
+      id: data['id'] ?? '',
+      userId: data['user_id'] ?? '',
+      name: data['name'] ?? '',
+      email: data['email'] ?? '',
+      phoneNumber: data['phone_number'] ?? '',
+      parentName: data['parent_name'] ?? '',
+      parentEmail: data['parent_email'] ?? '',
+      parentPhone: data['parent_phone'] ?? '',
+      batchId: data['batch_id'] ?? '',
+      rollNumber: data['roll_number'] ?? '',
+      dateOfBirth: DateTime.parse(
+          data['date_of_birth'] ?? DateTime.now().toIso8601String()),
+      address: data['address'] ?? '',
+      admissionDate: DateTime.parse(
+          data['admission_date'] ?? DateTime.now().toIso8601String()),
+      enrollmentDate: DateTime.parse(
+          data['admission_date'] ?? DateTime.now().toIso8601String()),
+      totalFees: (data['total_fees'] ?? 0).toDouble(),
+      feesPaid: (data['fees_paid'] ?? 0).toDouble(),
+      feeStatus: data['fee_status'] ?? 'pending',
+      enrollmentStatus: data['enrollment_status'] ?? 'active',
+      isActive: true,
+      subjectIds: [], // Will be populated separately if needed
+    );
+  }
+
   Future<bool> createStudent(Student student) async {
     try {
-      final json = student.toJson();
-      // DB schema expects TEXT PK with no default, so always provide an id.
-      if ((json['id'] as String).isEmpty) json['id'] = _tsId('stu');
-      // user_id is NOT NULL in schema; if missing, fail fast with a clearer error.
-      if ((json['user_id'] as String).isEmpty) {
-        throw Exception('Missing user_id for student (users row not created)');
+      // In normalized schema, we need to create user first, then parent, then student
+      debugPrint('Creating student with normalized schema...');
+
+      // 1. Create user record
+      final userJson = {
+        'id': student.userId,
+        'email': student.email,
+        'name': student.name,
+        'phone_number': student.phoneNumber,
+        'role': 'student',
+        'is_active': true,
+      };
+      await _client.from('users').insert(userJson);
+      debugPrint('✓ User created');
+
+      // 2. Create parent record if parent info provided
+      String? parentId;
+      if (student.parentName.isNotEmpty) {
+        parentId = 'parent_${DateTime.now().millisecondsSinceEpoch}';
+        final parentUserId =
+            'user_parent_${DateTime.now().millisecondsSinceEpoch}';
+
+        // Create parent user
+        final parentUserJson = {
+          'id': parentUserId,
+          'email': student.parentEmail,
+          'name': student.parentName,
+          'phone_number': student.parentPhone,
+          'role': 'parent',
+          'is_active': true,
+        };
+        await _client.from('users').insert(parentUserJson);
+
+        // Create parent record
+        final parentJson = {
+          'id': parentId,
+          'user_id': parentUserId,
+          'address': student.address,
+          'emergency_contact': student.parentPhone,
+        };
+        await _client.from('parents').insert(parentJson);
+        debugPrint('✓ Parent created');
       }
-      await _client.from('students').insert(json);
+
+      // 3. Create student record
+      final studentJson = {
+        'id': student.id,
+        'user_id': student.userId,
+        'parent_id': parentId,
+        'batch_id': student.batchId,
+        'roll_number': student.rollNumber,
+        'date_of_birth': student.dateOfBirth.toIso8601String().split('T')[0],
+        'address': student.address,
+        'admission_date': student.admissionDate.toIso8601String().split('T')[0],
+        'total_fees': student.totalFees.toInt(),
+        'fees_paid': student.feesPaid.toInt(),
+        'fee_status': student.feeStatus,
+        'enrollment_status': student.enrollmentStatus,
+      };
+      await _client.from('students').insert(studentJson);
+      debugPrint('✓ Student created');
+
+      // 4. Create student-subject mappings
+      for (final subjectId in student.subjectIds) {
+        final ssJson = {
+          'id': 'ss_${student.id}_$subjectId',
+          'student_id': student.id,
+          'subject_id': subjectId,
+          'enrollment_date': DateTime.now().toIso8601String().split('T')[0],
+          'is_active': true,
+        };
+        await _client.from('student_subjects').insert(ssJson);
+      }
+      debugPrint('✓ Student subjects mapped');
+
       return true;
     } catch (e) {
-      print('Error creating student: $e');
+      debugPrint('❌ Error creating student: $e');
+      debugPrint('Error type: ${e.runtimeType}');
+      debugPrint('Full error details: ${e.toString()}');
       return false;
     }
   }
@@ -114,7 +223,7 @@ class DatabaseService {
       await _client.from('batches').insert(json);
       return true;
     } catch (e) {
-      print('Error creating batch: $e');
+      debugPrint('Error creating batch: $e');
       return false;
     }
   }
@@ -127,7 +236,7 @@ class DatabaseService {
           .eq('id', studentId);
       return true;
     } catch (e) {
-      print('Error updating student: $e');
+      debugPrint('Error updating student: $e');
       return false;
     }
   }
@@ -138,7 +247,7 @@ class DatabaseService {
       final response = await _client.from('admissions').select();
       return (response as List).map((a) => Admission.fromJson(a)).toList();
     } catch (e) {
-      print('Error fetching admissions: $e');
+      debugPrint('Error fetching admissions: $e');
       return [];
     }
   }
@@ -171,7 +280,7 @@ class DatabaseService {
       await _client.from('admissions').insert(admission.toJson());
       return true;
     } catch (e) {
-      print('Error creating admission: $e');
+      debugPrint('Error creating admission: $e');
       return false;
     }
   }
@@ -183,7 +292,7 @@ class DatabaseService {
           .update({'status': status}).eq('id', admissionId);
       return true;
     } catch (e) {
-      print('Error updating admission: $e');
+      debugPrint('Error updating admission: $e');
       return false;
     }
   }
@@ -194,7 +303,7 @@ class DatabaseService {
       final response = await _client.from('timetables').select();
       return (response as List).map((t) => TimeTable.fromJson(t)).toList();
     } catch (e) {
-      print('Error fetching timetables: $e');
+      debugPrint('Error fetching timetables: $e');
       return [];
     }
   }
@@ -214,7 +323,7 @@ class DatabaseService {
       await _client.from('timetables').insert(tt.toJson());
       return true;
     } catch (e) {
-      print('Error creating timetable entry: $e');
+      debugPrint('Error creating timetable entry: $e');
       return false;
     }
   }
@@ -245,7 +354,7 @@ class DatabaseService {
       await _client.from('homework').insert(homework.toJson());
       return true;
     } catch (e) {
-      print('Error creating homework: $e');
+      debugPrint('Error creating homework: $e');
       return false;
     }
   }
@@ -266,7 +375,7 @@ class DatabaseService {
       await _client.from('tests').insert(test.toJson());
       return true;
     } catch (e) {
-      print('Error creating test: $e');
+      debugPrint('Error creating test: $e');
       return false;
     }
   }
@@ -289,7 +398,7 @@ class DatabaseService {
       await _client.from('test_results').insert(result.toJson());
       return true;
     } catch (e) {
-      print('Error creating test result: $e');
+      debugPrint('Error creating test result: $e');
       return false;
     }
   }
@@ -300,10 +409,32 @@ class DatabaseService {
       final response = await _client
           .from('fee_payments')
           .select()
-          .eq('student_id', studentId);
+          .eq('student_id', studentId)
+          .order('payment_date', ascending: false);
       return (response as List).map((f) => FeePayment.fromJson(f)).toList();
     } catch (e) {
       return [];
+    }
+  }
+
+  /// Records a fee payment AND updates the student's fees_paid + fee_status atomically.
+  Future<bool> createFeePaymentAndUpdateStudent(
+      FeePayment payment, double newFeesPaid, double totalFees) async {
+    try {
+      await _client.from('fee_payments').insert(payment.toJson());
+      final feeStatus = newFeesPaid >= totalFees
+          ? 'full'
+          : newFeesPaid > 0
+              ? 'partial'
+              : 'pending';
+      await _client.from('students').update({
+        'fees_paid': newFeesPaid.toInt(),
+        'fee_status': feeStatus,
+      }).eq('id', payment.studentId);
+      return true;
+    } catch (e) {
+      debugPrint('Error recording fee payment: $e');
+      return false;
     }
   }
 
@@ -312,8 +443,23 @@ class DatabaseService {
       await _client.from('fee_payments').insert(payment.toJson());
       return true;
     } catch (e) {
-      print('Error creating fee payment: $e');
+      debugPrint('Error creating fee payment: $e');
       return false;
+    }
+  }
+
+  /// Fetch student by parent email (using normalized parent table)
+  Future<List<Student>> getStudentsByParentEmail(String parentEmail) async {
+    try {
+      final response = await _client
+          .from('student_details')
+          .select()
+          .eq('parent_email', parentEmail.trim().toLowerCase());
+      return (response as List)
+          .map((s) => _convertStudentDetailsToStudent(s))
+          .toList();
+    } catch (e) {
+      return [];
     }
   }
 
@@ -326,7 +472,7 @@ class DatabaseService {
           .order('sent_date', ascending: false);
       return (response as List).map((b) => Broadcast.fromJson(b)).toList();
     } catch (e) {
-      print('Error fetching broadcasts: $e');
+      debugPrint('Error fetching broadcasts: $e');
       return [];
     }
   }
@@ -336,7 +482,7 @@ class DatabaseService {
       await _client.from('broadcasts').insert(broadcast.toJson());
       return true;
     } catch (e) {
-      print('Error creating broadcast: $e');
+      debugPrint('Error creating broadcast: $e');
       return false;
     }
   }
@@ -367,7 +513,7 @@ class DatabaseService {
       await _client.from('doubts').insert(doubt.toJson());
       return true;
     } catch (e) {
-      print('Error creating doubt: $e');
+      debugPrint('Error creating doubt: $e');
       return false;
     }
   }
@@ -381,7 +527,7 @@ class DatabaseService {
           .order('submitted_date', ascending: false);
       return (response as List).map((f) => Feedback.fromJson(f)).toList();
     } catch (e) {
-      print('Error fetching feedback: $e');
+      debugPrint('Error fetching feedback: $e');
       return [];
     }
   }
@@ -391,7 +537,35 @@ class DatabaseService {
       await _client.from('feedbacks').insert(feedback.toJson());
       return true;
     } catch (e) {
-      print('Error creating feedback: $e');
+      debugPrint('Error creating feedback: $e');
+      return false;
+    }
+  }
+
+  // ==================== TEACHER FEEDBACK ====================
+  Future<List<TeacherFeedback>> getTeacherFeedbackForStudent(
+      String studentId) async {
+    try {
+      final response = await _client
+          .from('teacher_feedback')
+          .select()
+          .eq('student_id', studentId)
+          .order('created_at', ascending: false);
+      return (response as List)
+          .map((f) => TeacherFeedback.fromJson(f))
+          .toList();
+    } catch (e) {
+      debugPrint('Error fetching teacher feedback: $e');
+      return [];
+    }
+  }
+
+  Future<bool> createTeacherFeedback(TeacherFeedback feedback) async {
+    try {
+      await _client.from('teacher_feedback').insert(feedback.toJson());
+      return true;
+    } catch (e) {
+      debugPrint('Error creating teacher feedback: $e');
       return false;
     }
   }
