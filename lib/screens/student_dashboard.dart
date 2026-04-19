@@ -3,6 +3,9 @@ import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/database_service.dart';
 import '../models/models.dart';
+import 'connect_with_us_screen.dart';
+import 'faculty_screen.dart';
+import 'submit_feedback_screen_premium.dart';
 
 class StudentDashboard extends StatefulWidget {
   final String studentId;
@@ -42,6 +45,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
         activeIcon: Icons.bar_chart_rounded,
         label: 'Results'),
     BottomNavItem(
+        icon: Icons.feedback_outlined,
+        activeIcon: Icons.feedback_rounded,
+        label: 'Feedback'),
+    BottomNavItem(
         icon: Icons.person_outline,
         activeIcon: Icons.person_rounded,
         label: 'Profile'),
@@ -60,6 +67,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         _StudentTasksPage(
             homework: _homework, tests: _tests, loading: _loading),
         _StudentResultsPage(testResults: _testResults, loading: _loading),
+        _StudentFeedbackPage(studentId: widget.studentId),
         _StudentProfilePage(student: _student, loading: _loading),
       ];
 
@@ -228,6 +236,41 @@ class _StudentHomePage extends StatelessWidget {
             roleColor: AppColors.studentAccent,
             notificationCount: 3,
             onNotification: () => _showNoticesSheet(context),
+            actionButtons: [
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FacultyScreen(),
+                  ),
+                ),
+                child: const GlassCard(
+                  padding: EdgeInsets.all(10),
+                  child: Icon(
+                    Icons.people_rounded,
+                    color: AppColors.studentAccent,
+                    size: 22,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ConnectWithUsScreen(),
+                  ),
+                ),
+                child: const GlassCard(
+                  padding: EdgeInsets.all(10),
+                  child: Icon(
+                    Icons.public_rounded,
+                    color: AppColors.studentAccent,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
 
@@ -1699,6 +1742,301 @@ class _HolidayNotice extends StatelessWidget {
                 style: TextStyle(
                     fontSize: 10, fontWeight: FontWeight.w700, color: color)),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+
+// ============================================================
+//  STUDENT FEEDBACK PAGE
+// ============================================================
+
+class _StudentFeedbackPage extends StatefulWidget {
+  final String studentId;
+  
+  const _StudentFeedbackPage({required this.studentId});
+
+  @override
+  State<_StudentFeedbackPage> createState() => _StudentFeedbackPageState();
+}
+
+class _StudentFeedbackPageState extends State<_StudentFeedbackPage> {
+  final _db = DatabaseService();
+  List<AnonymousFeedback> _myFeedback = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMyFeedback();
+  }
+
+  Future<void> _loadMyFeedback() async {
+    final feedback = await _db.getMySubmittedFeedback(widget.studentId, 'student');
+    if (mounted) {
+      setState(() {
+        _myFeedback = feedback;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(title: 'Anonymous Feedback'),
+          const SizedBox(height: 14),
+          
+          // Info card
+          const GlassCard(
+            child: Row(
+              children: [
+                Icon(Icons.info_outline_rounded, color: AppColors.info, size: 28),
+                SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Send Anonymous Feedback',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Your feedback is completely anonymous. Teachers will not know who sent it.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textMid,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Send Feedback Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SubmitFeedbackScreenPremium(
+                      senderRole: 'student',
+                      senderId: widget.studentId,
+                    ),
+                  ),
+                );
+                _loadMyFeedback(); // Refresh after returning
+              },
+              icon: const Icon(Icons.add_rounded, size: 20),
+              label: const Text('Send Feedback to Teacher'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.studentAccent,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // My Submitted Feedback
+          const SectionHeader(title: 'My Submitted Feedback'),
+          const SizedBox(height: 14),
+          
+          if (_loading)
+            const Center(child: CircularProgressIndicator())
+          else if (_myFeedback.isEmpty)
+            const GlassCard(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      Icon(Icons.feedback_outlined, size: 48, color: AppColors.textLight),
+                      SizedBox(height: 12),
+                      Text(
+                        'No feedback submitted yet',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textMid,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            ..._myFeedback.map((feedback) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _FeedbackStatusCard(feedback: feedback),
+            )),
+
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeedbackStatusCard extends StatelessWidget {
+  final AnonymousFeedback feedback;
+
+  const _FeedbackStatusCard({required this.feedback});
+
+  @override
+  Widget build(BuildContext context) {
+    Color statusColor;
+    String statusLabel;
+    IconData statusIcon;
+
+    switch (feedback.status) {
+      case 'approved':
+        statusColor = AppColors.success;
+        statusLabel = 'Approved';
+        statusIcon = Icons.check_circle_rounded;
+        break;
+      case 'rejected':
+        statusColor = AppColors.error;
+        statusLabel = 'Rejected';
+        statusIcon = Icons.cancel_rounded;
+        break;
+      default:
+        statusColor = AppColors.warning;
+        statusLabel = 'Pending Review';
+        statusIcon = Icons.pending_rounded;
+    }
+
+    return GlassCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'To: ${feedback.teacherName}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      feedback.category.replaceAll('_', ' ').toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textMid,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(statusIcon, size: 14, color: statusColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      statusLabel,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: statusColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            feedback.feedbackText,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textDark,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              if (feedback.rating != null) ...[
+                ...List.generate(
+                  5,
+                  (i) => Icon(
+                    i < feedback.rating! ? Icons.star_rounded : Icons.star_outline_rounded,
+                    size: 16,
+                    color: AppColors.warning,
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Text(
+                '${feedback.submittedAt.day}/${feedback.submittedAt.month}/${feedback.submittedAt.year}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textLight,
+                ),
+              ),
+            ],
+          ),
+          if (feedback.adminNotes != null && feedback.adminNotes!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.divider.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.admin_panel_settings_rounded, size: 16, color: AppColors.textMid),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Admin: ${feedback.adminNotes}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textMid,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

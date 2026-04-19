@@ -36,8 +36,14 @@ class VidyaSarathiApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/loading': (context) {
-          final role = ModalRoute.of(context)?.settings.arguments as String? ??
-              'student';
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is Map) {
+            return LoadingScreen(
+              role: (args['role'] as String?) ?? 'student',
+              userEmail: args['email'] as String?,
+            );
+          }
+          final role = args as String? ?? 'student';
           return LoadingScreen(role: role);
         },
         '/dashboard': (context) {

@@ -3,6 +3,9 @@ import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/database_service.dart';
 import '../models/models.dart';
+import 'connect_with_us_screen.dart';
+import 'faculty_screen.dart';
+import 'submit_feedback_screen_premium.dart';
 
 class ParentDashboard extends StatefulWidget {
   final String parentEmail;
@@ -51,7 +54,9 @@ class _ParentDashboardState extends State<ParentDashboard> {
   }
 
   Future<void> _loadStudents() async {
+    debugPrint('Loading students for parent: ${widget.parentEmail}');
     final students = await _db.getStudentsByParentEmail(widget.parentEmail);
+    debugPrint('Found ${students.length} students');
     if (mounted)
       setState(() {
         _students = students;
@@ -171,8 +176,33 @@ class _ParentHomePageState extends State<_ParentHomePage> {
   @override
   Widget build(BuildContext context) {
     if (widget.loading) return const Center(child: CircularProgressIndicator());
-    if (widget.students.isEmpty)
-      return const Center(child: Text('No children found.'));
+    if (widget.students.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.family_restroom_rounded, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No children found',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Please contact admin for enrollment',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     final student = widget.students[_selectedChild];
     final feeProgress = student.totalFees > 0
@@ -198,7 +228,42 @@ class _ParentHomePageState extends State<_ParentHomePage> {
             subtitle: 'Parent Dashboard',
             roleColor: AppColors.parentAccent,
             notificationCount: 1,
-            onNotification: widget.onNotification),
+            onNotification: widget.onNotification,
+            actionButtons: [
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FacultyScreen(),
+                  ),
+                ),
+                child: const GlassCard(
+                  padding: EdgeInsets.all(10),
+                  child: Icon(
+                    Icons.people_rounded,
+                    color: AppColors.parentAccent,
+                    size: 22,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ConnectWithUsScreen(),
+                  ),
+                ),
+                child: const GlassCard(
+                  padding: EdgeInsets.all(10),
+                  child: Icon(
+                    Icons.public_rounded,
+                    color: AppColors.parentAccent,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ]),
         const SizedBox(height: 24),
         const SectionHeader(title: 'My Children'),
         const SizedBox(height: 12),
@@ -266,7 +331,29 @@ class _ParentHomePageState extends State<_ParentHomePage> {
           );
         }),
         const SizedBox(height: 24),
+        
+        // Performance Banner
+        _PerformanceBanner(studentName: student.name.split(' ')[0]),
+        const SizedBox(height: 24),
+        
+        // Stats Cards
         Wrap(spacing: 12, runSpacing: 12, children: [
+          SizedBox(
+              width: (MediaQuery.of(context).size.width - 52) / 2,
+              child: const StatCard(
+                  title: 'Attendance',
+                  value: '92%',
+                  icon: Icons.how_to_reg_rounded,
+                  color: AppColors.success,
+                  subtitle: 'This month')),
+          SizedBox(
+              width: (MediaQuery.of(context).size.width - 52) / 2,
+              child: const StatCard(
+                  title: 'Overall Grade',
+                  value: 'A-',
+                  icon: Icons.star_rounded,
+                  color: AppColors.parentAccent,
+                  subtitle: 'Semester 2')),
           SizedBox(
               width: (MediaQuery.of(context).size.width - 52) / 2,
               child: StatCard(
@@ -279,14 +366,21 @@ class _ParentHomePageState extends State<_ParentHomePage> {
                   subtitle: '${(feeProgress * 100).toInt()}% paid')),
           SizedBox(
               width: (MediaQuery.of(context).size.width - 52) / 2,
-              child: StatCard(
-                  title: 'Enrollment',
-                  value: student.enrollmentStatus.toUpperCase(),
-                  icon: Icons.school_rounded,
-                  color: AppColors.info,
-                  subtitle: student.batchId)),
+              child: const StatCard(
+                  title: 'Class Rank',
+                  value: '#7',
+                  icon: Icons.bar_chart_rounded,
+                  color: AppColors.warning,
+                  subtitle: 'Out of 40')),
         ]),
         const SizedBox(height: 24),
+        
+        // Academic Progress
+        const SectionHeader(title: 'Academic Progress'),
+        const SizedBox(height: 14),
+        const _AcademicProgressCard(),
+        const SizedBox(height: 24),
+        
         const SectionHeader(title: 'Fee Progress'),
         const SizedBox(height: 14),
         GlassCard(
@@ -320,6 +414,161 @@ class _ParentHomePageState extends State<_ParentHomePage> {
   }
 }
 
+// Performance Banner Widget
+class _PerformanceBanner extends StatelessWidget {
+  final String studentName;
+  const _PerformanceBanner({required this.studentName});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.parentAccent, Color(0xFF4ECDC4)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.parentAccent.withValues(alpha: 0.35),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "$studentName's Performance",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Doing great this semester! Consistent\nimprovement in all subjects.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white70,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.trending_up_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tests: 8/10',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Homework: 95%',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Academic Progress Card Widget
+class _AcademicProgressCard extends StatelessWidget {
+  const _AcademicProgressCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const GlassCard(
+      child: Column(
+        children: [
+          LabeledProgressBar(
+            label: 'Physics',
+            value: 0.85,
+            color: Color(0xFF667EEA),
+          ),
+          SizedBox(height: 14),
+          LabeledProgressBar(
+            label: 'Chemistry',
+            value: 0.78,
+            color: Color(0xFF26C6DA),
+          ),
+          SizedBox(height: 14),
+          LabeledProgressBar(
+            label: 'Mathematics',
+            value: 0.91,
+            color: AppColors.success,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ─── Children Page ────────────────────────────────────────────────────────────
 class _ParentChildrenPage extends StatelessWidget {
   final List<Student> students;
@@ -329,8 +578,33 @@ class _ParentChildrenPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (loading) return const Center(child: CircularProgressIndicator());
-    if (students.isEmpty)
-      return const Center(child: Text('No children found.'));
+    if (students.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.child_care_outlined, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No children enrolled',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Contact admin to add your child',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     final subjectColors = [
       AppColors.primary,
       AppColors.info,
@@ -543,8 +817,33 @@ class _ParentFeesPageState extends State<_ParentFeesPage> {
   @override
   Widget build(BuildContext context) {
     if (widget.loading) return const Center(child: CircularProgressIndicator());
-    if (widget.students.isEmpty)
-      return const Center(child: Text('No children found.'));
+    if (widget.students.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.payment_outlined, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No fee records',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Fee details will appear once enrolled',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     final student = widget.students[_selectedChild];
     final feeProgress = student.totalFees > 0
@@ -717,178 +1016,107 @@ class _ParentTeacherFeedbackPage extends StatefulWidget {
 
 class _ParentTeacherFeedbackPageState
     extends State<_ParentTeacherFeedbackPage> {
-  int _selectedChild = 0;
-  List<TeacherFeedback> _feedbacks = [];
-  bool _loadingFeedback = false;
-  final _db = DatabaseService();
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.students.isNotEmpty) _loadFeedback();
-  }
-
-  @override
-  void didUpdateWidget(covariant _ParentTeacherFeedbackPage old) {
-    super.didUpdateWidget(old);
-    if (old.students != widget.students && widget.students.isNotEmpty)
-      _loadFeedback();
-  }
-
-  Future<void> _loadFeedback() async {
-    if (widget.students.isEmpty) return;
-    setState(() => _loadingFeedback = true);
-    final f = await _db
-        .getTeacherFeedbackForStudent(widget.students[_selectedChild].id);
-    if (mounted)
-      setState(() {
-        _feedbacks = f;
-        _loadingFeedback = false;
-      });
-  }
-
-  void _onChildSwitch(int i) {
-    setState(() {
-      _selectedChild = i;
-      _feedbacks = [];
-    });
-    _loadFeedback();
-  }
-
-  Color _categoryColor(String cat) {
-    switch (cat) {
-      case 'academic':
-        return AppColors.primary;
-      case 'behaviour':
-        return AppColors.warning;
-      case 'attendance':
-        return AppColors.error;
-      default:
-        return AppColors.info;
-    }
-  }
-
-  IconData _categoryIcon(String cat) {
-    switch (cat) {
-      case 'academic':
-        return Icons.menu_book_rounded;
-      case 'behaviour':
-        return Icons.emoji_people_rounded;
-      case 'attendance':
-        return Icons.how_to_reg_rounded;
-      default:
-        return Icons.chat_bubble_outline_rounded;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     if (widget.loading) return const Center(child: CircularProgressIndicator());
-    if (widget.students.isEmpty)
-      return const Center(child: Text('No children found.'));
+    if (widget.students.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.message_outlined, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No feedback available',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Enroll your child to send feedback',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final currentStudent = widget.students[0]; // Use first student for feedback
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const SectionHeader(title: 'Teacher Feedback'),
+        const SectionHeader(title: 'Feedback'),
         const SizedBox(height: 14),
-        // Child selector
-        if (widget.students.length > 1)
-          Row(
-              children: List.generate(widget.students.length, (i) {
-            final s = widget.students[i];
-            final isSelected = i == _selectedChild;
-            return Expanded(
-                child: GestureDetector(
-              onTap: () => _onChildSwitch(i),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: EdgeInsets.only(
-                    right: i < widget.students.length - 1 ? 8 : 0),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.parentAccent
-                      : Colors.white.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(s.name.split(' ')[0],
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
+        
+        // Send Anonymous Feedback Section
+        const GlassCard(
+          child: Row(
+            children: [
+              Icon(Icons.lock_rounded, color: AppColors.info, size: 28),
+              SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Send Anonymous Feedback',
+                      style: TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: isSelected ? Colors.white : AppColors.textDark)),
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Share your thoughts with teachers anonymously',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textMid,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ));
-          })),
-        if (widget.students.length > 1) const SizedBox(height: 16),
-        if (_loadingFeedback)
-          const Center(child: CircularProgressIndicator())
-        else if (_feedbacks.isEmpty)
-          GlassCard(
-              child: Column(children: [
-            const Icon(Icons.mark_chat_unread_outlined,
-                size: 48, color: AppColors.textLight),
-            const SizedBox(height: 12),
-            Text('No feedback from teachers yet.',
-                style: TextStyle(
-                    fontSize: Responsive.sp(context, 13),
-                    color: AppColors.textMid)),
-          ]))
-        else
-          ..._feedbacks.map((f) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: GlassCard(
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: _categoryColor(f.category)
-                                    .withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12)),
-                            child: Icon(_categoryIcon(f.category),
-                                color: _categoryColor(f.category), size: 22)),
-                        const SizedBox(width: 12),
-                        Expanded(
-                            child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                              Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(f.teacherName,
-                                        style: TextStyle(
-                                            fontSize:
-                                                Responsive.sp(context, 13),
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColors.textDark)),
-                                    Text(
-                                        '${f.createdAt.day}/${f.createdAt.month}/${f.createdAt.year}',
-                                        style: TextStyle(
-                                            fontSize:
-                                                Responsive.sp(context, 11),
-                                            color: AppColors.textLight)),
-                                  ]),
-                              Text(
-                                  '${f.subjectName} • ${f.category[0].toUpperCase()}${f.category.substring(1)}',
-                                  style: TextStyle(
-                                      fontSize: Responsive.sp(context, 11),
-                                      color: _categoryColor(f.category),
-                                      fontWeight: FontWeight.w600)),
-                              const SizedBox(height: 4),
-                              Text(f.message,
-                                  style: TextStyle(
-                                      fontSize: Responsive.sp(context, 12),
-                                      color: AppColors.textMid,
-                                      height: 1.4)),
-                            ])),
-                      ],
-                    )),
-              )),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SubmitFeedbackScreenPremium(
+                    senderRole: 'parent',
+                    senderId: currentStudent.parentEmail,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.add_rounded, size: 20),
+            label: const Text('Send Feedback to Teacher'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.parentAccent,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        
         const SizedBox(height: 30),
       ]),
     );

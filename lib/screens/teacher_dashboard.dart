@@ -7,7 +7,9 @@ import 'login_screen.dart';
 import 'placeholder_screens.dart';
 
 class TeacherDashboard extends StatefulWidget {
-  const TeacherDashboard({super.key});
+  final String? teacherEmail;
+  
+  const TeacherDashboard({super.key, this.teacherEmail});
 
   @override
   State<TeacherDashboard> createState() => _TeacherDashboardState();
@@ -15,6 +17,45 @@ class TeacherDashboard extends StatefulWidget {
 
 class _TeacherDashboardState extends State<TeacherDashboard> {
   int _selectedIndex = 0;
+  int _approvedFeedbackCount = 0;
+  final _db = DatabaseService();
+  Teacher? _currentTeacher;
+  bool _loadingTeacher = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTeacherData();
+  }
+
+  Future<void> _loadTeacherData() async {
+    setState(() => _loadingTeacher = true);
+    
+    // Get teacher by email
+    if (widget.teacherEmail != null) {
+      final teacher = await _db.getTeacherByEmail(widget.teacherEmail!);
+      if (mounted) {
+        setState(() {
+          _currentTeacher = teacher;
+          _loadingTeacher = false;
+        });
+        
+        // Load feedback count for this teacher
+        if (teacher != null) {
+          _loadApprovedFeedbackCount(teacher.id);
+        }
+      }
+    } else {
+      setState(() => _loadingTeacher = false);
+    }
+  }
+
+  Future<void> _loadApprovedFeedbackCount(String teacherId) async {
+    final feedbacks = await _db.getApprovedFeedbackForTeacher(teacherId);
+    if (mounted) {
+      setState(() => _approvedFeedbackCount = feedbacks.length);
+    }
+  }
 
   final List<BottomNavItem> _navItems = const [
     BottomNavItem(
@@ -32,113 +73,52 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   ];
 
   List<Widget> get _pages => [
-        const _TeacherHomePage(),
+        _TeacherHomePage(teacher: _currentTeacher),
         const _TeacherClassesPage(),
       ];
 
   void _showProfileSheet(BuildContext context) {
+    if (_currentTeacher == null) return;
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.55,
-        minChildSize: 0.4,
-        maxChildSize: 0.85,
-        expand: false,
-        builder: (_, scrollController) => Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SingleChildScrollView(
-            controller: scrollController,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                      color: AppColors.divider,
-                      borderRadius: BorderRadius.circular(2)),
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                      color: AppColors.teacherAccent.withOpacity(0.12),
-                      shape: BoxShape.circle),
-                  child: const Icon(Icons.account_circle_rounded,
-                      color: AppColors.teacherAccent, size: 40),
-                ),
-                const SizedBox(height: 12),
-                const Text('Mrs. Priya Nair',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textDark)),
-                const SizedBox(height: 4),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.teacherAccent.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text('TEACHER',
-                      style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.teacherAccent)),
-                ),
-                const SizedBox(height: 24),
-                const _TeacherProfileInfoRow(
-                    icon: Icons.email_outlined,
-                    label: 'Email',
-                    value: 'priya.nair@vidyasarathi.edu'),
-                const Divider(color: AppColors.divider, height: 24),
-                const _TeacherProfileInfoRow(
-                    icon: Icons.phone_outlined,
-                    label: 'Phone',
-                    value: '+91 98765 12345'),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        (route) => false,
-                      );
-                    },
-                    icon: const Icon(Icons.logout_rounded, size: 18),
-                    label: const Text('Log Out'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.error,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      textStyle: const TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        ),
+      builder: (_) => _TeacherProfileSheet(
+        teacher: _currentTeacher!,
+        onFeedbackRead: () => _loadApprovedFeedbackCount(_currentTeacher!.id),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingTeacher) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_currentTeacher == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text('Teacher not found'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                child: const Text('Back to Login'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return GradientScaffold(
       bottomNavigationBar: VidyaBottomNav(
         currentIndex: _selectedIndex,
@@ -162,8 +142,401 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   }
 }
 
+// ─── Teacher Profile Sheet with Approved Feedback ─────────────────────────────
+class _TeacherProfileSheet extends StatefulWidget {
+  final Teacher teacher;
+  final VoidCallback onFeedbackRead;
+
+  const _TeacherProfileSheet({
+    required this.teacher,
+    required this.onFeedbackRead,
+  });
+
+  @override
+  State<_TeacherProfileSheet> createState() => _TeacherProfileSheetState();
+}
+
+class _TeacherProfileSheetState extends State<_TeacherProfileSheet> {
+  final _db = DatabaseService();
+  List<AnonymousFeedback> _approvedFeedbacks = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadApprovedFeedback();
+  }
+
+  Future<void> _loadApprovedFeedback() async {
+    setState(() => _loading = true);
+    final feedbacks = await _db.getApprovedFeedbackForTeacher(widget.teacher.id);
+    if (mounted) {
+      setState(() {
+        _approvedFeedbacks = feedbacks;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _markAsRead(AnonymousFeedback feedback) async {
+    if (!feedback.isReadByTeacher) {
+      await _db.markFeedbackAsRead(feedback.id);
+      _loadApprovedFeedback();
+      widget.onFeedbackRead();
+    }
+  }
+
+  String _getCategoryLabel(String category) {
+    switch (category) {
+      case 'teaching':
+        return 'Teaching Style';
+      case 'behavior':
+        return 'Behavior';
+      case 'communication':
+        return 'Communication';
+      case 'subject_knowledge':
+        return 'Subject Knowledge';
+      case 'punctuality':
+        return 'Punctuality';
+      default:
+        return category;
+    }
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category) {
+      case 'teaching':
+        return const Color(0xFF667EEA);
+      case 'behavior':
+        return const Color(0xFFFFA726);
+      case 'communication':
+        return const Color(0xFF26C6DA);
+      case 'subject_knowledge':
+        return const Color(0xFF9C27B0);
+      case 'punctuality':
+        return const Color(0xFFEF5350);
+      default:
+        return AppColors.textMid;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final unreadCount = _approvedFeedbacks.where((f) => !f.isReadByTeacher).length;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (_, scrollController) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Profile Header
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppColors.teacherAccent.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.school_rounded,
+                  color: AppColors.teacherAccent, size: 40),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Teacher',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.teacherAccent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                'TEACHER',
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.teacherAccent),
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Feedback Section
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Student Feedback',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                if (unreadCount > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '$unreadCount new',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            
+            // Feedback List
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _approvedFeedbacks.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.feedback_outlined,
+                                  size: 48, color: Colors.grey[400]),
+                              const SizedBox(height: 12),
+                              Text(
+                                'No feedback yet',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: scrollController,
+                          itemCount: _approvedFeedbacks.length,
+                          itemBuilder: (context, index) {
+                            final feedback = _approvedFeedbacks[index];
+                            return _TeacherFeedbackCard(
+                              feedback: feedback,
+                              categoryLabel: _getCategoryLabel(feedback.category),
+                              categoryColor: _getCategoryColor(feedback.category),
+                              onTap: () => _markAsRead(feedback),
+                            );
+                          },
+                        ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Logout Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  );
+                },
+                icon: const Icon(Icons.logout_rounded, size: 18),
+                label: const Text('Log Out'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  textStyle: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Teacher Feedback Card Widget ─────────────────────────────────────────────
+class _TeacherFeedbackCard extends StatelessWidget {
+  final AnonymousFeedback feedback;
+  final String categoryLabel;
+  final Color categoryColor;
+  final VoidCallback onTap;
+
+  const _TeacherFeedbackCard({
+    required this.feedback,
+    required this.categoryLabel,
+    required this.categoryColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: feedback.isReadByTeacher ? Colors.grey[50] : const Color(0xFFFFF3E0),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: feedback.isReadByTeacher ? Colors.grey[200]! : const Color(0xFFFFB74D),
+            width: feedback.isReadByTeacher ? 1 : 2,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: categoryColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.feedback_outlined, color: categoryColor, size: 18),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        categoryLabel,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: categoryColor,
+                        ),
+                      ),
+                      Text(
+                        'Anonymous ${feedback.senderRole}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Rating
+                if (feedback.rating != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFA726).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.star, color: Color(0xFFFFA726), size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${feedback.rating}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFFFA726),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (!feedback.isReadByTeacher) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: AppColors.error,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 12),
+            
+            // Feedback Text
+            Text(
+              feedback.feedbackText,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textMid,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            
+            // Date
+            Row(
+              children: [
+                Icon(Icons.access_time, size: 14, color: AppColors.textLight),
+                const SizedBox(width: 4),
+                Text(
+                  '${feedback.submittedAt.day}/${feedback.submittedAt.month}/${feedback.submittedAt.year}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textLight,
+                  ),
+                ),
+                if (!feedback.isReadByTeacher) ...[
+                  const Spacer(),
+                  const Text(
+                    'Tap to mark as read',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.teacherAccent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _TeacherHomePage extends StatelessWidget {
-  const _TeacherHomePage();
+  final Teacher? teacher;
+  
+  const _TeacherHomePage({this.teacher});
 
   void _showNoticesSheet(BuildContext context) {
     showModalBottomSheet(
@@ -236,7 +609,7 @@ class _TeacherHomePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           DashboardHeader(
-            name: 'Mrs. Priya Nair',
+            name: teacher?.name ?? 'Teacher',
             role: 'TEACHER',
             subtitle: 'Teacher Dashboard',
             roleColor: AppColors.teacherAccent,

@@ -9,8 +9,9 @@ import '../widgets/shared_widgets.dart';
 
 class LoadingScreen extends StatefulWidget {
   final String role;
+  final String? userEmail;
 
-  const LoadingScreen({super.key, required this.role});
+  const LoadingScreen({super.key, required this.role, this.userEmail});
 
   @override
   State<LoadingScreen> createState() => _LoadingScreenState();
@@ -56,13 +57,13 @@ class _LoadingScreenState extends State<LoadingScreen>
         destination = const ReceptionDashboard();
         break;
       case 'teacher':
-        destination = const TeacherDashboard();
+        destination = TeacherDashboard(teacherEmail: widget.userEmail);
         break;
       case 'student':
         destination = const StudentDashboard();
         break;
       case 'parent':
-        destination = const ParentDashboard();
+        destination = ParentDashboard(parentEmail: widget.userEmail ?? 'rajesh.sharma@parents.com');
         break;
       default:
         destination = const StudentDashboard();
