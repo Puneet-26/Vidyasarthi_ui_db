@@ -61,11 +61,30 @@ class DatabaseService {
 
   Future<Teacher?> getTeacherByEmail(String email) async {
     try {
+      debugPrint('Looking up teacher by email: $email');
       final response = await _client
           .from('teachers')
           .select()
-          .eq('email', email)
-          .single();
+          .eq('email', email.trim().toLowerCase())
+          .maybeSingle();
+      
+      if (response == null) {
+        debugPrint('Teacher not found with email: $email');
+        // Try case-insensitive search as fallback
+        final allTeachers = await _client.from('teachers').select();
+        final match = (allTeachers as List).firstWhere(
+          (t) => (t['email'] ?? '').toString().toLowerCase() == email.trim().toLowerCase(),
+          orElse: () => null,
+        );
+        if (match == null) {
+          debugPrint('Teacher not found in fallback search either');
+          return null;
+        }
+        debugPrint('Teacher found via fallback: ${match['name']}');
+        return _teacherFromRow(match);
+      }
+      
+      debugPrint('Teacher found: ${response['name']}');
       return _teacherFromRow(response);
     } catch (e) {
       debugPrint('Error fetching teacher by email: $e');

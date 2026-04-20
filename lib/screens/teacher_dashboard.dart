@@ -31,18 +31,33 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   Future<void> _loadTeacherData() async {
     setState(() => _loadingTeacher = true);
     
-    // Get teacher by email
     if (widget.teacherEmail != null) {
       final teacher = await _db.getTeacherByEmail(widget.teacherEmail!);
       if (mounted) {
         setState(() {
-          _currentTeacher = teacher;
+          // Even if teacher record not found, create a minimal one from email
+          _currentTeacher = teacher ?? Teacher(
+            id: '',
+            userId: '',
+            name: widget.teacherEmail!.split('@')[0].replaceAll('.', ' ')
+                .split(' ').map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '').join(' '),
+            email: widget.teacherEmail!,
+            phoneNumber: '',
+            employeeId: '',
+            subjects: [],
+            classes: [],
+            board: '',
+            qualification: null,
+            experienceYears: 0,
+            salary: 0,
+            isActive: true,
+            createdAt: DateTime.now(),
+          );
           _loadingTeacher = false;
         });
         
-        // Load feedback count for this teacher
-        if (teacher != null) {
-          _loadApprovedFeedbackCount(teacher.id);
+        if (_currentTeacher!.id.isNotEmpty) {
+          _loadApprovedFeedbackCount(_currentTeacher!.id);
         }
       }
     } else {
@@ -79,14 +94,15 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
   void _showProfileSheet(BuildContext context) {
     if (_currentTeacher == null) return;
-    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => _TeacherProfileSheet(
         teacher: _currentTeacher!,
-        onFeedbackRead: () => _loadApprovedFeedbackCount(_currentTeacher!.id),
+        onFeedbackRead: () => _currentTeacher!.id.isNotEmpty
+            ? _loadApprovedFeedbackCount(_currentTeacher!.id)
+            : null,
       ),
     );
   }
@@ -96,26 +112,6 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     if (_loadingTeacher) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (_currentTeacher == null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              const Text('Teacher not found'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-                child: const Text('Back to Login'),
-              ),
-            ],
-          ),
-        ),
       );
     }
 
