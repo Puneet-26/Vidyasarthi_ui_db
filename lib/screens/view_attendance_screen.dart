@@ -3,6 +3,7 @@ import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/attendance_service.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ViewAttendanceScreen extends StatefulWidget {
   final String studentId;
@@ -24,11 +25,62 @@ class _ViewAttendanceScreenState extends State<ViewAttendanceScreen> {
   Map<String, dynamic> _summary = {};
   List<Map<String, dynamic>> _history = [];
   bool _isLoading = true;
+  
+  // Real-time subscription
+  RealtimeChannel? _attendanceChannel;
 
   @override
   void initState() {
     super.initState();
     _loadAttendanceData();
+    _setupRealtimeSubscription();
+  }
+
+  @override
+  void dispose() {
+    _attendanceChannel?.unsubscribe();
+    super.dispose();
+  }
+
+  void _setupRealtimeSubscription() {
+    // Subscribe to attendance changes for this student
+    _attendanceChannel = Supabase.instance.client
+        .channel('attendance_${widget.studentId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'attendance',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'student_id',
+            value: widget.studentId,
+          ),
+          callback: (payload) {
+            debugPrint('🔔 Attendance updated in real-time!');
+            
+            // Show notification
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(Icons.refresh, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text('Attendance updated!'),
+                    ],
+                  ),
+                  backgroundColor: AppColors.success,
+                  duration: Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+            
+            // Reload data when attendance changes
+            _loadAttendanceData();
+          },
+        )
+        .subscribe();
   }
 
   Future<void> _loadAttendanceData() async {
