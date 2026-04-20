@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/database_service.dart';
@@ -646,6 +647,46 @@ class _TeacherClassesPage extends StatefulWidget {
 }
 
 class _TeacherClassesPageState extends State<_TeacherClassesPage> {
+  List<Map<String, dynamic>> _scheduledExams = [];
+  bool _loadingExams = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadScheduledExams();
+  }
+
+  Future<void> _loadScheduledExams() async {
+    setState(() => _loadingExams = true);
+    
+    try {
+      final response = await Supabase.instance.client
+          .from('tests')
+          .select()
+          .eq('status', 'scheduled')
+          .order('test_date', ascending: true);
+      
+      if (mounted) {
+        setState(() {
+          _scheduledExams = List<Map<String, dynamic>>.from(response);
+          _loadingExams = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingExams = false);
+      }
+    }
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return dateString;
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -653,47 +694,8 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with Schedule Exam button
-          Row(
-            children: [
-              const Expanded(child: SectionHeader(title: 'My Classes')),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ScheduleExamScreen(
-                        teacherId: 'teacher_001',
-                        teacherName: 'Teacher',
-                      ),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.event_note_rounded, color: Colors.white, size: 18),
-                      SizedBox(width: 8),
-                      Text(
-                        'Schedule Exam',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+          // Header
+          const SectionHeader(title: 'My Classes'),
           const SizedBox(height: 16),
           const _ClassCard(
               batch: 'Class 10-A',
@@ -721,7 +723,232 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
               time: 'Wed 11 AM–12 PM',
               attendanceStatus: 'Pending',
               present: 0),
+          const SizedBox(height: 20),
+          
+          // Schedule Exam Widget
+          GestureDetector(
+            onTap: () async {
+              // For now, use a valid UUID format as placeholder
+              // In production, this should come from the logged-in teacher's profile
+              const teacherId = '00000000-0000-0000-0000-000000000001';
+              
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ScheduleExamScreen(
+                    teacherId: teacherId,
+                    teacherName: 'Teacher',
+                  ),
+                ),
+              );
+              
+              // Reload exams if an exam was scheduled
+              if (result == true) {
+                _loadScheduledExams();
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withOpacity(0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.event_note_rounded,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Schedule Exam',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Create and schedule exams for your classes',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Scheduled Exams Section
+          const SectionHeader(title: 'Scheduled Exams'),
+          const SizedBox(height: 12),
+          
+          if (_loadingExams)
+            const Center(child: CircularProgressIndicator())
+          else if (_scheduledExams.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.event_busy,
+                      size: 48,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No exams scheduled yet',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ..._scheduledExams.map((exam) => _buildExamCard(exam)),
+          
           const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExamCard(Map<String, dynamic> exam) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.quiz_rounded,
+              color: AppColors.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  exam['title'] ?? 'Untitled Exam',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Batch: ${exam['batch_id'] ?? 'N/A'}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMid,
+                  ),
+                ),
+                Text(
+                  'Date: ${_formatDate(exam['test_date'] ?? '')}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${exam['total_marks'] ?? 0} marks',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.success,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  exam['status'] ?? 'scheduled',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.warning,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

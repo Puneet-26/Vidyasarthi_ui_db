@@ -22,15 +22,11 @@ class ScheduleExamScreen extends StatefulWidget {
 class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
   final _maxMarksController = TextEditingController();
-  final _durationController = TextEditingController();
-  final _roomController = TextEditingController();
 
   String? _selectedBatch;
   String? _selectedSubject;
   DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
   bool _isSaving = false;
 
   final List<Map<String, String>> _batches = [
@@ -52,10 +48,7 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
   @override
   void dispose() {
     _titleController.dispose();
-    _descriptionController.dispose();
     _maxMarksController.dispose();
-    _durationController.dispose();
-    _roomController.dispose();
     super.dispose();
   }
 
@@ -69,17 +62,6 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
 
     if (picked != null) {
       setState(() => _selectedDate = picked);
-    }
-  }
-
-  Future<void> _selectTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: const TimeOfDay(hour: 9, minute: 0),
-    );
-
-    if (picked != null) {
-      setState(() => _selectedTime = picked);
     }
   }
 
@@ -101,27 +83,18 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
       return;
     }
 
-    if (_selectedTime == null) {
-      _showError('Please select exam time');
-      return;
-    }
-
     setState(() => _isSaving = true);
 
     try {
       final examData = {
         'id': _generateUuid(),
         'title': _titleController.text.trim(),
-        'description': _descriptionController.text.trim(),
         'subject_id': _selectedSubject,
         'batch_id': _selectedBatch,
         'teacher_id': widget.teacherId,
-        'test_date': _selectedDate!.toIso8601String().split('T')[0],
-        'start_time': '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}:00',
-        'duration_minutes': int.parse(_durationController.text),
-        'max_marks': int.parse(_maxMarksController.text),
+        'test_date': _selectedDate!.toIso8601String(),
+        'total_marks': int.parse(_maxMarksController.text),
         'status': 'scheduled',
-        'room_number': _roomController.text.trim(),
         'created_at': DateTime.now().toIso8601String(),
       };
 
@@ -193,22 +166,6 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
 
             const SizedBox(height: 16),
 
-            // Description
-            TextFormField(
-              controller: _descriptionController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                labelText: 'Description',
-                hintText: 'Exam details, topics covered, etc.',
-                prefixIcon: const Icon(Icons.description),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
             // Batch Selection
             DropdownButtonFormField<String>(
               value: _selectedBatch,
@@ -263,171 +220,74 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
 
             const SizedBox(height: 16),
 
-            // Date and Time
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: _selectDate,
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
+            // Exam Date
+            GestureDetector(
+              onTap: _selectDate,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today, color: AppColors.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.calendar_today, color: AppColors.primary),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Exam Date *',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textLight,
-                                  ),
-                                ),
-                                Text(
-                                  _selectedDate != null
-                                      ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                                      : 'Select date',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: _selectedDate != null
-                                        ? AppColors.textDark
-                                        : AppColors.textLight,
-                                  ),
-                                ),
-                              ],
+                          const Text(
+                            'Exam Date *',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textLight,
+                            ),
+                          ),
+                          Text(
+                            _selectedDate != null
+                                ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                                : 'Select date',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: _selectedDate != null
+                                  ? AppColors.textDark
+                                  : AppColors.textLight,
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: _selectTime,
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.access_time, color: AppColors.primary),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Start Time *',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textLight,
-                                  ),
-                                ),
-                                Text(
-                                  _selectedTime != null
-                                      ? _selectedTime!.format(context)
-                                      : 'Select time',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: _selectedTime != null
-                                        ? AppColors.textDark
-                                        : AppColors.textLight,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
 
             const SizedBox(height: 16),
 
-            // Duration and Max Marks
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _durationController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(
-                      labelText: 'Duration (minutes) *',
-                      hintText: '180',
-                      prefixIcon: const Icon(Icons.timer),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Required';
-                      }
-                      final duration = int.tryParse(value);
-                      if (duration == null || duration <= 0) {
-                        return 'Invalid';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _maxMarksController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(
-                      labelText: 'Max Marks *',
-                      hintText: '100',
-                      prefixIcon: const Icon(Icons.grade),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Required';
-                      }
-                      final marks = int.tryParse(value);
-                      if (marks == null || marks <= 0) {
-                        return 'Invalid';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Room Number
+            // Max Marks
             TextFormField(
-              controller: _roomController,
+              controller: _maxMarksController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: InputDecoration(
-                labelText: 'Room Number',
-                hintText: 'e.g., Room 101',
-                prefixIcon: const Icon(Icons.meeting_room),
+                labelText: 'Total Marks *',
+                hintText: '100',
+                prefixIcon: const Icon(Icons.grade),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Required';
+                }
+                final marks = int.tryParse(value);
+                if (marks == null || marks <= 0) {
+                  return 'Invalid';
+                }
+                return null;
+              },
             ),
 
             const SizedBox(height: 24),
