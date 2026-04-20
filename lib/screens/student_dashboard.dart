@@ -6,6 +6,7 @@ import '../models/models.dart';
 import 'connect_with_us_screen.dart';
 import 'faculty_screen.dart';
 import 'submit_feedback_screen_premium.dart';
+import 'view_attendance_screen.dart';
 
 class StudentDashboard extends StatefulWidget {
   final String studentId;
@@ -285,19 +286,32 @@ class _StudentHomePage extends StatelessWidget {
           const SizedBox(height: 24),
 
           // Stats Row — Attendance & Pending Tasks only
-          const Row(
+          Row(
             children: [
               Expanded(
-                child: StatCard(
-                  title: 'Attendance',
-                  value: '92%',
-                  icon: Icons.how_to_reg_rounded,
-                  color: AppColors.success,
-                  subtitle: 'This month',
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ViewAttendanceScreen(
+                          studentId: widget.studentId,
+                          studentName: _student?.name ?? 'Student',
+                        ),
+                      ),
+                    );
+                  },
+                  child: const StatCard(
+                    title: 'Attendance',
+                    value: '92%',
+                    icon: Icons.how_to_reg_rounded,
+                    color: AppColors.success,
+                    subtitle: 'This month',
+                  ),
                 ),
               ),
-              SizedBox(width: 12),
-              Expanded(
+              const SizedBox(width: 12),
+              const Expanded(
                 child: StatCard(
                   title: 'Pending Tasks',
                   value: '4',

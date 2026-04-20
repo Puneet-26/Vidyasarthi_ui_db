@@ -6,6 +6,7 @@ import '../models/models.dart';
 import 'connect_with_us_screen.dart';
 import 'faculty_screen.dart';
 import 'submit_feedback_screen_premium.dart';
+import 'view_attendance_screen.dart';
 
 class ParentDashboard extends StatefulWidget {
   final String parentEmail;
@@ -338,14 +339,27 @@ class _ParentHomePageState extends State<_ParentHomePage> {
         
         // Stats Cards
         Wrap(spacing: 12, runSpacing: 12, children: [
-          SizedBox(
-              width: (MediaQuery.of(context).size.width - 52) / 2,
-              child: const StatCard(
-                  title: 'Attendance',
-                  value: '92%',
-                  icon: Icons.how_to_reg_rounded,
-                  color: AppColors.success,
-                  subtitle: 'This month')),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ViewAttendanceScreen(
+                    studentId: student.id,
+                    studentName: student.name,
+                  ),
+                ),
+              );
+            },
+            child: SizedBox(
+                width: (MediaQuery.of(context).size.width - 52) / 2,
+                child: const StatCard(
+                    title: 'Attendance',
+                    value: '92%',
+                    icon: Icons.how_to_reg_rounded,
+                    color: AppColors.success,
+                    subtitle: 'This month')),
+          ),
           SizedBox(
               width: (MediaQuery.of(context).size.width - 52) / 2,
               child: const StatCard(

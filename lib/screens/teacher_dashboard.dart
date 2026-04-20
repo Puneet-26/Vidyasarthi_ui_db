@@ -5,6 +5,8 @@ import '../services/database_service.dart';
 import '../models/models.dart';
 import 'login_screen.dart';
 import 'placeholder_screens.dart';
+import 'mark_attendance_screen.dart';
+import 'select_batch_for_attendance.dart';
 
 class TeacherDashboard extends StatefulWidget {
   final String? teacherEmail;
@@ -2269,8 +2271,22 @@ class _QuickActionsGrid extends StatelessWidget {
   }
 
   void _navigateToScreen(BuildContext context, int screenIndex) {
+    // For Mark Attendance (index 0), show batch selection
+    if (screenIndex == 0) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SelectBatchForAttendanceScreen(
+            teacherId: _currentTeacher?.id ?? 'teacher_001',
+            teacherName: _currentTeacher?.name ?? 'Teacher',
+          ),
+        ),
+      );
+      return;
+    }
+
     final List<Widget> screens = [
-      const TimetableManagementScreen(), // Mark Attendance
+      const TimetableManagementScreen(), // Mark Attendance (not used, handled above)
       const HomeworkSystemScreen(), // Upload Assignment
       const TestsAndPracticeScreen(), // Enter Marks
       const LiveClassScreen(), // Send Notice
