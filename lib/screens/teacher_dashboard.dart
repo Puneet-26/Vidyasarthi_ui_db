@@ -7,6 +7,7 @@ import 'login_screen.dart';
 import 'placeholder_screens.dart';
 import 'mark_attendance_screen.dart';
 import 'select_batch_for_attendance.dart';
+import 'schedule_exam_screen.dart';
 
 class TeacherDashboard extends StatefulWidget {
   final String? teacherEmail;
@@ -637,18 +638,64 @@ class _TeacherHomePage extends StatelessWidget {
   }
 }
 
-class _TeacherClassesPage extends StatelessWidget {
+class _TeacherClassesPage extends StatefulWidget {
   const _TeacherClassesPage();
+  
+  @override
+  State<_TeacherClassesPage> createState() => _TeacherClassesPageState();
+}
+
+class _TeacherClassesPageState extends State<_TeacherClassesPage> {
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(20),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'My Classes'),
-          SizedBox(height: 12),
-          _ClassCard(
+          // Header with Schedule Exam button
+          Row(
+            children: [
+              const Expanded(child: SectionHeader(title: 'My Classes')),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ScheduleExamScreen(
+                        teacherId: 'teacher_001',
+                        teacherName: 'Teacher',
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.event_note_rounded, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'Schedule Exam',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const _ClassCard(
               batch: 'Class 10-A',
               subject: 'Chemistry',
               students: 40,
@@ -656,8 +703,8 @@ class _TeacherClassesPage extends StatelessWidget {
               time: 'Mon/Tue 9–10 AM',
               attendanceStatus: 'Marked',
               present: 38),
-          SizedBox(height: 10),
-          _ClassCard(
+          const SizedBox(height: 10),
+          const _ClassCard(
               batch: 'Class 10-B',
               subject: 'Chemistry',
               students: 38,
@@ -665,8 +712,8 @@ class _TeacherClassesPage extends StatelessWidget {
               time: 'Tue 10–11 AM',
               attendanceStatus: 'Pending',
               present: 0),
-          SizedBox(height: 10),
-          _ClassCard(
+          const SizedBox(height: 10),
+          const _ClassCard(
               batch: 'Class 11-A',
               subject: 'Chemistry',
               students: 35,
@@ -674,7 +721,7 @@ class _TeacherClassesPage extends StatelessWidget {
               time: 'Wed 11 AM–12 PM',
               attendanceStatus: 'Pending',
               present: 0),
-          SizedBox(height: 30),
+          const SizedBox(height: 30),
         ],
       ),
     );
@@ -2322,28 +2369,28 @@ class _TeacherSchedule extends StatelessWidget {
       'class': 'Class 8-A',
       'subject': 'Chemistry',
       'room': 'Room 204',
-      'status': 'done'
+      'endTime': '10:00 AM'
     },
     {
       'time': '10:30 AM',
       'class': 'Class 9-B',
       'subject': 'Chemistry',
       'room': 'Room 301',
-      'status': 'current'
+      'endTime': '11:30 AM'
     },
     {
       'time': '12:30 PM',
       'class': 'Class 7-C',
       'subject': 'Chemistry',
       'room': 'Room 105',
-      'status': 'upcoming'
+      'endTime': '01:30 PM'
     },
     {
       'time': '02:00 PM',
       'class': 'Class 10-A',
       'subject': 'Chemistry',
       'room': 'Room 204',
-      'status': 'upcoming'
+      'endTime': '03:00 PM'
     },
   ];
 
@@ -2351,9 +2398,11 @@ class _TeacherSchedule extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: schedule.map((s) {
+        final status = _getClassStatus(s['time']!, s['endTime']!);
         Color statusColor;
         String statusLabel;
-        switch (s['status']) {
+        
+        switch (status) {
           case 'done':
             statusColor = AppColors.textLight;
             statusLabel = 'Done';
@@ -2366,11 +2415,12 @@ class _TeacherSchedule extends StatelessWidget {
             statusColor = AppColors.teacherAccent;
             statusLabel = 'Upcoming';
         }
+        
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: GlassCard(
             padding: const EdgeInsets.all(14),
-            color: s['status'] == 'current'
+            color: status == 'current'
                 ? AppColors.success.withOpacity(0.08)
                 : null,
             child: Row(
@@ -2442,6 +2492,50 @@ class _TeacherSchedule extends StatelessWidget {
         );
       }).toList(),
     );
+  }
+
+  String _getClassStatus(String startTimeStr, String endTimeStr) {
+    final now = DateTime.now();
+    final currentTime = TimeOfDay.fromDateTime(now);
+    
+    final startTime = _parseTimeString(startTimeStr);
+    final endTime = _parseTimeString(endTimeStr);
+    
+    final currentMinutes = currentTime.hour * 60 + currentTime.minute;
+    final startMinutes = startTime.hour * 60 + startTime.minute;
+    final endMinutes = endTime.hour * 60 + endTime.minute;
+    
+    if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+      return 'current';
+    } else if (currentMinutes >= endMinutes) {
+      return 'done';
+    } else {
+      return 'upcoming';
+    }
+  }
+
+  TimeOfDay _parseTimeString(String timeStr) {
+    try {
+      // Parse time like "09:00 AM" or "02:00 PM"
+      final parts = timeStr.split(' ');
+      final timePart = parts[0];
+      final period = parts[1];
+      
+      final hourMinute = timePart.split(':');
+      int hour = int.parse(hourMinute[0]);
+      final minute = int.parse(hourMinute[1]);
+      
+      // Convert to 24-hour format
+      if (period == 'PM' && hour != 12) {
+        hour += 12;
+      } else if (period == 'AM' && hour == 12) {
+        hour = 0;
+      }
+      
+      return TimeOfDay(hour: hour, minute: minute);
+    } catch (e) {
+      return const TimeOfDay(hour: 0, minute: 0);
+    }
   }
 }
 
