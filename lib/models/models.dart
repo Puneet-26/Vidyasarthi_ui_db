@@ -49,6 +49,96 @@ class AppUser {
       };
 }
 
+// Teacher Model
+class Teacher {
+  final String id;
+  final String userId;
+  final String name;
+  final String email;
+  final String phoneNumber;
+  final String employeeId;
+  final List<String> subjects; // Subjects taught
+  final List<String> classes; // Classes assigned (7th, 8th, etc.)
+  final String board; // CBSE or SSC
+  final String? batchId; // Optional batch assignment
+  final String? qualification;
+  final int experienceYears;
+  final double salary;
+  final DateTime? joiningDate;
+  final String? specialization;
+  final bool isActive;
+  final DateTime createdAt;
+
+  Teacher({
+    required this.id,
+    required this.userId,
+    required this.name,
+    required this.email,
+    required this.phoneNumber,
+    required this.employeeId,
+    required this.subjects,
+    required this.classes,
+    required this.board,
+    this.batchId,
+    this.qualification,
+    this.experienceYears = 0,
+    this.salary = 0.0,
+    this.joiningDate,
+    this.specialization,
+    this.isActive = true,
+    required this.createdAt,
+  });
+
+  factory Teacher.fromJson(Map<String, dynamic> json) {
+    return Teacher(
+      id: json['id'] ?? '',
+      userId: json['user_id'] ?? '',
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      phoneNumber: json['phone_number'] ?? json['phone'] ?? '',
+      employeeId: json['employee_id'] ?? '',
+      subjects: json['subjects'] is List
+          ? List<String>.from(json['subjects'])
+          : (json['subjects'] as String?)?.split(',').map((e) => e.trim()).toList() ?? [],
+      classes: json['classes'] is List
+          ? List<String>.from(json['classes'])
+          : (json['classes'] as String?)?.split(',').map((e) => e.trim()).toList() ?? [],
+      board: json['board'] ?? 'CBSE',
+      batchId: json['batch_id'],
+      qualification: json['qualification'],
+      experienceYears: json['experience_years'] ?? 0,
+      salary: (json['salary'] ?? 0).toDouble(),
+      joiningDate: json['joining_date'] != null
+          ? DateTime.parse(json['joining_date'])
+          : null,
+      specialization: json['specialization'],
+      isActive: json['is_active'] ?? true,
+      createdAt: DateTime.parse(
+          json['created_at'] ?? DateTime.now().toIso8601String()),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'user_id': userId,
+        'name': name,
+        'email': email,
+        'phone_number': phoneNumber,
+        'employee_id': employeeId,
+        'subjects': subjects.join(','),
+        'classes': classes.join(','),
+        'board': board,
+        'batch_id': batchId,
+        'qualification': qualification,
+        'experience_years': experienceYears,
+        'salary': salary,
+        'joining_date': joiningDate?.toIso8601String().split('T')[0],
+        'specialization': specialization,
+        'is_active': isActive,
+        'created_at': createdAt.toIso8601String(),
+      };
+}
+
 // Subject Model
 class Subject {
   final String id;
@@ -99,11 +189,10 @@ class Batch {
   factory Batch.fromJson(Map<String, dynamic> json) {
     return Batch(
       id: json['id'] ?? '',
-      name: json['name'] ?? '',
+      name: json['batch_name'] ?? json['name'] ?? '',
       level: json['level'] ?? '',
       subjects: List<String>.from(json['subject_ids'] ?? []),
-      createdAt: DateTime.parse(
-          json['created_at'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
     );
   }
 
@@ -139,6 +228,8 @@ class Student {
   final String address;
   final DateTime admissionDate;
   final bool isActive;
+  final String? studentClass; // e.g., "7th", "8th", etc.
+  final String? board; // e.g., "CBSE", "SSC"
 
   Student({
     required this.id,
@@ -162,6 +253,8 @@ class Student {
     required this.admissionDate,
     required this.isActive,
     this.profileImage,
+    this.studentClass,
+    this.board,
   });
 
   factory Student.fromJson(Map<String, dynamic> json) {
@@ -191,6 +284,8 @@ class Student {
           json['admission_date'] ?? DateTime.now().toIso8601String()),
       isActive: json['is_active'] ?? true,
       profileImage: json['profile_image'],
+      studentClass: json['class'],
+      board: json['board'],
     );
   }
 
@@ -216,6 +311,8 @@ class Student {
         'admission_date':
             admissionDate.toIso8601String().split('T')[0], // Date only
         'is_active': isActive,
+        'class': studentClass,
+        'board': board,
         if (profileImage != null) 'profile_image': profileImage,
       };
 }
@@ -794,6 +891,89 @@ class TeacherFeedback {
         'subject_name': subjectName,
         'message': message,
         'category': category,
+        'created_at': createdAt.toIso8601String(),
+      };
+}
+
+// Anonymous Feedback Model (student/parent -> admin -> teacher)
+class AnonymousFeedback {
+  final String id;
+  final String senderRole; // 'student' or 'parent'
+  final String? senderId; // Optional, for tracking only
+  final String teacherId;
+  final String teacherName;
+  final String category; // teaching, behavior, communication, subject_knowledge, punctuality, other
+  final String feedbackText;
+  final int? rating; // 1-5 stars (optional)
+  final String status; // pending, approved, rejected
+  final String? adminNotes;
+  final String? reviewedBy;
+  final DateTime? reviewedAt;
+  final bool isReadByTeacher;
+  final DateTime? readAt;
+  final DateTime submittedAt;
+  final DateTime createdAt;
+
+  AnonymousFeedback({
+    required this.id,
+    required this.senderRole,
+    this.senderId,
+    required this.teacherId,
+    required this.teacherName,
+    required this.category,
+    required this.feedbackText,
+    this.rating,
+    this.status = 'pending',
+    this.adminNotes,
+    this.reviewedBy,
+    this.reviewedAt,
+    this.isReadByTeacher = false,
+    this.readAt,
+    required this.submittedAt,
+    required this.createdAt,
+  });
+
+  factory AnonymousFeedback.fromJson(Map<String, dynamic> json) {
+    return AnonymousFeedback(
+      id: json['id'] ?? '',
+      senderRole: json['sender_role'] ?? 'student',
+      senderId: json['sender_id'],
+      teacherId: json['teacher_id'] ?? '',
+      teacherName: json['teacher_name'] ?? '',
+      category: json['category'] ?? 'other',
+      feedbackText: json['feedback_text'] ?? '',
+      rating: json['rating'],
+      status: json['status'] ?? 'pending',
+      adminNotes: json['admin_notes'],
+      reviewedBy: json['reviewed_by'],
+      reviewedAt: json['reviewed_at'] != null
+          ? DateTime.parse(json['reviewed_at'])
+          : null,
+      isReadByTeacher: json['is_read_by_teacher'] ?? false,
+      readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
+      submittedAt: DateTime.parse(
+          json['submitted_at'] ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+          json['created_at'] ?? DateTime.now().toIso8601String()),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'sender_role': senderRole,
+        'sender_id': senderId,
+        'teacher_id': teacherId,
+        'teacher_name': teacherName,
+        'category': category,
+        'feedback_text': feedbackText,
+        'rating': rating,
+        'status': status,
+        'admin_notes': adminNotes,
+        'reviewed_by': reviewedBy,
+        'reviewed_at': reviewedAt?.toIso8601String(),
+        'is_read_by_teacher': isReadByTeacher,
+        'read_at': readAt?.toIso8601String(),
+        'submitted_at': submittedAt.toIso8601String(),
         'created_at': createdAt.toIso8601String(),
       };
 }

@@ -97,7 +97,11 @@ class _LoginScreenState extends State<LoginScreen>
 
       if (result['success'] == true) {
         final role = result['role'] ?? 'student';
-        Navigator.of(context).pushReplacementNamed('/loading', arguments: role);
+        final email = result['email'] ?? '';
+        Navigator.of(context).pushReplacementNamed(
+          '/loading',
+          arguments: {'role': role, 'email': email},
+        );
       } else {
         // error is already a clean user-facing string from AuthService / AppErrors
         setState(() {

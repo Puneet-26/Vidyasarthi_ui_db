@@ -420,6 +420,7 @@ class DashboardHeader extends StatelessWidget {
   final VoidCallback? onNotification;
   final int notificationCount;
   final bool showNotification;
+  final List<Widget>? actionButtons;
 
   const DashboardHeader({
     super.key,
@@ -430,6 +431,7 @@ class DashboardHeader extends StatelessWidget {
     this.onNotification,
     this.notificationCount = 0,
     this.showNotification = true,
+    this.actionButtons,
   });
 
   @override
@@ -483,7 +485,12 @@ class DashboardHeader extends StatelessWidget {
             ],
           ),
         ),
-        if (showNotification)
+        if (actionButtons != null) ...[
+          const SizedBox(width: 8),
+          ...actionButtons!,
+        ],
+        if (showNotification) ...[
+          const SizedBox(width: 8),
           Stack(
             clipBehavior: Clip.none,
             children: [
@@ -517,6 +524,7 @@ class DashboardHeader extends StatelessWidget {
                 ),
             ],
           ),
+        ],
       ],
     );
   }
