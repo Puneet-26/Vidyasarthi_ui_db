@@ -2127,7 +2127,10 @@ class _MarksTestCard extends StatelessWidget {
 }
 
 class _TeacherMessagesPage extends StatelessWidget {
-  const _TeacherMessagesPage();
+  final Teacher? teacher;
+  
+  const _TeacherMessagesPage({this.teacher});
+  
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -2137,7 +2140,10 @@ class _TeacherMessagesPage extends StatelessWidget {
         children: [
           const SectionHeader(title: 'Quick Actions'),
           const SizedBox(height: 14),
-          _QuickActionsGrid(),
+          _QuickActionsGrid(
+            teacherId: teacher?.id,
+            teacherName: teacher?.name,
+          ),
           const SizedBox(height: 30),
         ],
       ),
@@ -2192,6 +2198,14 @@ class _NoticeCard extends StatelessWidget {
 }
 
 class _QuickActionsGrid extends StatelessWidget {
+  final String? teacherId;
+  final String? teacherName;
+
+  const _QuickActionsGrid({
+    this.teacherId,
+    this.teacherName,
+  });
+
   final List<Map<String, dynamic>> actions = const [
     {
       'label': 'Mark\nAttendance',
@@ -2277,8 +2291,8 @@ class _QuickActionsGrid extends StatelessWidget {
         context,
         MaterialPageRoute(
           builder: (_) => SelectBatchForAttendanceScreen(
-            teacherId: _currentTeacher?.id ?? 'teacher_001',
-            teacherName: _currentTeacher?.name ?? 'Teacher',
+            teacherId: teacherId ?? 'teacher_001',
+            teacherName: teacherName ?? 'Teacher',
           ),
         ),
       );

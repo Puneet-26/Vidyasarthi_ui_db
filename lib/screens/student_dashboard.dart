@@ -291,15 +291,17 @@ class _StudentHomePage extends StatelessWidget {
               Expanded(
                 child: GestureDetector(
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ViewAttendanceScreen(
-                          studentId: widget.studentId,
-                          studentName: _student?.name ?? 'Student',
+                    if (student != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ViewAttendanceScreen(
+                            studentId: student!.id,
+                            studentName: student!.name,
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    }
                   },
                   child: const StatCard(
                     title: 'Attendance',

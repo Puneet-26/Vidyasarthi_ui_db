@@ -74,9 +74,9 @@ class DatabaseService {
         final allTeachers = await _client.from('teachers').select();
         final match = (allTeachers as List).firstWhere(
           (t) => (t['email'] ?? '').toString().toLowerCase() == email.trim().toLowerCase(),
-          orElse: () => null,
+          orElse: () => <String, dynamic>{},
         );
-        if (match == null) {
+        if (match.isEmpty) {
           debugPrint('Teacher not found in fallback search either');
           return null;
         }
