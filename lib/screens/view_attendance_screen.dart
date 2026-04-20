@@ -285,11 +285,8 @@ class _ViewAttendanceScreenState extends State<ViewAttendanceScreen> {
                         itemCount: _history.length,
                         itemBuilder: (context, index) {
                           final record = _history[index];
-                          final date = DateTime.parse(record['attendance_date']);
+                          final date = DateTime.parse(record['date']);
                           final status = record['status'];
-                          final subject = record['subjects'];
-                          final teacher = record['teachers'];
-                          final remarks = record['remarks'] ?? '';
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
@@ -309,37 +306,12 @@ class _ViewAttendanceScreenState extends State<ViewAttendanceScreen> {
                                   fontSize: 14,
                                 ),
                               ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    subject != null ? subject['name'] : 'N/A',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textLight,
-                                    ),
-                                  ),
-                                  if (teacher != null && teacher['users'] != null)
-                                    Text(
-                                      'Teacher: ${teacher['users']['name']}',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.textLight,
-                                      ),
-                                    ),
-                                  if (remarks.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Text(
-                                        'Note: $remarks',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
-                                    ),
-                                ],
+                              subtitle: Text(
+                                'Batch: ${record['batch_id'] ?? 'N/A'}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textLight,
+                                ),
                               ),
                               trailing: Container(
                                 padding: const EdgeInsets.symmetric(

@@ -25,23 +25,17 @@ class AttendanceService {
           'id': _generateUuid(),
           'student_id': record['student_id'],
           'batch_id': batchId,
-          'subject_id': subjectId,
-          'teacher_id': teacherId,
-          'attendance_date': date.toIso8601String().split('T')[0],
+          'date': date.toIso8601String().split('T')[0],
           'status': record['status'], // present, absent, late, leave, half_day
-          'remarks': record['remarks'] ?? '',
-          'marked_at': DateTime.now().toIso8601String(),
-          'created_at': DateTime.now().toIso8601String(),
         });
       }
 
-      // Delete existing attendance for this date, batch, and subject
+      // Delete existing attendance for this date, batch
       await _client
           .from('attendance')
           .delete()
           .eq('batch_id', batchId)
-          .eq('subject_id', subjectId)
-          .eq('attendance_date', date.toIso8601String().split('T')[0]);
+          .eq('date', date.toIso8601String().split('T')[0]);
 
       // Insert new attendance records
       await _client.from('attendance').insert(attendanceRecords);
@@ -73,8 +67,7 @@ class AttendanceService {
           .from('attendance')
           .select('*, students!inner(*, users!inner(name, email))')
           .eq('batch_id', batchId)
-          .eq('subject_id', subjectId)
-          .eq('attendance_date', date.toIso8601String().split('T')[0]);
+          .eq('date', date.toIso8601String().split('T')[0]);
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
@@ -111,14 +104,14 @@ class AttendanceService {
     try {
       var query = _client
           .from('attendance')
-          .select('status, attendance_date')
+          .select('status, date')
           .eq('student_id', studentId);
 
       if (startDate != null) {
-        query = query.gte('attendance_date', startDate.toIso8601String().split('T')[0]);
+        query = query.gte('date', startDate.toIso8601String().split('T')[0]);
       }
       if (endDate != null) {
-        query = query.lte('attendance_date', endDate.toIso8601String().split('T')[0]);
+        query = query.lte('date', endDate.toIso8601String().split('T')[0]);
       }
 
       final response = await query;
@@ -180,9 +173,9 @@ class AttendanceService {
     try {
       final response = await _client
           .from('attendance')
-          .select('*, subjects(name, code), teachers!inner(*, users!inner(name))')
+          .select('*')
           .eq('student_id', studentId)
-          .order('attendance_date', ascending: false)
+          .order('date', ascending: false)
           .limit(limit);
 
       return List<Map<String, dynamic>>.from(response);
@@ -202,7 +195,7 @@ class AttendanceService {
           .from('attendance')
           .select('status')
           .eq('batch_id', batchId)
-          .eq('attendance_date', date.toIso8601String().split('T')[0]);
+          .eq('date', date.toIso8601String().split('T')[0]);
 
       final records = List<Map<String, dynamic>>.from(response);
       
