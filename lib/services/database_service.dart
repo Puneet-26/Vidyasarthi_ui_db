@@ -42,7 +42,16 @@ class DatabaseService {
   Future<List<Teacher>> getAllTeachers() async {
     try {
       final response = await _client.from('teachers').select();
-      return (response as List).map((t) => _teacherFromRow(t)).toList();
+      final List<Teacher> result = [];
+      for (final t in response as List) {
+        try {
+          result.add(_teacherFromRow(t));
+        } catch (e) {
+          debugPrint('Error parsing teacher row: $e | row: $t');
+        }
+      }
+      debugPrint('Loaded ${result.length} teachers');
+      return result;
     } catch (e) {
       debugPrint('Error fetching teachers: $e');
       return [];
@@ -100,23 +109,23 @@ class DatabaseService {
       return [];
     }
     return Teacher(
-      id: d['id'] ?? '',
-      userId: d['user_id'] ?? d['id'] ?? '',
-      name: d['name'] ?? '',
-      email: d['email'] ?? '',
-      phoneNumber: d['phone'] ?? d['phone_number'] ?? '',
-      employeeId: d['employee_id'] ?? '',
+      id: d['id']?.toString() ?? '',
+      userId: d['user_id']?.toString() ?? d['id']?.toString() ?? '',
+      name: d['name']?.toString() ?? '',
+      email: d['email']?.toString() ?? '',
+      phoneNumber: d['phone']?.toString() ?? d['phone_number']?.toString() ?? '',
+      employeeId: d['employee_id']?.toString() ?? '',
       subjects: parseList(d['subjects']),
       classes: parseList(d['classes']),
-      board: d['board'] ?? 'CBSE',
-      batchId: d['batch_id'],
-      qualification: d['qualification'],
-      experienceYears: d['experience_years'] ?? d['experience'] != null ? 0 : 0,
-      salary: (d['salary'] ?? 0).toDouble(),
-      joiningDate: d['joining_date'] != null ? DateTime.tryParse(d['joining_date']) : null,
-      specialization: d['specialization'],
-      isActive: d['is_active'] ?? true,
-      createdAt: DateTime.tryParse(d['created_at'] ?? '') ?? DateTime.now(),
+      board: d['board']?.toString() ?? 'CBSE',
+      batchId: d['batch_id']?.toString(),
+      qualification: d['qualification']?.toString(),
+      experienceYears: (d['experience_years'] as num?)?.toInt() ?? 0,
+      salary: (d['salary'] as num?)?.toDouble() ?? 0.0,
+      joiningDate: d['joining_date'] != null ? DateTime.tryParse(d['joining_date'].toString()) : null,
+      specialization: d['specialization']?.toString(),
+      isActive: d['is_active'] as bool? ?? true,
+      createdAt: DateTime.tryParse(d['created_at']?.toString() ?? '') ?? DateTime.now(),
     );
   }
 
@@ -153,6 +162,8 @@ class DatabaseService {
   }
 
   // Helper: build Student from a students-table row (name/email stored directly)
+  Student studentFromRow(Map<String, dynamic> d) => _studentFromRow(d);
+  
   Student _studentFromRow(Map<String, dynamic> d) {
     return Student(
       id: d['id'] ?? '',
@@ -352,51 +363,69 @@ class DatabaseService {
     try {
       debugPrint('Adding student: $name ($email)');
 
-      // 1. Create student auth credentials
-      await _client.from('auth_credentials').insert({
-        'id': 'cred_student_${DateTime.now().millisecondsSinceEpoch}',
-        'email': email.toLowerCase(),
-        'password_hash': 'Student@123',
-        'name': name,
-        'role': 'student',
-      });
-      debugPrint('✓ Student auth credentials created');
+      // 1. Create student auth credentials (skip if already exists)
+      try {
+        await _client.from('auth_credentials').insert({
+          'id': 'cred_stu_${DateTime.now().millisecondsSinceEpoch}',
+          'email': email.toLowerCase(),
+          'password_hash': 'Student@123',
+          'name': name,
+          'role': 'student',
+        });
+        debugPrint('✓ Student auth credentials created');
+      } catch (e) {
+        debugPrint('Student auth credentials may already exist, continuing: $e');
+      }
 
-      // 2. Create parent auth credentials
-      await _client.from('auth_credentials').insert({
-        'id': 'cred_parent_${DateTime.now().millisecondsSinceEpoch}',
-        'email': parentEmail.toLowerCase(),
-        'password_hash': 'Parent@123',
-        'name': parentName,
-        'role': 'parent',
-      });
-      debugPrint('✓ Parent auth credentials created');
+      // 2. Create parent auth credentials (skip if already exists)
+      try {
+        await _client.from('auth_credentials').insert({
+          'id': 'cred_par_${DateTime.now().millisecondsSinceEpoch}',
+          'email': parentEmail.toLowerCase(),
+          'password_hash': 'Parent@123',
+          'name': parentName,
+          'role': 'parent',
+        });
+        debugPrint('✓ Parent auth credentials created');
+      } catch (e) {
+        debugPrint('Parent auth credentials may already exist, continuing: $e');
+      }
 
       // 3. Insert into students table
       // CRITICAL: parent_name format MUST be "Name (email)" for parent-student isolation
       // This format is used by getStudentsByParentEmail() to filter students
       // DO NOT CHANGE without updating the filtering logic
       final parentNameWithEmail = '$parentName ($parentEmail)';
-      await _client.from('students').insert({
+      
+      // Only insert columns that actually exist in the students table
+      final studentData = <String, dynamic>{
         'name': name,
         'email': email,
         'phone': phone,
         'parent_name': parentNameWithEmail,
         'parent_phone': parentPhone,
-        'batch_id': batchId,
         'enrollment_status': 'active',
-        'class': selectedClass,
-        'board': selectedBoard,
-        'total_fees': totalFees ?? 0,
-        'fees_paid': feesPaid ?? 0,
-        'admission_date': admissionDate?.toIso8601String().split('T')[0],
-      });
+      };
+      
+      // batch_id is uuid type - only add if valid
+      if (batchId.isNotEmpty) studentData['batch_id'] = batchId;
+      if (selectedClass != null) studentData['class'] = selectedClass;
+      if (selectedBoard != null) studentData['board'] = selectedBoard;
+      if (totalFees != null) studentData['total_fees'] = totalFees;
+      if (feesPaid != null) studentData['fees_paid'] = feesPaid;
+      if (admissionDate != null) studentData['admission_date'] = admissionDate.toIso8601String().split('T')[0];
+      if (dateOfBirth != null) studentData['date_of_birth'] = dateOfBirth.toIso8601String().split('T')[0];
+      if (address != null && address.isNotEmpty) studentData['address'] = address;
+      
+      await _client.from('students').insert(studentData);
       debugPrint('✓ Student record created');
 
       return true;
     } on PostgrestException catch (e) {
       debugPrint('❌ Supabase error adding student: ${e.message}');
       debugPrint('Error code: ${e.code}');
+      debugPrint('Error details: ${e.details}');
+      debugPrint('Error hint: ${e.hint}');
       return false;
     } catch (e) {
       debugPrint('❌ Error adding student: $e');
@@ -425,38 +454,41 @@ class DatabaseService {
       final email = name.toLowerCase().trim().replaceAll(' ', '.') + '@teachers.com';
       final employeeId = 'EMP${DateTime.now().millisecondsSinceEpoch}';
 
-      // 2. Create teacher auth credentials
-      await _client.from('auth_credentials').insert({
-        'id': 'cred_teacher_${DateTime.now().millisecondsSinceEpoch}',
-        'email': email.toLowerCase(),
-        'password_hash': 'Teacher@123',
-        'name': name,
-        'role': 'teacher',
-      });
-      debugPrint('✓ Teacher auth credentials created');
+      // 2. Create teacher auth credentials (skip if already exists)
+      try {
+        await _client.from('auth_credentials').insert({
+          'id': 'cred_tea_${DateTime.now().millisecondsSinceEpoch}',
+          'email': email.toLowerCase(),
+          'password_hash': 'Teacher@123',
+          'name': name,
+          'role': 'teacher',
+        });
+        debugPrint('✓ Teacher auth credentials created');
+      } catch (e) {
+        debugPrint('Teacher auth credentials may already exist, continuing: $e');
+      }
 
       // 3. Insert into teachers table
-      // Store subjects and classes as comma-separated strings
-      final subjectsStr = subjects.join(',');
-      final classesStr = classes.join(',');
-      
-      await _client.from('teachers').insert({
+      final teacherData = <String, dynamic>{
         'id': 'teacher_${DateTime.now().millisecondsSinceEpoch}',
         'name': name,
         'email': email,
         'phone': phoneNumber,
         'employee_id': employeeId,
-        'subjects': subjectsStr,
-        'classes': classesStr,
+        'subjects': subjects.join(','),
+        'classes': classes.join(','),
         'board': board,
-        'batch_id': batchId,
-        'qualification': qualification,
-        'experience_years': experienceYears,
-        'salary': salary,
-        'joining_date': joiningDate?.toIso8601String().split('T')[0],
-        'specialization': subjects.isNotEmpty ? subjects[0] : null,
         'is_active': true,
-      });
+      };
+      
+      if (batchId != null) teacherData['batch_id'] = batchId;
+      if (qualification != null) teacherData['qualification'] = qualification;
+      if (experienceYears > 0) teacherData['experience_years'] = experienceYears;
+      if (salary > 0) teacherData['salary'] = salary;
+      if (joiningDate != null) teacherData['joining_date'] = joiningDate.toIso8601String().split('T')[0];
+      if (subjects.isNotEmpty) teacherData['specialization'] = subjects[0];
+      
+      await _client.from('teachers').insert(teacherData);
       debugPrint('✓ Teacher record created');
 
       return true;
@@ -788,6 +820,33 @@ class DatabaseService {
       return (response as List).map((b) => Broadcast.fromJson(b)).toList();
     } catch (e) {
       debugPrint('Error fetching broadcasts: $e');
+      return [];
+    }
+  }
+
+  /// Get broadcasts for a specific role (students/teachers/parents/staff)
+  Future<List<Broadcast>> getBroadcastsForRole(String role) async {
+    try {
+      debugPrint('Fetching broadcasts for role: $role');
+      // Fetch all broadcasts and filter client-side to avoid query issues
+      final response = await _client
+          .from('broadcasts')
+          .select()
+          .order('sent_date', ascending: false);
+      
+      final all = (response as List).map((b) => Broadcast.fromJson(b)).toList();
+      
+      // Filter: show if target matches role OR target is 'all'
+      final filtered = all.where((b) {
+        final t = b.targetAudience.toLowerCase().trim();
+        final r = role.toLowerCase().trim();
+        return t == 'all' || t == r;
+      }).toList();
+      
+      debugPrint('Found ${filtered.length} broadcasts for $role (total: ${all.length})');
+      return filtered;
+    } catch (e) {
+      debugPrint('Error fetching broadcasts for $role: $e');
       return [];
     }
   }
