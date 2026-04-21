@@ -14,8 +14,8 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const VidyaSarathiApp());
 
-    // Verify that the app loads and shows VIDYASARATHI text
+    // Verify that the app loads and shows the login landing content.
     expect(find.text('VIDYASARATHI'), findsOneWidget);
-    expect(find.text('Select Your Role'), findsOneWidget);
+    expect(find.text('Welcome Back'), findsOneWidget);
   });
 }
