@@ -1,0 +1,1 @@
+ALTER TABLE broadcasts ALTER COLUMN sent_by DROP NOT NULL;

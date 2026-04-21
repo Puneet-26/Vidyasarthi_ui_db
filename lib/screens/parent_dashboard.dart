@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/database_service.dart';
+import '../services/auth_session.dart';
 import '../models/models.dart';
 import 'connect_with_us_screen.dart';
 import 'faculty_screen.dart';
 import 'submit_feedback_screen_premium.dart';
+import 'view_attendance_screen.dart';
 
 class ParentDashboard extends StatefulWidget {
   final String parentEmail;
@@ -54,8 +56,10 @@ class _ParentDashboardState extends State<ParentDashboard> {
   }
 
   Future<void> _loadStudents() async {
-    debugPrint('Loading students for parent: ${widget.parentEmail}');
-    final students = await _db.getStudentsByParentEmail(widget.parentEmail);
+    // Use AuthSession - always has the correct logged-in email
+    final email = AuthSession.email ?? widget.parentEmail;
+    debugPrint('Loading students for parent: $email');
+    final students = await _db.getStudentsByParentEmail(email);
     debugPrint('Found ${students.length} students');
     if (mounted)
       setState(() {
@@ -79,50 +83,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
       ];
 
   void _showNoticesSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.35,
-        maxChildSize: 0.85,
-        expand: false,
-        builder: (_, sc) => Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-          child: SingleChildScrollView(
-              controller: sc,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                      child: Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                              color: AppColors.divider,
-                              borderRadius: BorderRadius.circular(2)))),
-                  const SizedBox(height: 20),
-                  const Text('Notices & Updates',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textDark)),
-                  const SizedBox(height: 16),
-                  const _EventItem(
-                      title: 'Mid-Term Exams - March 28',
-                      date: 'March 28, 2026',
-                      icon: Icons.quiz_rounded,
-                      color: AppColors.warning),
-                  const SizedBox(height: 10),
-                ],
-              )),
-        ),
-      ),
-    );
+    showBroadcastNoticesSheet(context, 'parents');
   }
 
   @override
@@ -338,14 +299,27 @@ class _ParentHomePageState extends State<_ParentHomePage> {
         
         // Stats Cards
         Wrap(spacing: 12, runSpacing: 12, children: [
-          SizedBox(
-              width: (MediaQuery.of(context).size.width - 52) / 2,
-              child: const StatCard(
-                  title: 'Attendance',
-                  value: '92%',
-                  icon: Icons.how_to_reg_rounded,
-                  color: AppColors.success,
-                  subtitle: 'This month')),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ViewAttendanceScreen(
+                    studentId: student.id,
+                    studentName: student.name,
+                  ),
+                ),
+              );
+            },
+            child: SizedBox(
+                width: (MediaQuery.of(context).size.width - 52) / 2,
+                child: const StatCard(
+                    title: 'Attendance',
+                    value: '92%',
+                    icon: Icons.how_to_reg_rounded,
+                    color: AppColors.success,
+                    subtitle: 'This month')),
+          ),
           SizedBox(
               width: (MediaQuery.of(context).size.width - 52) / 2,
               child: const StatCard(

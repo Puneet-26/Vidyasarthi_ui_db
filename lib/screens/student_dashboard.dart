@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/database_service.dart';
+import '../services/auth_session.dart';
 import '../models/models.dart';
 import 'connect_with_us_screen.dart';
 import 'faculty_screen.dart';
 import 'submit_feedback_screen_premium.dart';
+import 'view_attendance_screen.dart';
 
 class StudentDashboard extends StatefulWidget {
-  final String studentId;
-  const StudentDashboard({super.key, this.studentId = 'student_001'});
+  final String? studentEmail;
+  const StudentDashboard({super.key, this.studentEmail});
 
   @override
   State<StudentDashboard> createState() => _StudentDashboardState();
@@ -67,7 +69,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         _StudentTasksPage(
             homework: _homework, tests: _tests, loading: _loading),
         _StudentResultsPage(testResults: _testResults, loading: _loading),
-        _StudentFeedbackPage(studentId: widget.studentId),
+        _StudentFeedbackPage(studentId: _student?.id ?? ''),
         _StudentProfilePage(student: _student, loading: _loading),
       ];
 
@@ -79,14 +81,29 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   Future<void> _loadStudentData() async {
     try {
-      // Load student data
-      final student = await _db.getStudentById(widget.studentId);
-      if (student == null) {
-        debugPrint('Student not found: ${widget.studentId}');
+      // Use AuthSession - always has the correct logged-in email
+      final email = AuthSession.email ?? widget.studentEmail;
+      if (email == null || email.isEmpty) {
+        debugPrint('No student email in session');
+        if (mounted) setState(() => _loading = false);
         return;
       }
 
-      // Load related data
+      debugPrint('Loading student for email: $email');
+      final response = await _db.client
+          .from('students')
+          .select()
+          .eq('email', email)
+          .maybeSingle();
+
+      if (response == null) {
+        debugPrint('Student not found for email: $email');
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
+
+      final student = _db.studentFromRow(response);
+
       final subjects = await _db.getAllSubjects();
       final homework = await _db.getHomeworkByBatch(student.batchId);
       final tests = await _db.getTestsByBatch(student.batchId);
@@ -106,9 +123,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       }
     } catch (e) {
       debugPrint('Error loading student data: $e');
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -147,79 +162,9 @@ class _StudentHomePage extends StatelessWidget {
     required this.timetable,
     required this.loading,
   });
+
   void _showNoticesSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.35,
-        maxChildSize: 0.85,
-        expand: false,
-        builder: (_, scrollController) => Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SingleChildScrollView(
-            controller: scrollController,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                        color: AppColors.divider,
-                        borderRadius: BorderRadius.circular(2)),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text('Notices & Holidays',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textDark)),
-                const SizedBox(height: 16),
-                const _HolidayNotice(
-                    title: 'Holi Holiday',
-                    date: 'March 14, 2026',
-                    icon: Icons.celebration_rounded,
-                    color: AppColors.warning),
-                const SizedBox(height: 10),
-                const _HolidayNotice(
-                    title: 'Good Friday',
-                    date: 'April 3, 2026',
-                    icon: Icons.church_rounded,
-                    color: AppColors.info),
-                const SizedBox(height: 10),
-                const _HolidayNotice(
-                    title: 'Dr. Ambedkar Jayanti',
-                    date: 'April 14, 2026',
-                    icon: Icons.star_rounded,
-                    color: AppColors.primary),
-                const SizedBox(height: 10),
-                const _HolidayNotice(
-                    title: 'Summer Vacation Begins',
-                    date: 'May 1, 2026',
-                    icon: Icons.wb_sunny_rounded,
-                    color: AppColors.error),
-                const SizedBox(height: 10),
-                const _HolidayNotice(
-                    title: 'Independence Day',
-                    date: 'August 15, 2026',
-                    icon: Icons.flag_rounded,
-                    color: AppColors.success),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    showBroadcastNoticesSheet(context, 'students');
   }
 
   @override
@@ -230,7 +175,7 @@ class _StudentHomePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           DashboardHeader(
-            name: 'Aryan Sharma',
+            name: student?.name ?? AuthSession.name ?? 'Student',
             role: 'STUDENT',
             subtitle: 'Student Dashboard',
             roleColor: AppColors.studentAccent,
@@ -285,19 +230,34 @@ class _StudentHomePage extends StatelessWidget {
           const SizedBox(height: 24),
 
           // Stats Row — Attendance & Pending Tasks only
-          const Row(
+          Row(
             children: [
               Expanded(
-                child: StatCard(
-                  title: 'Attendance',
-                  value: '92%',
-                  icon: Icons.how_to_reg_rounded,
-                  color: AppColors.success,
-                  subtitle: 'This month',
+                child: GestureDetector(
+                  onTap: () {
+                    if (student != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ViewAttendanceScreen(
+                            studentId: student!.id,
+                            studentName: student!.name,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: const StatCard(
+                    title: 'Attendance',
+                    value: '92%',
+                    icon: Icons.how_to_reg_rounded,
+                    color: AppColors.success,
+                    subtitle: 'This month',
+                  ),
                 ),
               ),
-              SizedBox(width: 12),
-              Expanded(
+              const SizedBox(width: 12),
+              const Expanded(
                 child: StatCard(
                   title: 'Pending Tasks',
                   value: '4',
@@ -1037,50 +997,56 @@ class _StudentProfilePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          const Center(
+          Center(
               child: GradientAvatar(
-                  initials: 'AS', color: AppColors.studentAccent, size: 72)),
+                  initials: student != null && student!.name.isNotEmpty
+                      ? student!.name.substring(0, 1).toUpperCase()
+                      : 'S',
+                  color: AppColors.studentAccent,
+                  size: 72)),
           const SizedBox(height: 12),
-          const Center(
-              child: Text('Aryan Sharma',
-                  style: TextStyle(
+          Center(
+              child: Text(student?.name ?? AuthSession.name ?? 'Student',
+                  style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textDark))),
-          const Center(
-              child: Text('Student • Class 10-A',
-                  style: TextStyle(fontSize: 13, color: AppColors.textMid))),
+          Center(
+              child: Text('Student • ${student?.studentClass ?? 'N/A'}',
+                  style: const TextStyle(fontSize: 13, color: AppColors.textMid))),
           const SizedBox(height: 24),
 
           // Personal Info
-          const GlassCard(
-            padding: EdgeInsets.all(16),
+          GlassCard(
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 _ProfileRow(
                     icon: Icons.email_outlined,
                     label: 'Email',
-                    value: 'aryan.sharma@students.com'),
-                Divider(height: 20),
+                    value: student?.email ?? AuthSession.email ?? '-'),
+                const Divider(height: 20),
                 _ProfileRow(
                     icon: Icons.phone_outlined,
                     label: 'Phone',
-                    value: '+91-9876543210'),
-                Divider(height: 20),
+                    value: student?.phoneNumber ?? '-'),
+                const Divider(height: 20),
                 _ProfileRow(
                     icon: Icons.people_outlined,
                     label: 'Parent',
-                    value: 'Mr. Rajesh Sharma'),
-                Divider(height: 20),
+                    value: student?.parentName.split('(').first.trim() ?? '-'),
+                const Divider(height: 20),
                 _ProfileRow(
                     icon: Icons.class_outlined,
-                    label: 'Batch',
-                    value: 'Class 10-A'),
-                Divider(height: 20),
+                    label: 'Class',
+                    value: student?.studentClass ?? '-'),
+                const Divider(height: 20),
                 _ProfileRow(
                     icon: Icons.calendar_today_outlined,
                     label: 'Enrolled',
-                    value: 'March 2025'),
+                    value: student != null
+                        ? '${student!.enrollmentDate.month}/${student!.enrollmentDate.year}'
+                        : '-'),
               ],
             ),
           ),

@@ -60,7 +60,7 @@ class _LoadingScreenState extends State<LoadingScreen>
         destination = TeacherDashboard(teacherEmail: widget.userEmail);
         break;
       case 'student':
-        destination = const StudentDashboard();
+        destination = StudentDashboard(studentEmail: widget.userEmail);
         break;
       case 'parent':
         destination = ParentDashboard(parentEmail: widget.userEmail ?? 'rajesh.sharma@parents.com');

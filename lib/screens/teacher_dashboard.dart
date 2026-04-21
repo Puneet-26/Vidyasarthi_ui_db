@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/database_service.dart';
+import '../services/auth_session.dart';
 import '../models/models.dart';
 import 'login_screen.dart';
 import 'placeholder_screens.dart';
+import 'mark_attendance_screen.dart';
+import 'select_batch_for_attendance.dart';
+import 'schedule_exam_screen.dart';
 
 class TeacherDashboard extends StatefulWidget {
   final String? teacherEmail;
@@ -31,17 +36,20 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   Future<void> _loadTeacherData() async {
     setState(() => _loadingTeacher = true);
     
-    if (widget.teacherEmail != null) {
-      final teacher = await _db.getTeacherByEmail(widget.teacherEmail!);
+    // Use AuthSession - always has the correct logged-in email
+    final email = AuthSession.email ?? widget.teacherEmail;
+    
+    if (email != null && email.isNotEmpty) {
+      final teacher = await _db.getTeacherByEmail(email);
       if (mounted) {
         setState(() {
           // Even if teacher record not found, create a minimal one from email
           _currentTeacher = teacher ?? Teacher(
             id: '',
             userId: '',
-            name: widget.teacherEmail!.split('@')[0].replaceAll('.', ' ')
+            name: AuthSession.name ?? email.split('@')[0].replaceAll('.', ' ')
                 .split(' ').map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '').join(' '),
-            email: widget.teacherEmail!,
+            email: email,
             phoneNumber: '',
             employeeId: '',
             subjects: [],
@@ -535,66 +543,7 @@ class _TeacherHomePage extends StatelessWidget {
   const _TeacherHomePage({this.teacher});
 
   void _showNoticesSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.35,
-        maxChildSize: 0.85,
-        expand: false,
-        builder: (_, scrollController) => Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SingleChildScrollView(
-            controller: scrollController,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                        color: AppColors.divider,
-                        borderRadius: BorderRadius.circular(2)),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text('Notices & Announcements',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textDark)),
-                const SizedBox(height: 16),
-                const _NoticeCard(
-                    title: 'VidyaSarathi Platform Launch!',
-                    from: 'Admin',
-                    time: '2 days ago',
-                    priority: 'high'),
-                const SizedBox(height: 10),
-                const _NoticeCard(
-                    title: 'Staff Meeting - Training Update',
-                    from: 'Admin',
-                    time: '3 days ago',
-                    priority: 'normal'),
-                const SizedBox(height: 10),
-                const _NoticeCard(
-                    title: 'Holiday Notice - Holi',
-                    from: 'Admin',
-                    time: '5 days ago',
-                    priority: 'normal'),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    showBroadcastNoticesSheet(context, 'teachers');
   }
 
   @override
@@ -635,18 +584,65 @@ class _TeacherHomePage extends StatelessWidget {
   }
 }
 
-class _TeacherClassesPage extends StatelessWidget {
+class _TeacherClassesPage extends StatefulWidget {
   const _TeacherClassesPage();
+  
+  @override
+  State<_TeacherClassesPage> createState() => _TeacherClassesPageState();
+}
+
+class _TeacherClassesPageState extends State<_TeacherClassesPage> {
+  List<Map<String, dynamic>> _scheduledExams = [];
+  bool _loadingExams = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadScheduledExams();
+  }
+
+  Future<void> _loadScheduledExams() async {
+    setState(() => _loadingExams = true);
+    
+    try {
+      final response = await Supabase.instance.client
+          .from('tests')
+          .select()
+          .eq('status', 'scheduled')
+          .order('test_date', ascending: true);
+      
+      if (mounted) {
+        setState(() {
+          _scheduledExams = List<Map<String, dynamic>>.from(response);
+          _loadingExams = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingExams = false);
+      }
+    }
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return dateString;
+    }
+  }
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(20),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'My Classes'),
-          SizedBox(height: 12),
-          _ClassCard(
+          // Header
+          const SectionHeader(title: 'My Classes'),
+          const SizedBox(height: 16),
+          const _ClassCard(
               batch: 'Class 10-A',
               subject: 'Chemistry',
               students: 40,
@@ -654,8 +650,8 @@ class _TeacherClassesPage extends StatelessWidget {
               time: 'Mon/Tue 9–10 AM',
               attendanceStatus: 'Marked',
               present: 38),
-          SizedBox(height: 10),
-          _ClassCard(
+          const SizedBox(height: 10),
+          const _ClassCard(
               batch: 'Class 10-B',
               subject: 'Chemistry',
               students: 38,
@@ -663,8 +659,8 @@ class _TeacherClassesPage extends StatelessWidget {
               time: 'Tue 10–11 AM',
               attendanceStatus: 'Pending',
               present: 0),
-          SizedBox(height: 10),
-          _ClassCard(
+          const SizedBox(height: 10),
+          const _ClassCard(
               batch: 'Class 11-A',
               subject: 'Chemistry',
               students: 35,
@@ -672,7 +668,232 @@ class _TeacherClassesPage extends StatelessWidget {
               time: 'Wed 11 AM–12 PM',
               attendanceStatus: 'Pending',
               present: 0),
-          SizedBox(height: 30),
+          const SizedBox(height: 20),
+          
+          // Schedule Exam Widget
+          GestureDetector(
+            onTap: () async {
+              // For now, use a valid UUID format as placeholder
+              // In production, this should come from the logged-in teacher's profile
+              const teacherId = '00000000-0000-0000-0000-000000000001';
+              
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ScheduleExamScreen(
+                    teacherId: teacherId,
+                    teacherName: 'Teacher',
+                  ),
+                ),
+              );
+              
+              // Reload exams if an exam was scheduled
+              if (result == true) {
+                _loadScheduledExams();
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withOpacity(0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.event_note_rounded,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Schedule Exam',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Create and schedule exams for your classes',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Scheduled Exams Section
+          const SectionHeader(title: 'Scheduled Exams'),
+          const SizedBox(height: 12),
+          
+          if (_loadingExams)
+            const Center(child: CircularProgressIndicator())
+          else if (_scheduledExams.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.event_busy,
+                      size: 48,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No exams scheduled yet',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ..._scheduledExams.map((exam) => _buildExamCard(exam)),
+          
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExamCard(Map<String, dynamic> exam) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.quiz_rounded,
+              color: AppColors.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  exam['title'] ?? 'Untitled Exam',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Batch: ${exam['batch_id'] ?? 'N/A'}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMid,
+                  ),
+                ),
+                Text(
+                  'Date: ${_formatDate(exam['test_date'] ?? '')}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${exam['total_marks'] ?? 0} marks',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.success,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  exam['status'] ?? 'scheduled',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.warning,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -2125,7 +2346,10 @@ class _MarksTestCard extends StatelessWidget {
 }
 
 class _TeacherMessagesPage extends StatelessWidget {
-  const _TeacherMessagesPage();
+  final Teacher? teacher;
+  
+  const _TeacherMessagesPage({this.teacher});
+  
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -2135,7 +2359,10 @@ class _TeacherMessagesPage extends StatelessWidget {
         children: [
           const SectionHeader(title: 'Quick Actions'),
           const SizedBox(height: 14),
-          _QuickActionsGrid(),
+          _QuickActionsGrid(
+            teacherId: teacher?.id,
+            teacherName: teacher?.name,
+          ),
           const SizedBox(height: 30),
         ],
       ),
@@ -2190,6 +2417,14 @@ class _NoticeCard extends StatelessWidget {
 }
 
 class _QuickActionsGrid extends StatelessWidget {
+  final String? teacherId;
+  final String? teacherName;
+
+  const _QuickActionsGrid({
+    this.teacherId,
+    this.teacherName,
+  });
+
   final List<Map<String, dynamic>> actions = const [
     {
       'label': 'Mark\nAttendance',
@@ -2269,8 +2504,22 @@ class _QuickActionsGrid extends StatelessWidget {
   }
 
   void _navigateToScreen(BuildContext context, int screenIndex) {
+    // For Mark Attendance (index 0), show batch selection
+    if (screenIndex == 0) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SelectBatchForAttendanceScreen(
+            teacherId: teacherId ?? 'teacher_001',
+            teacherName: teacherName ?? 'Teacher',
+          ),
+        ),
+      );
+      return;
+    }
+
     final List<Widget> screens = [
-      const TimetableManagementScreen(), // Mark Attendance
+      const TimetableManagementScreen(), // Mark Attendance (not used, handled above)
       const HomeworkSystemScreen(), // Upload Assignment
       const TestsAndPracticeScreen(), // Enter Marks
       const LiveClassScreen(), // Send Notice
@@ -2292,28 +2541,28 @@ class _TeacherSchedule extends StatelessWidget {
       'class': 'Class 8-A',
       'subject': 'Chemistry',
       'room': 'Room 204',
-      'status': 'done'
+      'endTime': '10:00 AM'
     },
     {
       'time': '10:30 AM',
       'class': 'Class 9-B',
       'subject': 'Chemistry',
       'room': 'Room 301',
-      'status': 'current'
+      'endTime': '11:30 AM'
     },
     {
       'time': '12:30 PM',
       'class': 'Class 7-C',
       'subject': 'Chemistry',
       'room': 'Room 105',
-      'status': 'upcoming'
+      'endTime': '01:30 PM'
     },
     {
       'time': '02:00 PM',
       'class': 'Class 10-A',
       'subject': 'Chemistry',
       'room': 'Room 204',
-      'status': 'upcoming'
+      'endTime': '03:00 PM'
     },
   ];
 
@@ -2321,9 +2570,11 @@ class _TeacherSchedule extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: schedule.map((s) {
+        final status = _getClassStatus(s['time']!, s['endTime']!);
         Color statusColor;
         String statusLabel;
-        switch (s['status']) {
+        
+        switch (status) {
           case 'done':
             statusColor = AppColors.textLight;
             statusLabel = 'Done';
@@ -2336,11 +2587,12 @@ class _TeacherSchedule extends StatelessWidget {
             statusColor = AppColors.teacherAccent;
             statusLabel = 'Upcoming';
         }
+        
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: GlassCard(
             padding: const EdgeInsets.all(14),
-            color: s['status'] == 'current'
+            color: status == 'current'
                 ? AppColors.success.withOpacity(0.08)
                 : null,
             child: Row(
@@ -2412,6 +2664,50 @@ class _TeacherSchedule extends StatelessWidget {
         );
       }).toList(),
     );
+  }
+
+  String _getClassStatus(String startTimeStr, String endTimeStr) {
+    final now = DateTime.now();
+    final currentTime = TimeOfDay.fromDateTime(now);
+    
+    final startTime = _parseTimeString(startTimeStr);
+    final endTime = _parseTimeString(endTimeStr);
+    
+    final currentMinutes = currentTime.hour * 60 + currentTime.minute;
+    final startMinutes = startTime.hour * 60 + startTime.minute;
+    final endMinutes = endTime.hour * 60 + endTime.minute;
+    
+    if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+      return 'current';
+    } else if (currentMinutes >= endMinutes) {
+      return 'done';
+    } else {
+      return 'upcoming';
+    }
+  }
+
+  TimeOfDay _parseTimeString(String timeStr) {
+    try {
+      // Parse time like "09:00 AM" or "02:00 PM"
+      final parts = timeStr.split(' ');
+      final timePart = parts[0];
+      final period = parts[1];
+      
+      final hourMinute = timePart.split(':');
+      int hour = int.parse(hourMinute[0]);
+      final minute = int.parse(hourMinute[1]);
+      
+      // Convert to 24-hour format
+      if (period == 'PM' && hour != 12) {
+        hour += 12;
+      } else if (period == 'AM' && hour == 12) {
+        hour = 0;
+      }
+      
+      return TimeOfDay(hour: hour, minute: minute);
+    } catch (e) {
+      return const TimeOfDay(hour: 0, minute: 0);
+    }
   }
 }
 
