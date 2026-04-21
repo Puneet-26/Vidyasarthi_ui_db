@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../services/database_service.dart';
+import '../models/models.dart';
 
 // ─── Responsive Helper ──────────────────────────────────────────────────────
 class Responsive {
@@ -526,6 +528,214 @@ class DashboardHeader extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+// ─── Broadcast Notices Sheet ─────────────────────────────────────────────────
+/// Shows notices sent by admin for a specific role
+/// Usage: showBroadcastNoticesSheet(context, 'student')
+void showBroadcastNoticesSheet(BuildContext context, String role) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (_) => _BroadcastNoticesSheet(role: role),
+  );
+}
+
+class _BroadcastNoticesSheet extends StatefulWidget {
+  final String role;
+  const _BroadcastNoticesSheet({required this.role});
+
+  @override
+  State<_BroadcastNoticesSheet> createState() => _BroadcastNoticesSheetState();
+}
+
+class _BroadcastNoticesSheetState extends State<_BroadcastNoticesSheet> {
+  final _db = DatabaseService();
+  List<Broadcast> _notices = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotices();
+  }
+
+  Future<void> _loadNotices() async {
+    final notices = await _db.getBroadcastsForRole(widget.role);
+    if (mounted) setState(() { _notices = notices; _loading = false; });
+  }
+
+  Color _priorityColor(String p) {
+    switch (p) {
+      case 'high': return AppColors.warning;
+      case 'urgent': return AppColors.error;
+      default: return AppColors.info;
+    }
+  }
+
+  IconData _priorityIcon(String p) {
+    switch (p) {
+      case 'high': return Icons.priority_high_rounded;
+      case 'urgent': return Icons.warning_rounded;
+      default: return Icons.notifications_rounded;
+    }
+  }
+
+  String _timeAgo(DateTime dt) {
+    // Convert to local time for comparison
+    final local = dt.toLocal();
+    final now = DateTime.now();
+    final diff = now.difference(local);
+    if (diff.isNegative || diff.inSeconds < 60) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${local.day}/${local.month}/${local.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (_, scrollController) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            // Handle
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(color: AppColors.divider, borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Row(
+                children: [
+                  const Text('Notices & Announcements',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  const Spacer(),
+                  if (_notices.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text('${_notices.length}',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.error)),
+                    ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _notices.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.notifications_none_rounded, size: 56, color: Colors.grey[300]),
+                              const SizedBox(height: 12),
+                              Text('No notices yet', style: TextStyle(fontSize: 15, color: Colors.grey[500])),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          controller: scrollController,
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _notices.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (_, i) {
+                            final n = _notices[i];
+                            final color = _priorityColor(n.priority);
+                            return Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: color.withOpacity(0.3)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: color.withOpacity(0.08),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: color.withOpacity(0.12),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Icon(_priorityIcon(n.priority), size: 18, color: color),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(n.title,
+                                                style: const TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: AppColors.textDark)),
+                                            const SizedBox(height: 2),
+                                            Text(_timeAgo(n.sentDate),
+                                                style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: color.withOpacity(0.12),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(n.priority.toUpperCase(),
+                                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: color)),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(n.message,
+                                      style: const TextStyle(
+                                          fontSize: 13,
+                                          color: AppColors.textMid,
+                                          height: 1.5)),
+                                  const SizedBox(height: 8),
+                                  Text('From: Admin • ${n.targetAudience}',
+                                      style: TextStyle(fontSize: 11, color: Colors.grey[400])),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

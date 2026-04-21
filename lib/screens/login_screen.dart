@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/auth_service.dart';
+import '../services/auth_session.dart';
 import '../services/app_errors.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -98,6 +99,11 @@ class _LoginScreenState extends State<LoginScreen>
       if (result['success'] == true) {
         final role = result['role'] ?? 'student';
         final email = result['email'] ?? '';
+        final name = result['name'] ?? '';
+        
+        // Store globally - accessible from any screen forever
+        AuthSession.set(email: email, role: role, name: name);
+        
         Navigator.of(context).pushReplacementNamed(
           '/loading',
           arguments: {'role': role, 'email': email},

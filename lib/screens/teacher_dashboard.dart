@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/database_service.dart';
+import '../services/auth_session.dart';
 import '../models/models.dart';
 import 'login_screen.dart';
 import 'placeholder_screens.dart';
@@ -35,17 +36,20 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   Future<void> _loadTeacherData() async {
     setState(() => _loadingTeacher = true);
     
-    if (widget.teacherEmail != null) {
-      final teacher = await _db.getTeacherByEmail(widget.teacherEmail!);
+    // Use AuthSession - always has the correct logged-in email
+    final email = AuthSession.email ?? widget.teacherEmail;
+    
+    if (email != null && email.isNotEmpty) {
+      final teacher = await _db.getTeacherByEmail(email);
       if (mounted) {
         setState(() {
           // Even if teacher record not found, create a minimal one from email
           _currentTeacher = teacher ?? Teacher(
             id: '',
             userId: '',
-            name: widget.teacherEmail!.split('@')[0].replaceAll('.', ' ')
+            name: AuthSession.name ?? email.split('@')[0].replaceAll('.', ' ')
                 .split(' ').map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '').join(' '),
-            email: widget.teacherEmail!,
+            email: email,
             phoneNumber: '',
             employeeId: '',
             subjects: [],
@@ -539,66 +543,7 @@ class _TeacherHomePage extends StatelessWidget {
   const _TeacherHomePage({this.teacher});
 
   void _showNoticesSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.35,
-        maxChildSize: 0.85,
-        expand: false,
-        builder: (_, scrollController) => Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: SingleChildScrollView(
-            controller: scrollController,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                        color: AppColors.divider,
-                        borderRadius: BorderRadius.circular(2)),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text('Notices & Announcements',
-                    style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textDark)),
-                const SizedBox(height: 16),
-                const _NoticeCard(
-                    title: 'VidyaSarathi Platform Launch!',
-                    from: 'Admin',
-                    time: '2 days ago',
-                    priority: 'high'),
-                const SizedBox(height: 10),
-                const _NoticeCard(
-                    title: 'Staff Meeting - Training Update',
-                    from: 'Admin',
-                    time: '3 days ago',
-                    priority: 'normal'),
-                const SizedBox(height: 10),
-                const _NoticeCard(
-                    title: 'Holiday Notice - Holi',
-                    from: 'Admin',
-                    time: '5 days ago',
-                    priority: 'normal'),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    showBroadcastNoticesSheet(context, 'teachers');
   }
 
   @override
