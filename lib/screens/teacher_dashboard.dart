@@ -675,8 +675,23 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
           // Schedule Exam Widget
           GestureDetector(
             onTap: () async {
-              final teacherId = widget.teacher?.id ?? 'teacher_001';
-              
+              // tests.teacher_id references users.id (UUID)
+              final t = widget.teacher;
+              final teacherId = (t != null && t.userId.isNotEmpty)
+                  ? t.userId
+                  : (t != null && t.id.isNotEmpty ? t.id : '');
+              if (teacherId.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Cannot schedule exam: teacher profile has no user id. Populate the teachers table (user_id → users.id) for this account.',
+                    ),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+                return;
+              }
+
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -686,8 +701,7 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
                   ),
                 ),
               );
-              
-              // Reload exams if an exam was scheduled
+
               if (result == true) {
                 _loadScheduledExams();
               }
@@ -1377,9 +1391,9 @@ class _ClassDetailPageState extends State<_ClassDetailPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.bgLight,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.bgLight,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
@@ -2316,9 +2330,9 @@ class _GradeStudentsPageState extends State<_GradeStudentsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.bgLight,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.bgLight,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),

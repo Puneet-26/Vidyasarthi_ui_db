@@ -161,6 +161,36 @@ class DatabaseService {
     }
   }
 
+  /// Users table rows for a role (e.g. `parent`, `teacher`) — admin directory views.
+  Future<List<Map<String, dynamic>>> getUsersWithRole(String role) async {
+    try {
+      final response = await _client
+          .from('users')
+          .select('id,email,name,phone_number,role')
+          .eq('role', role)
+          .order('name');
+      return List<Map<String, dynamic>>.from(response as List);
+    } catch (e) {
+      debugPrint('Error fetching users with role $role: $e');
+      return [];
+    }
+  }
+
+  /// Students whose guardian email matches a parent login (case-insensitive).
+  Future<List<Student>> getStudentsByParentEmail(String parentEmail) async {
+    final needle = parentEmail.trim().toLowerCase();
+    if (needle.isEmpty) return [];
+    try {
+      final all = await getAllStudents();
+      return all
+          .where((s) => s.parentEmail.trim().toLowerCase() == needle)
+          .toList();
+    } catch (e) {
+      debugPrint('Error fetching students for parent: $e');
+      return [];
+    }
+  }
+
   // Helper: build Student from a students-table row (name/email stored directly)
   Student studentFromRow(Map<String, dynamic> d) => _studentFromRow(d);
   

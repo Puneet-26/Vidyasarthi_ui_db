@@ -41,11 +41,15 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
 
   Future<void> _loadData() async {
     try {
-      final batchesReq = await Supabase.instance.client.from('batches').select('id, batch_name');
+      // DB column is `name` (see supabase_complete_setup.sql); some views alias it as batch_name.
+      final batchesReq = await Supabase.instance.client.from('batches').select('id, name');
       final subjectsReq = await Supabase.instance.client.from('subjects').select('id, name');
       if (mounted) {
         setState(() {
-          _batches = List<Map<String, dynamic>>.from(batchesReq).map((b) => {'id': b['id'].toString(), 'name': b['batch_name'].toString()}).toList();
+          _batches = List<Map<String, dynamic>>.from(batchesReq).map((b) {
+            final label = (b['name'] ?? b['batch_name'])?.toString() ?? '';
+            return {'id': b['id'].toString(), 'name': label};
+          }).toList();
           _subjects = List<Map<String, dynamic>>.from(subjectsReq).map((s) => {'id': s['id'].toString(), 'name': s['name'].toString()}).toList();
           _isLoading = false;
         });

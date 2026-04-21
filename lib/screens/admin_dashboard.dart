@@ -236,8 +236,7 @@ class _DashboardTab extends StatelessWidget {
           const SizedBox(height: 24),
           _SchoolSummaryBanner(),
           const SizedBox(height: 24),
-          const SectionHeader(
-              title: 'Department Attendance', action: 'Full Report'),
+          const SectionHeader(title: 'Department Attendance'),
           const SizedBox(height: 14),
           const GlassCard(
             child: Column(
@@ -742,7 +741,33 @@ class _StudentsTabState extends State<_StudentsTab> {
   }
 }
 
-class _TeachersTab extends StatelessWidget {
+class _TeachersTab extends StatefulWidget {
+  @override
+  State<_TeachersTab> createState() => _TeachersTabState();
+}
+
+class _TeachersTabState extends State<_TeachersTab> {
+  final _db = DatabaseService();
+  List<Teacher> _teachers = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final list = await _db.getAllTeachers();
+    if (mounted) {
+      setState(() {
+        _teachers = list;
+        _loading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -796,25 +821,25 @@ class _TeachersTab extends StatelessWidget {
           // Teacher Stats
           const SectionHeader(title: 'Teacher Overview'),
           const SizedBox(height: 14),
-          const Row(
+          Row(
             children: [
               Expanded(
                 child: StatCard(
                   title: 'Total Teachers',
-                  value: '3',
+                  value: '${_teachers.length}',
                   icon: Icons.person_rounded,
                   color: AppColors.teacherAccent,
-                  subtitle: 'Active',
+                  subtitle: 'From database',
                 ),
               ),
-              SizedBox(width: 12),
-              Expanded(
+              const SizedBox(width: 12),
+              const Expanded(
                 child: StatCard(
                   title: 'Classes Today',
-                  value: '10',
+                  value: '—',
                   icon: Icons.class_rounded,
                   color: AppColors.primary,
-                  subtitle: 'Scheduled',
+                  subtitle: 'See timetable',
                 ),
               ),
             ],
@@ -845,26 +870,70 @@ class _TeachersTab extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Teacher List
-          const SectionHeader(title: 'Teaching Staff'),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Expanded(
+                child: SectionHeader(title: 'Teaching Staff'),
+              ),
+              if (!_loading)
+                IconButton(
+                  onPressed: _load,
+                  tooltip: 'Refresh',
+                  icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+                ),
+            ],
+          ),
           const SizedBox(height: 14),
-          const _TeacherListItem(
-              name: 'Mrs. Priya Nair',
-              subject: 'Physics',
-              classes: '3 Classes',
-              statusColor: AppColors.success),
-          const SizedBox(height: 8),
-          const _TeacherListItem(
-              name: 'Mr. Arun Kumar',
-              subject: 'Mathematics',
-              classes: '4 Classes',
-              statusColor: AppColors.success),
-          const SizedBox(height: 8),
-          const _TeacherListItem(
-              name: 'Dr. Meena Verma',
-              subject: 'Chemistry',
-              classes: '3 Classes',
-              statusColor: AppColors.success),
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_teachers.isEmpty)
+            GlassCard(
+              padding: const EdgeInsets.all(20),
+              child: Text(
+                'No teachers in the teachers table. Use Add Teacher or seed data.',
+                style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+              ),
+            )
+          else
+            Column(
+              children: _teachers.map((teacher) {
+                final subjectsText = teacher.subjects.isNotEmpty
+                    ? teacher.subjects.join(', ')
+                    : '—';
+                final classesText = teacher.classes.isNotEmpty
+                    ? '${teacher.classes.length} class groups'
+                    : '—';
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => _TeacherClassesDetailScreen(
+                              teacher: teacher,
+                            ),
+                          ),
+                        );
+                      },
+                      child: _TeacherListItem(
+                        name: teacher.name,
+                        subject: subjectsText,
+                        classes: classesText,
+                        statusColor: AppColors.success,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
 
           const SizedBox(height: 80),
         ],
@@ -982,11 +1051,39 @@ class _ParentsTabState extends State<_ParentsTab> {
   final _db = DatabaseService();
   List<AnonymousFeedback> _pendingFeedbacks = [];
   bool _loading = true;
+  List<Map<String, dynamic>> _parentUsers = [];
+  List<Student> _allStudents = [];
+  bool _loadingParentDir = true;
 
   @override
   void initState() {
     super.initState();
     _loadPendingFeedback();
+    _loadParentsDirectory();
+  }
+
+  Future<void> _loadParentsDirectory() async {
+    setState(() => _loadingParentDir = true);
+    try {
+      final parents = await _db.getUsersWithRole('parent');
+      final students = await _db.getAllStudents();
+      if (mounted) {
+        setState(() {
+          _parentUsers = parents;
+          _allStudents = students;
+          _loadingParentDir = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingParentDir = false);
+    }
+  }
+
+  int _childCountForParentEmail(String email) {
+    final e = email.trim().toLowerCase();
+    return _allStudents
+        .where((s) => s.parentEmail.trim().toLowerCase() == e)
+        .length;
   }
 
   Future<void> _loadPendingFeedback() async {
@@ -1070,6 +1167,99 @@ class _ParentsTabState extends State<_ParentsTab> {
         children: [
           const SectionHeader(title: 'Parent Management'),
           const SizedBox(height: 16),
+          const SectionHeader(title: 'Parents directory'),
+          const SizedBox(height: 10),
+          if (_loadingParentDir)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_parentUsers.isEmpty)
+            GlassCard(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'No parent accounts found (users with role parent).',
+                style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+              ),
+            )
+          else
+            Column(
+              children: _parentUsers.map((p) {
+                final name = (p['name'] ?? '').toString();
+                final email = (p['email'] ?? '').toString();
+                final phone = (p['phone_number'] ?? '').toString();
+                final n = _childCountForParentEmail(email);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => _ParentChildrenDetailScreen(
+                              parentEmail: email,
+                              parentName: name.isEmpty ? email : name,
+                              parentPhone: phone.isEmpty ? null : phone,
+                            ),
+                          ),
+                        );
+                      },
+                      child: GlassCard(
+                        padding: const EdgeInsets.all(14),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.parentAccent.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.family_restroom_rounded,
+                                  color: AppColors.parentAccent, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    name.isEmpty ? email : name,
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textDark),
+                                  ),
+                                  Text(
+                                    n == 0
+                                        ? 'No linked students'
+                                        : '$n student${n == 1 ? '' : 's'} on file',
+                                    style: const TextStyle(
+                                        fontSize: 11, color: AppColors.textMid),
+                                  ),
+                                  if (email.isNotEmpty)
+                                    Text(
+                                      email,
+                                      style: const TextStyle(
+                                          fontSize: 10,
+                                          color: AppColors.textLight),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right_rounded,
+                                color: AppColors.textLight, size: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          const SizedBox(height: 20),
 
           // Quick Actions
           Row(
@@ -1080,7 +1270,7 @@ class _ParentsTabState extends State<_ParentsTab> {
                   label: 'View All',
                   color: AppColors.parentAccent,
                   onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => _AllParentsScreen())),
+                      MaterialPageRoute(builder: (_) => const _AllParentsScreen())),
                 ),
               ),
               const SizedBox(width: 12),
@@ -4040,43 +4230,61 @@ class _AllTeachersScreenState extends State<_AllTeachersScreen> {
                         ? '${teacher.classes.length} Classes'
                         : 'No classes';
 
-                    return GlassCard(
-                      padding: const EdgeInsets.all(14),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.teacherAccent.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(10),
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  _TeacherClassesDetailScreen(teacher: teacher),
                             ),
-                            child: const Icon(Icons.person_rounded,
-                                color: AppColors.teacherAccent, size: 20),
+                          );
+                        },
+                        child: GlassCard(
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.teacherAccent
+                                      .withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.person_rounded,
+                                    color: AppColors.teacherAccent, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(teacher.name,
+                                        style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textDark)),
+                                    const SizedBox(height: 2),
+                                    Text('$subjectsText • $classesText',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textMid)),
+                                    const SizedBox(height: 2),
+                                    Text(teacher.email,
+                                        style: const TextStyle(
+                                            fontSize: 10,
+                                            color: AppColors.textLight)),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right_rounded,
+                                  color: AppColors.textLight, size: 20),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(teacher.name,
-                                    style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.textDark)),
-                                const SizedBox(height: 2),
-                                Text('$subjectsText • $classesText',
-                                    style: const TextStyle(
-                                        fontSize: 11, color: AppColors.textMid)),
-                                const SizedBox(height: 2),
-                                Text(teacher.email,
-                                    style: const TextStyle(
-                                        fontSize: 10, color: AppColors.textLight)),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.chevron_right_rounded,
-                              color: AppColors.textLight, size: 20),
-                        ],
+                        ),
                       ),
                     );
                   },
@@ -5200,72 +5408,553 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _AllParentsScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> parents = const [
-    {'name': 'Mr. Rajesh Sharma', 'children': '1 Child', 'status': 'Active'},
-    {'name': 'Mrs. Sunita Patel', 'children': '2 Children', 'status': 'Active'},
-    {'name': 'Mr. Vikram Mehta', 'children': '1 Child', 'status': 'Active'},
-    {'name': 'Mrs. Priya Iyer', 'children': '1 Child', 'status': 'Active'},
-    {'name': 'Mr. Karan Singh', 'children': '2 Children', 'status': 'Active'},
-  ];
+/// Admin: parent account → children from `students.parent_email`.
+class _ParentChildrenDetailScreen extends StatefulWidget {
+  final String parentEmail;
+  final String parentName;
+  final String? parentPhone;
+
+  const _ParentChildrenDetailScreen({
+    required this.parentEmail,
+    required this.parentName,
+    this.parentPhone,
+  });
+
+  @override
+  State<_ParentChildrenDetailScreen> createState() =>
+      _ParentChildrenDetailScreenState();
+}
+
+class _ParentChildrenDetailScreenState extends State<_ParentChildrenDetailScreen> {
+  final _db = DatabaseService();
+  List<Student> _children = [];
+  Map<String, String> _batchNames = {};
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final results = await Future.wait([
+      _db.getStudentsByParentEmail(widget.parentEmail),
+      _db.getAllBatches(),
+    ]);
+    if (!mounted) return;
+    final batches = results[1] as List<Batch>;
+    setState(() {
+      _children = results[0] as List<Student>;
+      _batchNames = {for (final b in batches) b.id: b.name};
+      _loading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('All Parents',
-            style: TextStyle(
-                color: AppColors.textDark, fontWeight: FontWeight.w700)),
-      ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(20),
-        itemCount: parents.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (_, i) {
-          final parent = parents[i];
-          return GlassCard(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.parentAccent.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.family_restroom_rounded,
-                      color: AppColors.parentAccent, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(parent['name'] as String,
-                          style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textDark)),
-                      Text(parent['children'] as String,
-                          style: const TextStyle(
-                              fontSize: 11, color: AppColors.textMid)),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right_rounded,
-                    color: AppColors.textLight, size: 20),
-              ],
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              widget.parentName,
+              style: const TextStyle(
+                  color: AppColors.textDark,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16),
             ),
-          );
-        },
+            Text(
+              widget.parentEmail,
+              style: const TextStyle(fontSize: 12, color: AppColors.textMid),
+            ),
+          ],
+        ),
       ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  if (widget.parentPhone != null &&
+                      widget.parentPhone!.trim().isNotEmpty)
+                    GlassCard(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        children: [
+                          Icon(Icons.phone_rounded,
+                              color: AppColors.parentAccent, size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              widget.parentPhone!,
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textDark),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (widget.parentPhone != null &&
+                      widget.parentPhone!.trim().isNotEmpty)
+                    const SizedBox(height: 16),
+                  Text(
+                    'Children (${_children.length})',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (_children.isEmpty)
+                    GlassCard(
+                      padding: const EdgeInsets.all(20),
+                      child: Text(
+                        'No student rows list this email as parent/guardian (students.parent_email). '
+                        'Link students in the database or update parent email to match this account.',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                      ),
+                    )
+                  else
+                    ..._children.map((s) {
+                      final batchLabel =
+                          _batchNames[s.batchId] ?? s.batchId;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: GlassCard(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                s.name,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textDark,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _detailLine(Icons.badge_outlined, 'Student ID', s.id),
+                              _detailLine(Icons.email_outlined, 'Email', s.email),
+                              if (s.phoneNumber.isNotEmpty)
+                                _detailLine(
+                                    Icons.phone_outlined, 'Phone', s.phoneNumber),
+                              _detailLine(
+                                  Icons.class_outlined, 'Class / batch', batchLabel),
+                              _detailLine(Icons.school_outlined, 'Enrollment',
+                                  s.enrollmentStatus),
+                              _detailLine(Icons.payments_outlined, 'Fee status',
+                                  s.feeStatus),
+                              _detailLine(
+                                  Icons.currency_rupee_rounded,
+                                  'Fees paid / total',
+                                  '₹${s.feesPaid.toInt()} / ₹${s.totalFees.toInt()}'),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _detailLine(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: AppColors.textLight),
+          const SizedBox(width: 8),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(fontSize: 12, color: AppColors.textMid),
+                children: [
+                  TextSpan(text: '$label: '),
+                  TextSpan(
+                    text: value,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, color: AppColors.textDark),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Admin: teacher profile + timetable-derived class assignments.
+class _TeacherClassesDetailScreen extends StatefulWidget {
+  final Teacher teacher;
+
+  const _TeacherClassesDetailScreen({required this.teacher});
+
+  @override
+  State<_TeacherClassesDetailScreen> createState() =>
+      _TeacherClassesDetailScreenState();
+}
+
+class _TeacherClassesDetailScreenState extends State<_TeacherClassesDetailScreen> {
+  final _db = DatabaseService();
+  List<Map<String, dynamic>> _slots = [];
+  bool _loading = true;
+
+  String get _timetableTeacherId {
+    final u = widget.teacher.userId.trim();
+    if (u.isNotEmpty) return u;
+    return widget.teacher.id.trim();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final slots = await _db.getTeacherTimetable(_timetableTeacherId);
+    if (mounted) {
+      setState(() {
+        _slots = slots;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = widget.teacher;
+    final profileSubjects =
+        t.subjects.isNotEmpty ? t.subjects.join(', ') : '—';
+    final profileClasses =
+        t.classes.isNotEmpty ? t.classes.join(', ') : '—';
+
+    return Scaffold(
+      backgroundColor: AppColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              t.name,
+              style: const TextStyle(
+                  color: AppColors.textDark,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16),
+            ),
+            Text(
+              t.email,
+              style: const TextStyle(fontSize: 12, color: AppColors.textMid),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+            onPressed: _load,
+          ),
+        ],
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  GlassCard(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Profile',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textDark,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _teacherMeta('Phone', t.phoneNumber.isEmpty ? '—' : t.phoneNumber),
+                        _teacherMeta('Employee ID', t.employeeId.isEmpty ? '—' : t.employeeId),
+                        _teacherMeta('Subjects (record)', profileSubjects),
+                        _teacherMeta('Classes (record)', profileClasses),
+                        _teacherMeta('Board', t.board),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Assigned classes (from timetable)${_slots.isEmpty ? ' — none' : ''}',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  if (_slots.isEmpty)
+                    GlassCard(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'No timetable rows for this teacher’s user id. '
+                        'Ensure timetables.teacher_id matches users.id for this account.',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                      ),
+                    )
+                  else
+                    ..._slots.map((row) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: GlassCard(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${row['batch'] ?? ''} • ${row['subject'] ?? ''}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textDark,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${row['day'] ?? ''}  ${row['time'] ?? ''}',
+                                style: const TextStyle(
+                                    fontSize: 12, color: AppColors.textMid),
+                              ),
+                              Text(
+                                'Room: ${row['room'] ?? 'TBA'}',
+                                style: const TextStyle(
+                                    fontSize: 12, color: AppColors.textLight),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _teacherMeta(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: AppColors.textLight),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AllParentsScreen extends StatefulWidget {
+  const _AllParentsScreen();
+
+  @override
+  State<_AllParentsScreen> createState() => _AllParentsScreenState();
+}
+
+class _AllParentsScreenState extends State<_AllParentsScreen> {
+  final _db = DatabaseService();
+  List<Map<String, dynamic>> _parents = [];
+  List<Student> _students = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final results = await Future.wait([
+      _db.getUsersWithRole('parent'),
+      _db.getAllStudents(),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _parents = List<Map<String, dynamic>>.from(results[0] as List);
+      _students = results[1] as List<Student>;
+      _loading = false;
+    });
+  }
+
+  int _childCount(String email) {
+    final e = email.trim().toLowerCase();
+    return _students
+        .where((s) => s.parentEmail.trim().toLowerCase() == e)
+        .length;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'All Parents (${_parents.length})',
+          style: const TextStyle(
+              color: AppColors.textDark, fontWeight: FontWeight.w700),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+            onPressed: _load,
+          ),
+        ],
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _parents.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'No parent accounts (users with role parent).',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: _parents.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (_, i) {
+                    final p = _parents[i];
+                    final name = (p['name'] ?? '').toString();
+                    final email = (p['email'] ?? '').toString();
+                    final phone = (p['phone_number'] ?? '').toString();
+                    final nKids = _childCount(email);
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => _ParentChildrenDetailScreen(
+                                parentEmail: email,
+                                parentName: name.isEmpty ? email : name,
+                                parentPhone: phone.isEmpty ? null : phone,
+                              ),
+                            ),
+                          );
+                        },
+                        child: GlassCard(
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.parentAccent.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.family_restroom_rounded,
+                                    color: AppColors.parentAccent, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name.isEmpty ? email : name,
+                                      style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textDark),
+                                    ),
+                                    Text(
+                                      nKids == 0
+                                          ? 'No linked students'
+                                          : '$nKids linked student${nKids == 1 ? '' : 's'}',
+                                      style: const TextStyle(
+                                          fontSize: 11, color: AppColors.textMid),
+                                    ),
+                                    if (email.isNotEmpty)
+                                      Text(
+                                        email,
+                                        style: const TextStyle(
+                                            fontSize: 10,
+                                            color: AppColors.textLight),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right_rounded,
+                                  color: AppColors.textLight, size: 20),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }
