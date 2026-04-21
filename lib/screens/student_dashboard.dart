@@ -25,6 +25,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   List<Test> _tests = [];
   List<TestResult> _testResults = [];
   List<TimeTable> _timetable = [];
+  List<Broadcast> _broadcasts = [];
   bool _loading = true;
 
   final _db = DatabaseService();
@@ -64,6 +65,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           tests: _tests,
           timetable: _timetable,
           loading: _loading,
+          broadcasts: _broadcasts,
         ),
         _StudentSubjectsPage(subjects: _subjects, loading: _loading),
         _StudentTasksPage(
@@ -109,6 +111,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       final tests = await _db.getTestsByBatch(student.batchId);
       final testResults = await _db.getTestResultsByStudent(student.id);
       final timetable = await _db.getTimeTableByBatch(student.batchId);
+      final broadcasts = await _db.getBroadcastsForRole('students');
 
       if (mounted) {
         setState(() {
@@ -118,6 +121,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           _tests = tests;
           _testResults = testResults;
           _timetable = timetable;
+          _broadcasts = broadcasts;
           _loading = false;
         });
       }
@@ -153,6 +157,7 @@ class _StudentHomePage extends StatelessWidget {
   final List<Test> tests;
   final List<TimeTable> timetable;
   final bool loading;
+  final List<Broadcast> broadcasts;
 
   const _StudentHomePage({
     required this.student,
@@ -161,6 +166,7 @@ class _StudentHomePage extends StatelessWidget {
     required this.tests,
     required this.timetable,
     required this.loading,
+    required this.broadcasts,
   });
 
   void _showNoticesSheet(BuildContext context) {
@@ -179,7 +185,7 @@ class _StudentHomePage extends StatelessWidget {
             role: 'STUDENT',
             subtitle: 'Student Dashboard',
             roleColor: AppColors.studentAccent,
-            notificationCount: 3,
+            notificationCount: broadcasts.length,
             onNotification: () => _showNoticesSheet(context),
             actionButtons: [
               GestureDetector(
@@ -302,29 +308,35 @@ class _StudentHomePage extends StatelessWidget {
           // Upcoming Assignments
           const SectionHeader(title: 'Upcoming Assignments'),
           const SizedBox(height: 14),
-          const _AssignmentItem(
-            subject: 'Mathematics',
-            title: 'Chapter 5 - Quadratic Equations',
-            dueDate: 'Due Tomorrow',
-            color: AppColors.primary,
-            isUrgent: true,
-          ),
-          const SizedBox(height: 10),
-          const _AssignmentItem(
-            subject: 'Science',
-            title: 'Lab Report - Photosynthesis',
-            dueDate: 'Due in 3 days',
-            color: AppColors.info,
-            isUrgent: false,
-          ),
-          const SizedBox(height: 10),
-          const _AssignmentItem(
-            subject: 'English',
-            title: 'Essay - My Role Model',
-            dueDate: 'Due in 5 days',
-            color: AppColors.success,
-            isUrgent: false,
-          ),
+          if (homework.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text('No pending assignments',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textLight,
+                      fontStyle: FontStyle.italic)),
+            )
+          else
+            ...homework
+                .take(5)
+                .map((hw) {
+                  final isUrgent = hw.dueDate.difference(DateTime.now()).inDays <= 1;
+                  return Column(
+                    children: [
+                      _AssignmentItem(
+                        subject: hw.subject,
+                        title: hw.title,
+                        dueDate:
+                            'Due ${hw.dueDate.difference(DateTime.now()).inDays} days',
+                        color: isUrgent ? AppColors.error : AppColors.primary,
+                        isUrgent: isUrgent,
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  );
+                })
+                .toList(),
           const SizedBox(height: 24),
 
           const SizedBox(height: 80),
@@ -889,41 +901,236 @@ class _TestItem extends StatelessWidget {
   }
 }
 
-class _StudentResultsPage extends StatelessWidget {
+class _StudentResultsPage extends StatefulWidget {
   final List<TestResult> testResults;
   final bool loading;
 
   const _StudentResultsPage({required this.testResults, required this.loading});
+  
+  @override
+  State<_StudentResultsPage> createState() => _StudentResultsPageState();
+}
+
+class _StudentResultsPageState extends State<_StudentResultsPage> {
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(20),
+    if (widget.loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (widget.testResults.isEmpty) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SectionHeader(title: 'Test Results'),
+            const SizedBox(height: 16),
+            Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.assignment,
+                    size: 64,
+                    color: Colors.grey[300],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No results yet',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your test results will appear here',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Test Results'),
-          SizedBox(height: 16),
-          GlassCard(
-            child: Column(
-              children: [
-                LabeledProgressBar(
-                    label: 'Physics - Unit Test 1 (85/100)',
-                    value: 0.85,
-                    color: AppColors.primary),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'Chemistry - Unit Test 1 (91/100)',
-                    value: 0.91,
-                    color: AppColors.info),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'Mathematics - Unit Test 1 (76/100)',
-                    value: 0.76,
-                    color: AppColors.success),
-              ],
+          const SectionHeader(title: 'Test Results'),
+          const SizedBox(height: 16),
+          ...widget.testResults.asMap().entries.map((entry) {
+            final result = entry.value;
+            final percentage = result.percentage ?? 0;
+            final grade = result.grade ?? 'N/A';
+            
+            return _TestResultCard(
+              subject: result.subject ?? 'Unknown Subject',
+              testName: result.testName ?? 'Unknown Test',
+              marksObtained: result.marksObtained ?? 0,
+              maxMarks: result.maxMarks ?? 100,
+              percentage: percentage,
+              grade: grade,
+              status: result.status ?? 'completed',
+            );
+          }),
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+}
+
+class _TestResultCard extends StatelessWidget {
+  final String subject;
+  final String testName;
+  final double marksObtained;
+  final double maxMarks;
+  final double percentage;
+  final String grade;
+  final String status;
+
+  const _TestResultCard({
+    required this.subject,
+    required this.testName,
+    required this.marksObtained,
+    required this.maxMarks,
+    required this.percentage,
+    required this.grade,
+    required this.status,
+  });
+
+  Color _getGradeColor() {
+    if (percentage >= 90) return const Color(0xFF4CAF50);
+    if (percentage >= 80) return const Color(0xFF2196F3);
+    if (percentage >= 70) return const Color(0xFFFFC107);
+    if (percentage >= 60) return const Color(0xFFFF9800);
+    return const Color(0xFFF44336);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.divider),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      subject,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      testName,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMid,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _getGradeColor().withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      grade,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: _getGradeColor(),
+                      ),
+                    ),
+                    Text(
+                      '${percentage.toStringAsFixed(1)}%',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: _getGradeColor(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Marks: ${marksObtained.toStringAsFixed(0)}/$maxMarks',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  status,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.success,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: percentage / 100,
+              minHeight: 6,
+              backgroundColor: AppColors.divider,
+              valueColor: AlwaysStoppedAnimation(_getGradeColor()),
             ),
           ),
-          SizedBox(height: 30),
         ],
       ),
     );
@@ -938,58 +1145,6 @@ class _StudentProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Fee data (replace with real data from Student model when wired up)
-    const double totalFees = 50000;
-    const double feesPaid = 30000;
-    const double feesDue = totalFees - feesPaid;
-    const String feeStatus = 'pending'; // 'active', 'pending', 'overdue'
-
-    final List<Map<String, dynamic>> installments = [
-      {
-        'label': 'Installment 1',
-        'amount': 15000.0,
-        'due': 'Jan 10, 2026',
-        'paid': true
-      },
-      {
-        'label': 'Installment 2',
-        'amount': 15000.0,
-        'due': 'Feb 10, 2026',
-        'paid': true
-      },
-      {
-        'label': 'Installment 3',
-        'amount': 10000.0,
-        'due': 'Mar 10, 2026',
-        'paid': false
-      },
-      {
-        'label': 'Installment 4',
-        'amount': 10000.0,
-        'due': 'Apr 10, 2026',
-        'paid': false
-      },
-    ];
-
-    Color statusColor;
-    String statusLabel;
-    IconData statusIcon;
-    switch (feeStatus) {
-      case 'overdue':
-        statusColor = AppColors.error;
-        statusLabel = 'Overdue';
-        statusIcon = Icons.warning_rounded;
-        break;
-      case 'active':
-        statusColor = AppColors.success;
-        statusLabel = 'Fully Paid';
-        statusIcon = Icons.check_circle_rounded;
-        break;
-      default:
-        statusColor = AppColors.warning;
-        statusLabel = 'Partially Paid';
-        statusIcon = Icons.pending_rounded;
-    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -1052,107 +1207,6 @@ class _StudentProfilePage extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Fee Summary
-          const SectionHeader(title: 'Fee Summary'),
-          const SizedBox(height: 12),
-          GlassCard(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: _FeeSummaryTile(
-                        label: 'Total Fees',
-                        amount: totalFees,
-                        color: AppColors.textDark,
-                        icon: Icons.account_balance_wallet_outlined,
-                      ),
-                    ),
-                    Container(width: 1, height: 48, color: AppColors.divider),
-                    const Expanded(
-                      child: _FeeSummaryTile(
-                        label: 'Fees Paid',
-                        amount: feesPaid,
-                        color: AppColors.success,
-                        icon: Icons.check_circle_outline_rounded,
-                      ),
-                    ),
-                    Container(width: 1, height: 48, color: AppColors.divider),
-                    const Expanded(
-                      child: _FeeSummaryTile(
-                        label: 'Fees Due',
-                        amount: feesDue,
-                        color:
-                            feesDue > 0 ? AppColors.error : AppColors.success,
-                        icon: feesDue > 0
-                            ? Icons.error_outline_rounded
-                            : Icons.check_circle_outline_rounded,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                // Progress bar
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: feesPaid / totalFees,
-                    minHeight: 8,
-                    backgroundColor: AppColors.divider,
-                    valueColor: AlwaysStoppedAnimation<Color>(statusColor),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('${((feesPaid / totalFees) * 100).round()}% paid',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: statusColor,
-                            fontWeight: FontWeight.w600)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(statusIcon, size: 13, color: statusColor),
-                          const SizedBox(width: 4),
-                          Text(statusLabel,
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: statusColor)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Installments
-          const SectionHeader(title: 'Installments'),
-          const SizedBox(height: 12),
-          ...installments.map((inst) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _InstallmentTile(
-                  label: inst['label'] as String,
-                  amount: inst['amount'] as double,
-                  dueDate: inst['due'] as String,
-                  paid: inst['paid'] as bool,
-                ),
-              )),
-          const SizedBox(height: 20),
-
           // Logout
           SizedBox(
             width: double.infinity,
@@ -1171,114 +1225,6 @@ class _StudentProfilePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 30),
-        ],
-      ),
-    );
-  }
-}
-
-class _FeeSummaryTile extends StatelessWidget {
-  final String label;
-  final double amount;
-  final Color color;
-  final IconData icon;
-  const _FeeSummaryTile(
-      {required this.label,
-      required this.amount,
-      required this.color,
-      required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 22),
-        const SizedBox(height: 6),
-        Text('₹${amount.toStringAsFixed(0)}',
-            style: TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w800, color: color)),
-        const SizedBox(height: 2),
-        Text(label,
-            style: const TextStyle(fontSize: 10, color: AppColors.textLight),
-            textAlign: TextAlign.center),
-      ],
-    );
-  }
-}
-
-class _InstallmentTile extends StatelessWidget {
-  final String label;
-  final double amount;
-  final String dueDate;
-  final bool paid;
-  const _InstallmentTile(
-      {required this.label,
-      required this.amount,
-      required this.dueDate,
-      required this.paid});
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: (paid ? AppColors.success : AppColors.warning)
-                  .withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              paid ? Icons.check_circle_rounded : Icons.schedule_rounded,
-              color: paid ? AppColors.success : AppColors.warning,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textDark)),
-                Text('Due: $dueDate',
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.textLight)),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text('₹${amount.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textDark)),
-              const SizedBox(height: 2),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: (paid ? AppColors.success : AppColors.warning)
-                      .withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  paid ? 'Paid' : 'Pending',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: paid ? AppColors.success : AppColors.warning,
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );

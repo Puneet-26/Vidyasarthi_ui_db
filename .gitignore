@@ -1,72 +1,314 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+﻿# ============================================================================
+# FLUTTER/DART PROJECT GITIGNORE
+# Comprehensive gitignore for Flutter/Dart projects
+# Last Updated: April 2026
+# ============================================================================
 
-# Environment variables and secrets
+# IMPORTANT: ALWAYS INCLUDE THESE
+!.gitkeep
+!.env.example
+
+# ============================================================================
+# ENVIRONMENT VARIABLES & SECRETS (NEVER COMMIT)
+# ============================================================================
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
+.env.test
 *.pem
 *.key
+*.jks
+*.keystore
+*.p8
+*.p12
+*.pfx
 CREDENTIALS.txt
+secrets/
+.secrets/
+private.key
+app.key
+config.json.private
+credentials.json
+service-account-key.json
+private-key.json
+certificates/
+keys/
+certs/
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# VS Code
-.vscode/
-
-# Flutter/Dart/Pub related
+# ============================================================================
+# FLUTTER & DART DEPENDENCIES
+# ============================================================================
 **/doc/api/
 **/ios/Flutter/.last_build_id
+**/ios/Flutter/Flutter.podspec
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
+.flutter/generated_plugins.cmake
 .pub-cache/
 .pub/
 /build/
 /coverage/
 .metadata
+pubspec.lock
+packages/
+.package_config.json
 
-# Flutter generated files (auto-generated, do not commit)
+# ============================================================================
+# IDE & EDITOR CONFIGURATION
+# ============================================================================
+# IntelliJ / Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+.gradle/
+.classpath
+.factorypath
+.project
+.pydevproject
+.settings/
+
+# VS Code
+.vscode/
+.vscode/extensions/
+.vscode/launch.json
+.vscode/settings.json
+.vscode/tasks.json
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim, Nano, Emacs
+*.swp
+*.swo
+*~
+.vim/
+.emacs.d/
+*_BACKUP_*
+*_BASE_*
+*_LOCAL_*
+*_REMOTE_*
+
+# ============================================================================
+# FLUTTER GENERATED FILES
+# ============================================================================
 **/flutter/generated_plugin_registrant.cc
 **/flutter/generated_plugin_registrant.h
 **/flutter/generated_plugin_registrant.dart
 **/flutter/generated_plugin_registrant.swift
 **/flutter/generated_plugins.cmake
+**/GeneratedPluginRegistrant.java
+.dart_tool/flutter_gen/
+**/GeneratedPluginRegistrant.swift
+generated_plugin_registrant.m
+generated_plugins.cmake
 
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
+# ============================================================================
+# ANDROID BUILD
+# ============================================================================
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/app/intermediates
+/android/app/outputs
+/android/.gradle
+/android/build
 android/local.properties
-
-# APKs and build outputs
+android/keystores/
+android/.idea
+.android/
 *.apk
 *.aab
+*.apkm
+*.app.bundle
+
+# ============================================================================
+# iOS BUILD
+# ============================================================================
+/ios/Flutter/flutter_export_environment.sh
+/ios/Flutter/.last_build_id
+/ios/Flutter/Flutter.framework
+/ios/Flutter/Flutter.modulemap
+/ios/Flutter/Flutter.podspec
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/flutter_assets
+/ios/Pods
+/ios/Podfile.lock
+/ios/Flutter/generated_plugin_registrant.swift
+.ios/
 *.ipa
 *.dSYM.zip
 *.dSYM
+*.xcworkspace/
+Pods/
+Podfile.lock
+Flutter/Flutter.podspec
 
-# Analysis outputs
+# ============================================================================
+# MACOS BUILD
+# ============================================================================
+/macos/Flutter/GeneratedPluginRegistrant.swift
+/macos/Flutter/Flutter.framework
+/macos/Flutter/Flutter.ephemeralModels
+/macos/Flutter/flutter_export_environment.sh
+/macos/Flutter/generated_plugin_registrant.swift
+/macos/Pods
+/macos/Podfile.lock
+
+# ============================================================================
+# LINUX & WINDOWS DESKTOP BUILD
+# ============================================================================
+/linux/flutter/generated_plugins.cmake
+/windows/flutter/generated_plugins.cmake
+/windows/flutter/generated_plugin_registrant.cc
+/windows/flutter/generated_plugin_registrant.h
+/windows/runner/Release
+/windows/runner/Debug
+
+# ============================================================================
+# WEB BUILD
+# ============================================================================
+/web/flutter_service_worker.js
+/web/.firebase/
+/web/app.*.js
+/web/app.*.js.map
+/web/index.*.html
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.npm/
+.eslintcache
+.next/
+dist/
+out/
+
+# ============================================================================
+# BUILD & COMPILATION ARTIFACTS
+# ============================================================================
+/build/
+/bin/
+/obj/
+app.*.symbols
+app.*.map.json
+obfuscation_map.json
 analyze_output.txt
 analyze_results.json
+
+# ============================================================================
+# COVERAGE & TESTING
+# ============================================================================
+/coverage/
+lcov.info
+.coverage
+.nyc_output/
+test-results/
+report.html
+.test/
+
+# ============================================================================
+# SUPABASE & FIREBASE
+# ============================================================================
+supabase/.branches/
+supabase/.temp/
+supabase/seed.sql.bak
+.supabase/
+.firebase/
+firebase-debug.log
+
+# ============================================================================
+# DATABASE FILES
+# ============================================================================
+*.db
+*.sqlite
+*.sqlite3
+*.sqlitedb
+*.db-journal
+*.sqlite-wal
+*.sqlite-shm
+
+# ============================================================================
+# OPERATING SYSTEM FILES
+# ============================================================================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.stackdump
+*.lnk
+*.pdb
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+Icon?
+
+# Linux
+.nfs*
+.directory
+
+# ============================================================================
+# MISCELLANEOUS TEMPORARY FILES
+# ============================================================================
+*.class
+*.log
+*.log.*
+*.pyc
+*.pyo
+*.pyd
+*.pot
+*.pot.json
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+.swiftpm/
+__pycache__/
+.pytest_cache/
+
+# ============================================================================
+# CACHES
+# ============================================================================
+.cache/
+.gem/
+.nvm/
+.rubygems/
+.m2/
+.ivy2/
+.sbt/
+
+# ============================================================================
+# TEMPORARY & BACKUP FILES
+# ============================================================================
+*.tmp
+*.bak
+*.backup
+*.backup.sql
+*.autosave
+*.swn
+*.rej
+*.orig
+*_backup.*
+*_test_*
+.~*
+.run/

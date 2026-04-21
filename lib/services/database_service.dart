@@ -1132,4 +1132,111 @@ class DatabaseService {
       return [];
     }
   }
+
+  // ==================== SYLLABUS/CURRICULUM ====================
+  /// Get syllabus items (curriculum/portion) for a specific subject
+  Future<List<SyllabusItem>> getSyllabusBySubject(String subjectId) async {
+    try {
+      final response = await _client
+          .from('syllabus_items')
+          .select()
+          .eq('subject_id', subjectId)
+          .order('ordering', ascending: true);
+      
+      return (response as List)
+          .map((s) => SyllabusItem.fromJson(s))
+          .toList();
+    } catch (e) {
+      debugPrint('Error fetching syllabus items: $e');
+      return [];
+    }
+  }
+
+  /// Get curriculum progress for a student's subjects
+  /// Returns a map of subject_id -> list of syllabus items
+  Future<Map<String, List<SyllabusItem>>> getCurriculumProgressByStudent(
+      String studentId, List<String> subjectIds) async {
+    try {
+      final result = <String, List<SyllabusItem>>{};
+      
+      for (final subjectId in subjectIds) {
+        final items = await getSyllabusBySubject(subjectId);
+        result[subjectId] = items;
+      }
+      
+      return result;
+    } catch (e) {
+      debugPrint('Error fetching curriculum progress: $e');
+      return {};
+    }
+  }
+
+  /// Get overall curriculum completion percentage for a subject
+  Future<double> getCurriculumCompletionPercentage(String subjectId) async {
+    try {
+      final items = await getSyllabusBySubject(subjectId);
+      if (items.isEmpty) return 0.0;
+      
+      final completedCount = items.where((s) => s.isCompleted).length;
+      return (completedCount / items.length);
+    } catch (e) {
+      debugPrint('Error calculating curriculum completion: $e');
+      return 0.0;
+    }
+  }
+
+  /// Get all syllabus items with completion status
+  Future<List<SyllabusItem>> getAllSyllabus() async {
+    try {
+      final response = await _client
+          .from('syllabus_items')
+          .select()
+          .order('subject_id', ascending: true)
+          .order('ordering', ascending: true);
+      
+      return (response as List)
+          .map((s) => SyllabusItem.fromJson(s))
+          .toList();
+    } catch (e) {
+      debugPrint('Error fetching all syllabus: $e');
+      return [];
+    }
+  }
+
+  /// Get syllabus items for multiple subjects (useful for batch processing)
+  Future<List<SyllabusItem>> getSyllabusBySubjects(List<String> subjectIds) async {
+    try {
+      if (subjectIds.isEmpty) return [];
+      
+      final response = await _client
+          .from('syllabus_items')
+          .select()
+          .inFilter('subject_id', subjectIds)
+          .order('subject_id', ascending: true)
+          .order('ordering', ascending: true);
+      
+      return (response as List)
+          .map((s) => SyllabusItem.fromJson(s))
+          .toList();
+    } catch (e) {
+      debugPrint('Error fetching syllabus for subjects: $e');
+      return [];
+    }
+  }
+
+  /// Update syllabus item completion status
+  Future<bool> updateSyllabusItemCompletion(
+      String syllabusItemId, bool isCompleted) async {
+    try {
+      await _client.from('syllabus_items').update({
+        'is_completed': isCompleted,
+        'completed_date': isCompleted ? DateTime.now().toIso8601String() : null,
+      }).eq('id', syllabusItemId);
+      
+      return true;
+    } catch (e) {
+      debugPrint('Error updating syllabus item: $e');
+      return false;
+    }
+  }
 }

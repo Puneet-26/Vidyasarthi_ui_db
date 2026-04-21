@@ -23,6 +23,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
   int _selectedChild = 0;
   List<Student> _students = [];
   bool _loadingStudents = true;
+  int _notificationCount = 0;
 
   final _db = DatabaseService();
 
@@ -53,6 +54,7 @@ class _ParentDashboardState extends State<ParentDashboard> {
   void initState() {
     super.initState();
     _loadStudents();
+    _loadNotificationCount();
   }
 
   Future<void> _loadStudents() async {
@@ -68,13 +70,27 @@ class _ParentDashboardState extends State<ParentDashboard> {
       });
   }
 
+  Future<void> _loadNotificationCount() async {
+    try {
+      final broadcasts = await _db.getBroadcastsForRole('parents');
+      if (mounted) {
+        setState(() {
+          _notificationCount = broadcasts.length;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading notification count: $e');
+    }
+  }
+
   List<Widget> get _pages => [
         _ParentHomePage(
             students: _students,
             loading: _loadingStudents,
             selectedChild: _selectedChild,
             onSelectChild: (i) => setState(() => _selectedChild = i),
-            onNotification: () => _showNoticesSheet(context)),
+            onNotification: () => _showNoticesSheet(context),
+            notificationCount: _notificationCount),
         _ParentChildrenPage(students: _students, loading: _loadingStudents),
         _ParentFeesPage(students: _students, loading: _loadingStudents),
         _ParentTeacherFeedbackPage(
@@ -108,12 +124,14 @@ class _ParentHomePage extends StatefulWidget {
   final int selectedChild;
   final ValueChanged<int> onSelectChild;
   final VoidCallback onNotification;
+  final int notificationCount;
   const _ParentHomePage(
       {required this.students,
       required this.loading,
       required this.selectedChild,
       required this.onSelectChild,
-      required this.onNotification});
+      required this.onNotification,
+      this.notificationCount = 0});
   @override
   State<_ParentHomePage> createState() => _ParentHomePageState();
 }
@@ -188,7 +206,7 @@ class _ParentHomePageState extends State<_ParentHomePage> {
             role: 'PARENT',
             subtitle: 'Parent Dashboard',
             roleColor: AppColors.parentAccent,
-            notificationCount: 1,
+            notificationCount: widget.notificationCount,
             onNotification: widget.onNotification,
             actionButtons: [
               GestureDetector(
@@ -382,6 +400,18 @@ class _ParentHomePageState extends State<_ParentHomePage> {
           LabeledProgressBar(
               label: 'Fees Paid', value: feeProgress, color: feeColor),
         ])),
+        const SizedBox(height: 24),
+        
+        // Fee Reminders
+        if (student.feeStatus != 'full')
+          _FeeRemindersCard(student: student),
+        if (student.feeStatus != 'full')
+          const SizedBox(height: 24),
+        
+        // Curriculum/Portion Progress
+        const SectionHeader(title: 'Curriculum Progress'),
+        const SizedBox(height: 14),
+        _CurriculumProgressCard(studentId: student.id, subjectIds: student.subjectIds),
         const SizedBox(height: 30),
       ]),
     );
@@ -1284,5 +1314,207 @@ class _EventItem extends StatelessWidget {
                         color: AppColors.textLight)),
               ])),
         ]));
+  }
+}
+
+// ─── Fee Reminders Card ───────────────────────────────────────────────────────
+class _FeeRemindersCard extends StatelessWidget {
+  final Student student;
+  const _FeeRemindersCard({required this.student});
+
+  @override
+  Widget build(BuildContext context) {
+    final outstandingFees = student.totalFees - student.feesPaid;
+    final daysUntilDue = 15; // Mock deadline
+    
+    return GlassCard(
+      padding: const EdgeInsets.all(14),
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppColors.warning.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(
+            Icons.notifications_active_rounded,
+            color: AppColors.warning,
+            size: 22,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Fee Payment Reminder',
+                style: TextStyle(
+                  fontSize: Responsive.sp(context, 13),
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '₹${outstandingFees.toInt()} outstanding • Due in $daysUntilDue days',
+                style: TextStyle(
+                  fontSize: Responsive.sp(context, 11),
+                  color: AppColors.textMid,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.warning.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            'Pending',
+            style: TextStyle(
+              fontSize: Responsive.sp(context, 10),
+              fontWeight: FontWeight.w600,
+              color: AppColors.warning,
+            ),
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+// ─── Curriculum Progress Card ────────────────────────────────────────────────
+class _CurriculumProgressCard extends StatefulWidget {
+  final String studentId;
+  final List<String> subjectIds;
+  const _CurriculumProgressCard(
+      {required this.studentId, required this.subjectIds});
+
+  @override
+  State<_CurriculumProgressCard> createState() => _CurriculumProgressCardState();
+}
+
+class _CurriculumProgressCardState extends State<_CurriculumProgressCard> {
+  late final DatabaseService _db;
+  Map<String, double> _curriculumProgress = {};
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _db = DatabaseService();
+    _loadCurriculumProgress();
+  }
+
+  Future<void> _loadCurriculumProgress() async {
+    try {
+      final progress = <String, double>{};
+      for (final subjectId in widget.subjectIds) {
+        final completion = await _db.getCurriculumCompletionPercentage(subjectId);
+        progress[subjectId] = completion;
+      }
+      if (mounted) {
+        setState(() {
+          _curriculumProgress = progress;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading curriculum progress: $e');
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const GlassCard(
+        child: SizedBox(
+          height: 100,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    if (_curriculumProgress.isEmpty) {
+      return const GlassCard(
+        child: Padding(
+          padding: EdgeInsets.all(14),
+          child: Text(
+            'No curriculum data available yet',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.textMid,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final subjectNames = ['Physics', 'Chemistry', 'Mathematics'];
+    final colors = [
+      const Color(0xFF667EEA),
+      const Color(0xFF26C6DA),
+      AppColors.success,
+    ];
+
+    return GlassCard(
+      child: Column(
+        children: List.generate(
+          _curriculumProgress.length,
+          (index) {
+            final subjectId = _curriculumProgress.keys.elementAt(index);
+            final progress = _curriculumProgress[subjectId] ?? 0.0;
+            final subjectName = index < subjectNames.length
+                ? subjectNames[index]
+                : 'Subject ${index + 1}';
+            final color = index < colors.length ? colors[index] : AppColors.primary;
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: index < _curriculumProgress.length - 1 ? 14 : 0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        subjectName,
+                        style: TextStyle(
+                          fontSize: Responsive.sp(context, 13),
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      Text(
+                        '${(progress * 100).toInt()}% completed',
+                        style: TextStyle(
+                          fontSize: Responsive.sp(context, 11),
+                          fontWeight: FontWeight.w600,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  LabeledProgressBar(
+                    label: 'Portion Covered',
+                    value: progress,
+                    color: color,
+                  ),
+                ],
+              );
+            );
+          },
+        ),
+      ),
+    );
   }
 }

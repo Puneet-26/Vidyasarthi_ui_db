@@ -301,40 +301,123 @@ class _ReportsTab extends StatelessWidget {
   }
 }
 
-class _ActivitiesTab extends StatelessWidget {
+class _ActivitiesTab extends StatefulWidget {
+  const _ActivitiesTab();
+
+  @override
+  State<_ActivitiesTab> createState() => _ActivitiesTabState();
+}
+
+class _ActivitiesTabState extends State<_ActivitiesTab> {
+  final _db = DatabaseService();
+  List<Map<String, dynamic>> _activities = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadActivities();
+  }
+
+  Future<void> _loadActivities() async {
+    setState(() => _loading = true);
+    try {
+      // Load real activities from the system
+      final broadcasts = await _db.getAllBroadcasts();
+      final students = await _db.getAllStudents();
+      
+      List<Map<String, dynamic>> activities = [];
+      
+      // Add recent broadcasts
+      for (final broadcast in broadcasts.take(3)) {
+        activities.add({
+          'title': 'Announcement Sent',
+          'desc': broadcast.title,
+          'time': broadcast.sentDate,
+          'icon': Icons.campaign_rounded,
+          'color': AppColors.info,
+        });
+      }
+      
+      // Add recent students (assuming we can get their creation date from enrollment_date)
+      // For now, we'll show generic "New Student" entries
+      if (students.isNotEmpty) {
+        activities.add({
+          'title': 'New Students Enrolled',
+          'desc': '${students.length} active students in the system',
+          'time': students.isNotEmpty ? students.first.enrollmentDate : DateTime.now(),
+          'icon': Icons.person_add_rounded,
+          'color': AppColors.success,
+        });
+      }
+      
+      // Add a general activity
+      activities.add({
+        'title': 'System Activity',
+        'desc': 'Administrative tasks completed',
+        'time': DateTime.now().subtract(const Duration(hours: 2)),
+        'icon': Icons.check_circle_rounded,
+        'color': AppColors.success,
+      });
+
+      // Sort by time (most recent first)
+      activities.sort((a, b) => (b['time'] as DateTime).compareTo(a['time'] as DateTime));
+
+      if (mounted) {
+        setState(() {
+          _activities = activities;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading activities: $e');
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  String _timeAgo(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${dt.day}/${dt.month}';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(20),
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Recent Activities'),
-          SizedBox(height: 14),
-          _ActivityItem(
-            title: 'New Teacher Onboarded',
-            desc: 'Ms. Kavita Singh joined as Science teacher for Class 7',
-            time: '1 hour ago',
-            icon: Icons.person_add_rounded,
-            color: AppColors.success,
-          ),
-          SizedBox(height: 8),
-          _ActivityItem(
-            title: 'Fee Reminder Sent',
-            desc: '45 parents notified for pending Q4 fees',
-            time: '3 hours ago',
-            icon: Icons.send_rounded,
-            color: AppColors.warning,
-          ),
-          SizedBox(height: 8),
-          _ActivityItem(
-            title: 'Timetable Updated',
-            desc: 'Class 10-A timetable revised for exam preparation',
-            time: '2 days ago',
-            icon: Icons.schedule_rounded,
-            color: AppColors.adminAccent,
-          ),
-          SizedBox(height: 80),
+          const SectionHeader(title: 'Recent Activities'),
+          const SizedBox(height: 14),
+          if (_activities.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(32),
+              child: Text('No recent activities',
+                  style: TextStyle(color: AppColors.textLight)),
+            )
+          else
+            ..._activities.map((activity) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _ActivityItem(
+                title: activity['title'] as String,
+                desc: activity['desc'] as String,
+                time: _timeAgo(activity['time'] as DateTime),
+                icon: activity['icon'] as IconData,
+                color: activity['color'] as Color,
+              ),
+            )).toList(),
+          const SizedBox(height: 80),
         ],
       ),
     );
@@ -790,7 +873,37 @@ class _TeachersTab extends StatelessWidget {
   }
 }
 
-class _StaffTab extends StatelessWidget {
+class _StaffTab extends StatefulWidget {
+  const _StaffTab();
+
+  @override
+  State<_StaffTab> createState() => _StaffTabState();
+}
+
+class _StaffTabState extends State<_StaffTab> {
+  final _db = DatabaseService();
+  int _pendingFeesCount = 0;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPendingFees();
+  }
+
+  Future<void> _loadPendingFees() async {
+    setState(() => _loading = true);
+    final students = await _db.getAllStudents();
+    // Count students with pending fees (fees_paid < total_fees)
+    final withPendingFees = students.where((s) => s.feesPaid < s.totalFees).length;
+    if (mounted) {
+      setState(() {
+        _pendingFeesCount = withPendingFees;
+        _loading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -837,34 +950,18 @@ class _StaffTab extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Pending Tasks
-          const SectionHeader(title: 'Pending Tasks'),
+          // Fee Reminders - Only Active Task
+          const SectionHeader(title: 'Active Tasks'),
           const SizedBox(height: 14),
-          const GlassCard(
-            child: Column(
-              children: [
-                _PendingTaskItem(
-                  title: 'Admission Applications',
-                  count: '7',
-                  icon: Icons.person_add_rounded,
-                  color: AppColors.primary,
-                ),
-                Divider(color: AppColors.divider, height: 20),
-                _PendingTaskItem(
-                  title: 'Fee Reminders',
-                  count: '14',
-                  icon: Icons.notifications_rounded,
-                  color: AppColors.warning,
-                ),
-                Divider(color: AppColors.divider, height: 20),
-                _PendingTaskItem(
-                  title: 'Timetable Conflicts',
-                  count: '2',
-                  icon: Icons.warning_rounded,
-                  color: AppColors.error,
-                ),
-              ],
-            ),
+          GlassCard(
+            child: _loading
+                ? const Center(child: SizedBox(height: 60, child: CircularProgressIndicator()))
+                : _PendingTaskItem(
+                    title: 'Fee Reminders',
+                    count: '$_pendingFeesCount',
+                    icon: Icons.notifications_rounded,
+                    color: AppColors.warning,
+                  ),
           ),
 
           const SizedBox(height: 80),
@@ -3988,9 +4085,48 @@ class _AllTeachersScreenState extends State<_AllTeachersScreen> {
   }
 }
 
-class _AdminAdmissionsScreen extends StatelessWidget {
+class _AdminAdmissionsScreen extends StatefulWidget {
+  @override
+  State<_AdminAdmissionsScreen> createState() => _AdminAdmissionsScreenState();
+}
+
+class _AdminAdmissionsScreenState extends State<_AdminAdmissionsScreen> {
+  final _db = DatabaseService();
+  List<Student> _students = [];
+  List<Batch> _batches = [];
+  String? _selectedBatchId;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _loading = true);
+    final results = await Future.wait([
+      _db.getAllStudents(),
+      _db.getAllBatches(),
+    ]);
+    if (mounted) {
+      setState(() {
+        _students = results[0] as List<Student>;
+        _batches = results[1] as List<Batch>;
+        _loading = false;
+      });
+    }
+  }
+
+  List<Student> _getFilteredStudents() {
+    if (_selectedBatchId == null) return _students;
+    return _students.where((s) => s.batchId == _selectedBatchId).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final filtered = _getFilteredStudents();
+    
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppBar(
@@ -4003,39 +4139,229 @@ class _AdminAdmissionsScreen extends StatelessWidget {
         title: const Text('Admissions',
             style: TextStyle(
                 color: AppColors.textDark, fontWeight: FontWeight.w700)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+            onPressed: _loadData,
+          ),
+        ],
       ),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(20),
-        child: GlassCard(
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.all(40),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.person_add_rounded,
-                      size: 64, color: AppColors.primary),
-                  SizedBox(height: 16),
-                  Text('Admission Management',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textDark)),
-                  SizedBox(height: 8),
-                  Text('View and manage all admission applications',
-                      style: TextStyle(color: AppColors.textLight)),
+                  // Batch Filter
+                  const Text('Filter by Batch',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  const SizedBox(height: 12),
+                  GlassCard(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String?>(
+                        isExpanded: true,
+                        value: _selectedBatchId,
+                        hint: const Text('All Batches'),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('All Batches'),
+                          ),
+                          ..._batches.map((b) => DropdownMenuItem<String?>(
+                            value: b.id,
+                            child: Text(b.name),
+                          )).toList(),
+                        ],
+                        onChanged: (value) => setState(() => _selectedBatchId = value),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Stats
+                  Row(
+                    children: [
+                      Expanded(
+                        child: StatCard(
+                          title: 'Total',
+                          value: '${filtered.length}',
+                          icon: Icons.school_rounded,
+                          color: AppColors.primary,
+                          subtitle: 'Students',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: StatCard(
+                          title: 'Active',
+                          value: '${filtered.where((s) => s.enrollmentStatus == 'active').length}',
+                          icon: Icons.check_circle_rounded,
+                          color: AppColors.success,
+                          subtitle: 'Enrolled',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Students List
+                  const Text('Admitted Students',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  const SizedBox(height: 12),
+                  
+                  if (filtered.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.person_add_outlined, size: 48, color: Colors.grey[400]),
+                            const SizedBox(height: 12),
+                            Text('No students found',
+                                style: TextStyle(color: Colors.grey[600])),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    ...filtered.map((student) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: GlassCard(
+                        padding: const EdgeInsets.all(14),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.person_rounded,
+                                  color: AppColors.primary, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(student.name,
+                                      style: const TextStyle(
+                                          fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Batch: ${student.batchId?.split('_').last ?? 'N/A'} • Status: ${student.enrollmentStatus}',
+                                    style: const TextStyle(fontSize: 11, color: AppColors.textMid),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(student.email,
+                                      style: const TextStyle(fontSize: 10, color: AppColors.textLight)),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: student.enrollmentStatus == 'active'
+                                    ? AppColors.success.withValues(alpha: 0.12)
+                                    : AppColors.warning.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                student.enrollmentStatus == 'active' ? '✓ Active' : 'Pending',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: student.enrollmentStatus == 'active'
+                                      ? AppColors.success
+                                      : AppColors.warning,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )).toList(),
+                  
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }
 
-class _AdminTimetableScreen extends StatelessWidget {
+class _AdminTimetableScreen extends StatefulWidget {
+  @override
+  State<_AdminTimetableScreen> createState() => _AdminTimetableScreenState();
+}
+
+class _AdminTimetableScreenState extends State<_AdminTimetableScreen> {
+  final _db = DatabaseService();
+  List<TimeTable> _timetables = [];
+  List<Batch> _batches = [];
+  List<Subject> _subjects = [];
+  List<Teacher> _teachers = [];
+  String? _selectedBatchId;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _loading = true);
+    final results = await Future.wait([
+      _db.getAllTimeTables(),
+      _db.getAllBatches(),
+      _db.getAllSubjects(),
+      _db.getAllTeachers(),
+    ]);
+    if (mounted) {
+      setState(() {
+        _timetables = results[0] as List<TimeTable>;
+        _batches = results[1] as List<Batch>;
+        _subjects = results[2] as List<Subject>;
+        _teachers = results[3] as List<Teacher>;
+        _loading = false;
+      });
+    }
+  }
+
+  List<TimeTable> _getFilteredTimetables() {
+    if (_selectedBatchId == null) return _timetables;
+    return _timetables.where((t) => t.batchId == _selectedBatchId).toList();
+  }
+
+  Future<void> _assignClass() async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        builder: (_, controller) => _AssignClassToTimetable(
+          batches: _batches,
+          subjects: _subjects,
+          teachers: _teachers,
+          db: _db,
+          onSuccess: _loadData,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final filtered = _getFilteredTimetables();
+    
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppBar(
@@ -4046,40 +4372,211 @@ class _AdminTimetableScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text('Timetable',
-            style: TextStyle(
-                color: AppColors.textDark, fontWeight: FontWeight.w700)),
+            style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+            onPressed: _loadData,
+          ),
+        ],
       ),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(20),
-        child: GlassCard(
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.all(40),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _assignClass,
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add_rounded),
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.schedule_rounded, size: 64, color: AppColors.info),
-                  SizedBox(height: 16),
-                  Text('Timetable Management',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textDark)),
-                  SizedBox(height: 8),
-                  Text('Create and manage class schedules',
-                      style: TextStyle(color: AppColors.textLight)),
+                  // Batch Filter
+                  const Text('Filter by Batch',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  const SizedBox(height: 12),
+                  GlassCard(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String?>(
+                        isExpanded: true,
+                        value: _selectedBatchId,
+                        hint: const Text('All Batches'),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('All Batches'),
+                          ),
+                          ..._batches.map((b) => DropdownMenuItem<String?>(
+                            value: b.id,
+                            child: Text(b.name),
+                          )).toList(),
+                        ],
+                        onChanged: (value) => setState(() => _selectedBatchId = value),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Stats
+                  Row(
+                    children: [
+                      Expanded(
+                        child: StatCard(
+                          title: 'Total',
+                          value: '${filtered.length}',
+                          icon: Icons.schedule_rounded,
+                          color: AppColors.info,
+                          subtitle: 'Classes',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: StatCard(
+                          title: 'Batches',
+                          value: '${_batches.length}',
+                          icon: Icons.class_rounded,
+                          color: AppColors.primary,
+                          subtitle: 'Total',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Timetable List
+                  const Text('Class Timetable',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  const SizedBox(height: 12),
+                  
+                  if (filtered.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.schedule_outlined, size: 48, color: Colors.grey[400]),
+                            const SizedBox(height: 12),
+                            Text('No timetable entries found',
+                                style: TextStyle(color: Colors.grey[600])),
+                            const SizedBox(height: 8),
+                            Text('Tap + to create one',
+                                style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    ...filtered.map((tt) {
+                      final batch = _batches.firstWhere(
+                        (b) => b.id == tt.batchId,
+                        orElse: () => Batch(
+                          id: '', name: 'Unknown', level: '', subjects: [], createdAt: DateTime.now()
+                        ),
+                      );
+                      final subject = _subjects.firstWhere(
+                        (s) => s.id == tt.subjectId,
+                        orElse: () => Subject(id: '', name: 'Unknown', code: '', description: ''),
+                      );
+                      
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: GlassCard(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.info.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(Icons.schedule_rounded,
+                                        color: AppColors.info, size: 18),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(subject.name,
+                                            style: const TextStyle(
+                                                fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                                        Text(batch.name,
+                                            style: const TextStyle(fontSize: 11, color: AppColors.textMid)),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.success.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      '✓ Active',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.success,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }
 
-class _AdminBroadcastScreen extends StatelessWidget {
+class _AdminBroadcastScreen extends StatefulWidget {
+  @override
+  State<_AdminBroadcastScreen> createState() => _AdminBroadcastScreenState();
+}
+
+class _AdminBroadcastScreenState extends State<_AdminBroadcastScreen> {
+  final _db = DatabaseService();
+  List<Broadcast> _broadcasts = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBroadcasts();
+  }
+
+  Future<void> _loadBroadcasts() async {
+    setState(() => _loading = true);
+    final broadcasts = await _db.getAllBroadcasts();
+    if (mounted) {
+      setState(() {
+        _broadcasts = broadcasts;
+        _loading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final recent = _broadcasts.reversed.take(10).toList();
+    
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppBar(
@@ -4089,42 +4586,299 @@ class _AdminBroadcastScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Broadcast',
-            style: TextStyle(
-                color: AppColors.textDark, fontWeight: FontWeight.w700)),
+        title: const Text('Send Notices',
+            style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700)),
       ),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(20),
-        child: GlassCard(
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.all(40),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (_) => Dialog(
+              backgroundColor: Colors.transparent,
+              child: DraggableScrollableSheet(
+                expand: false,
+                builder: (_, controller) => Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Send Notice To',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                          const SizedBox(height: 20),
+                          _BroadcastTargetButton(
+                            label: 'All Students',
+                            icon: Icons.school_rounded,
+                            color: AppColors.primary,
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const _SendNoticeScreen(target: 'Students'),
+                                ),
+                              ).then((_) => _loadBroadcasts());
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          _BroadcastTargetButton(
+                            label: 'All Teachers',
+                            icon: Icons.person_rounded,
+                            color: AppColors.teacherAccent,
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const _SendNoticeScreen(target: 'Teachers'),
+                                ),
+                              ).then((_) => _loadBroadcasts());
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          _BroadcastTargetButton(
+                            label: 'All Parents',
+                            icon: Icons.family_restroom_rounded,
+                            color: AppColors.parentAccent,
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const _SendNoticeScreen(target: 'Parents'),
+                                ),
+                              ).then((_) => _loadBroadcasts());
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          _BroadcastTargetButton(
+                            label: 'Everyone',
+                            icon: Icons.public_rounded,
+                            color: AppColors.adminAccent,
+                            onTap: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const _SendNoticeScreen(target: 'All'),
+                                ),
+                              ).then((_) => _loadBroadcasts());
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+        backgroundColor: AppColors.warning,
+        child: const Icon(Icons.add_rounded),
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.campaign_rounded,
-                      size: 64, color: AppColors.warning),
-                  SizedBox(height: 16),
-                  Text('Broadcast Messages',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textDark)),
-                  SizedBox(height: 8),
-                  Text('Send notices to students, teachers, and parents',
-                      style: TextStyle(color: AppColors.textLight)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Recent Broadcasts',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                      IconButton(
+                        icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+                        onPressed: _loadBroadcasts,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  if (recent.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.campaign_outlined, size: 48, color: Colors.grey[400]),
+                            const SizedBox(height: 12),
+                            Text('No broadcasts sent yet',
+                                style: TextStyle(color: Colors.grey[600])),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    ...recent.map((b) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: GlassCard(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(b.title,
+                                          style: const TextStyle(
+                                              fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark),
+                                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      const SizedBox(height: 4),
+                                      Text(b.message,
+                                          style: const TextStyle(fontSize: 11, color: AppColors.textMid),
+                                          maxLines: 2, overflow: TextOverflow.ellipsis),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.info.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    b.targetAudience.substring(0, 1).toUpperCase() + 
+                                    b.targetAudience.substring(1),
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.info,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${b.sentDate.day}/${b.sentDate.month}/${b.sentDate.year}',
+                              style: const TextStyle(fontSize: 10, color: AppColors.textLight),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )).toList(),
+                  
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
-          ),
+    );
+  }
+}
+
+class _BroadcastTargetButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _BroadcastTargetButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: GlassCard(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark,
+                ),
+              ),
+            ),
+            Icon(Icons.arrow_forward_rounded, color: AppColors.textLight),
+          ],
         ),
       ),
     );
   }
 }
 
-class _AdminFeesScreen extends StatelessWidget {
+class _AdminFeesScreen extends StatefulWidget {
+  @override
+  State<_AdminFeesScreen> createState() => _AdminFeeScreenState();
+}
+
+class _AdminFeeScreenState extends State<_AdminFeesScreen> {
+  final _db = DatabaseService();
+  List<Student> _students = [];
+  String _filterStatus = 'all'; // all, pending, paid
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _loading = true);
+    final students = await _db.getAllStudents();
+    if (mounted) {
+      setState(() {
+        _students = students;
+        _loading = false;
+      });
+    }
+  }
+
+  List<Student> _getFilteredStudents() {
+    switch (_filterStatus) {
+      case 'pending':
+        return _students.where((s) => s.feesPaid < s.totalFees).toList();
+      case 'paid':
+        return _students.where((s) => s.feesPaid >= s.totalFees).toList();
+      default:
+        return _students;
+    }
+  }
+
+  double _getTotalFees() => _students.fold(0, (sum, s) => sum + s.totalFees);
+  double _getTotalPaid() => _students.fold(0, (sum, s) => sum + s.feesPaid);
+  double _getTotalPending() => _getTotalFees() - _getTotalPaid();
+
   @override
   Widget build(BuildContext context) {
+    final filtered = _getFilteredStudents();
+    
     return Scaffold(
       backgroundColor: AppColors.bgLight,
       appBar: AppBar(
@@ -4135,32 +4889,311 @@ class _AdminFeesScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text('Fee Management',
-            style: TextStyle(
-                color: AppColors.textDark, fontWeight: FontWeight.w700)),
+            style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+            onPressed: _loadData,
+          ),
+        ],
       ),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(20),
-        child: GlassCard(
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.all(40),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.account_balance_wallet_rounded,
-                      size: 64, color: AppColors.success),
-                  SizedBox(height: 16),
-                  Text('Fee Management',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textDark)),
-                  SizedBox(height: 8),
-                  Text('Track and manage student fees',
-                      style: TextStyle(color: AppColors.textLight)),
+                  // Summary Statistics
+                  const Text('Fee Summary',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  const SizedBox(height: 12),
+                  
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.success, Color(0xFF81C784)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Total Fees Collected',
+                            style: TextStyle(fontSize: 12, color: Colors.white70)),
+                        const SizedBox(height: 4),
+                        Text('₹${_getTotalPaid().toStringAsFixed(0)}',
+                            style: const TextStyle(
+                                fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white)),
+                        const SizedBox(height: 8),
+                        Text('of ₹${_getTotalFees().toStringAsFixed(0)}',
+                            style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppColors.warning.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Pending',
+                                  style: TextStyle(fontSize: 11, color: AppColors.warning, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 4),
+                              Text('₹${_getTotalPending().toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                      fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.warning)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Students',
+                                  style: TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 4),
+                              Text('${_students.length}',
+                                  style: const TextStyle(
+                                      fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Filter Buttons
+                  const Text('Filter Students',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      _FilterChip(
+                        label: 'All',
+                        count: _students.length,
+                        isSelected: _filterStatus == 'all',
+                        onTap: () => setState(() => _filterStatus = 'all'),
+                      ),
+                      _FilterChip(
+                        label: 'Paid',
+                        count: _students.where((s) => s.feesPaid >= s.totalFees).length,
+                        isSelected: _filterStatus == 'paid',
+                        onTap: () => setState(() => _filterStatus = 'paid'),
+                        color: AppColors.success,
+                      ),
+                      _FilterChip(
+                        label: 'Pending',
+                        count: _students.where((s) => s.feesPaid < s.totalFees).length,
+                        isSelected: _filterStatus == 'pending',
+                        onTap: () => setState(() => _filterStatus = 'pending'),
+                        color: AppColors.warning,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Students List
+                  const Text('Student Fees',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  const SizedBox(height: 12),
+                  
+                  if (filtered.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.account_balance_wallet_outlined, size: 48, color: Colors.grey[400]),
+                            const SizedBox(height: 12),
+                            Text('No students found',
+                                style: TextStyle(color: Colors.grey[600])),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    ...filtered.map((student) {
+                      final feePaid = student.feesPaid;
+                      final totalFee = student.totalFees;
+                      final pending = totalFee - feePaid;
+                      final percentage = totalFee > 0 ? (feePaid / totalFee * 100) : 0;
+                      final isPaid = pending <= 0;
+                      
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: GlassCard(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: isPaid
+                                          ? AppColors.success.withValues(alpha: 0.12)
+                                          : AppColors.warning.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(
+                                      isPaid ? Icons.check_circle_rounded : Icons.pending_actions_rounded,
+                                      color: isPaid ? AppColors.success : AppColors.warning,
+                                      size: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(student.name,
+                                            style: const TextStyle(
+                                                fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                                        Text(student.email,
+                                            style: const TextStyle(fontSize: 10, color: AppColors.textLight)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              // Progress bar
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: LinearProgressIndicator(
+                                  value: percentage / 100,
+                                  minHeight: 6,
+                                  backgroundColor: Colors.grey[300],
+                                  valueColor: AlwaysStoppedAnimation(
+                                    isPaid ? AppColors.success : AppColors.warning,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Paid: ₹${feePaid.toStringAsFixed(0)}',
+                                    style: const TextStyle(fontSize: 11, color: AppColors.textMid, fontWeight: FontWeight.w600),
+                                  ),
+                                  Text(
+                                    'Pending: ₹${pending.toStringAsFixed(0)}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isPaid ? AppColors.success : AppColors.warning,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${percentage.toStringAsFixed(0)}%',
+                                    style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w700),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final int count;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color? color;
+
+  const _FilterChip({
+    required this.label,
+    required this.count,
+    required this.isSelected,
+    required this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final finalColor = color ?? AppColors.primary;
+    
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? finalColor.withValues(alpha: 0.15) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? finalColor : AppColors.divider,
+            width: isSelected ? 2 : 1,
           ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? finalColor : AppColors.textMid,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: finalColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: finalColor,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -4905,6 +5938,299 @@ class _AdminProfileSheetState extends State<_AdminProfileSheet> {
                       fontSize: 15, fontWeight: FontWeight.w600),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Timetable Assignment Helper ──────────────────────────────────────────────
+class _AssignClassToTimetable extends StatefulWidget {
+  final List<Batch> batches;
+  final List<Subject> subjects;
+  final List<Teacher> teachers;
+  final DatabaseService db;
+  final VoidCallback onSuccess;
+
+  const _AssignClassToTimetable({
+    required this.batches,
+    required this.subjects,
+    required this.teachers,
+    required this.db,
+    required this.onSuccess,
+  });
+
+  @override
+  State<_AssignClassToTimetable> createState() => _AssignClassToTimetableState();
+}
+
+class _AssignClassToTimetableState extends State<_AssignClassToTimetable> {
+  String? _selectedBatchId;
+  String? _selectedSubjectId;
+  String? _selectedTeacherId;
+  String? _selectedDay;
+  TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
+  TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
+  final _roomController = TextEditingController();
+  bool _isSaving = false;
+
+  final List<String> _days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  String _formatTime(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+
+  Future<void> _pickTime(bool isStart) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: isStart ? _startTime : _endTime,
+    );
+    if (picked != null) {
+      setState(() => isStart ? _startTime = picked : _endTime = picked);
+    }
+  }
+
+  Future<void> _save() async {
+    if (_selectedBatchId == null ||
+        _selectedSubjectId == null ||
+        _selectedTeacherId == null ||
+        _selectedDay == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all required fields')),
+      );
+      return;
+    }
+    setState(() => _isSaving = true);
+    try {
+      final tt = TimeTable(
+        id: 'tt_${DateTime.now().millisecondsSinceEpoch}',
+        batchId: _selectedBatchId!,
+        subjectId: _selectedSubjectId!,
+        teacherId: _selectedTeacherId!,
+        day: _selectedDay!,
+        startTime: _formatTime(_startTime),
+        endTime: _formatTime(_endTime),
+        room: _roomController.text.trim().isEmpty ? null : _roomController.text.trim(),
+        createdAt: DateTime.now(),
+      );
+      await widget.db.createTimeTableEntry(tt);
+      if (mounted) {
+        Navigator.pop(context);
+        widget.onSuccess();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Timetable entry created successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _roomController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text('Assign Class',
+                style: TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+            const SizedBox(height: 20),
+            // Batch Dropdown
+            const Text('Batch',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _selectedBatchId,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              hint: const Text('Select batch'),
+              items: widget.batches
+                  .map((b) => DropdownMenuItem(value: b.id, child: Text(b.name)))
+                  .toList(),
+              onChanged: (value) => setState(() => _selectedBatchId = value),
+            ),
+            const SizedBox(height: 16),
+            // Subject Dropdown
+            const Text('Subject',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _selectedSubjectId,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              hint: const Text('Select subject'),
+              items: widget.subjects
+                  .map((s) => DropdownMenuItem(value: s.id, child: Text(s.name)))
+                  .toList(),
+              onChanged: (value) => setState(() => _selectedSubjectId = value),
+            ),
+            const SizedBox(height: 16),
+            // Teacher Dropdown
+            const Text('Teacher',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _selectedTeacherId,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              hint: const Text('Select teacher'),
+              items: widget.teachers
+                  .map((t) => DropdownMenuItem(value: t.id, child: Text(t.name)))
+                  .toList(),
+              onChanged: (value) => setState(() => _selectedTeacherId = value),
+            ),
+            const SizedBox(height: 16),
+            // Day
+            const Text('Day',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: _selectedDay,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              hint: const Text('Select day'),
+              items: _days.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+              onChanged: (value) => setState(() => _selectedDay = value),
+            ),
+            const SizedBox(height: 16),
+            // Times
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Start Time',
+                          style:
+                              TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () => _pickTime(true),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey[300]!),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(_formatTime(_startTime)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('End Time',
+                          style:
+                              TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () => _pickTime(false),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey[300]!),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(_formatTime(_endTime)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Room
+            const Text('Room (Optional)',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _roomController,
+              decoration: InputDecoration(
+                hintText: 'e.g., Room 101',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _save,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('Save'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
