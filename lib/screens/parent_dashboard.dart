@@ -1597,7 +1597,7 @@ class _CurriculumProgressCardState extends State<_CurriculumProgressCard> {
                     color: color,
                   ),
                 ],
-              );
+              ),
             );
           },
         ),

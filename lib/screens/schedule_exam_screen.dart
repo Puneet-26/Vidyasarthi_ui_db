@@ -192,7 +192,7 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
                 ),
               ),
               items: _batches.map((batch) {
-                return DropdownMenuItem(
+                return DropdownMenuItem<String>(
                   value: batch['id'],
                   child: Text(batch['name']!),
                 );
@@ -219,7 +219,7 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
                 ),
               ),
               items: _subjects.map((subject) {
-                return DropdownMenuItem(
+                return DropdownMenuItem<String>(
                   value: subject['id'],
                   child: Text(subject['name']!),
                 );

@@ -65,7 +65,7 @@ class AttendanceService {
     try {
       final response = await _client
           .from('attendance')
-          .select('*, students!inner(*, users!inner(name, email))')
+          .select('student_id, status, date, remarks')
           .eq('batch_id', batchId)
           .eq('date', date.toIso8601String().split('T')[0]);
 
@@ -77,20 +77,32 @@ class AttendanceService {
   }
 
   /// Get students in a batch for attendance marking
+  /// Returns flat rows with 'name' and 'email' directly (no users join needed)
   Future<List<Map<String, dynamic>>> getStudentsForAttendance({
     required String batchId,
   }) async {
     try {
+      // First try with the direct columns (flat schema used by this app)
       final response = await _client
           .from('students')
-          .select('id, roll_number, users!inner(name, email)')
+          .select('id, name, email, roll_number')
           .eq('batch_id', batchId)
           .eq('enrollment_status', 'active')
           .order('roll_number');
 
-      return List<Map<String, dynamic>>.from(response);
+      // Normalise into a shape mark_attendance_screen.dart expects:
+      // student['users']['name'] → we inject a synthetic 'users' map
+      return (response as List).map<Map<String, dynamic>>((s) {
+        final row = Map<String, dynamic>.from(s);
+        // Provide 'users' sub-map so existing UI code works unchanged
+        row['users'] = {
+          'name': row['name'] ?? '',
+          'email': row['email'] ?? '',
+        };
+        return row;
+      }).toList();
     } catch (e) {
-      debugPrint('❌ Error fetching students: $e');
+      debugPrint('❌ Error fetching students for attendance: $e');
       return [];
     }
   }

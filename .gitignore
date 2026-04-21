@@ -1,4 +1,4 @@
-﻿# ============================================================================
+# ============================================================================
 # FLUTTER/DART PROJECT GITIGNORE
 # Comprehensive gitignore for Flutter/Dart projects
 # Last Updated: April 2026
@@ -25,6 +25,11 @@
 *.p12
 *.pfx
 CREDENTIALS.txt
+demo_credentials.txt
+*_credentials.txt
+*_creds.txt
+login_credentials.*
+demo_logins.*
 secrets/
 .secrets/
 private.key
@@ -52,7 +57,9 @@ certs/
 /build/
 /coverage/
 .metadata
-pubspec.lock
+# pubspec.lock — intentionally NOT ignored for apps (only for packages/plugins).
+# Remove the line below if you want to track it (recommended for Flutter apps).
+# pubspec.lock
 packages/
 .package_config.json
 
@@ -312,3 +319,27 @@ __pycache__/
 *_test_*
 .~*
 .run/
+
+# ============================================================================
+# PROJECT-SPECIFIC OVERRIDES (VidyaSarathi)
+# ============================================================================
+# Python seed script cache & output
+__pycache__/
+*.py[cod]
+seed_output/
+seed_results/
+
+# SQL scratch / check files (root-level) — keep .sql schema files tracked
+check_*.sql
+quick_test_data.sql
+final_add_data.sql
+run_seeder.dart
+
+# Any locally generated credential or secrets dump
+demo_credentials.txt
+*_credentials.txt
+*_creds.txt
+
+# Local Flutter device & run config
+.flutter-devices
+flutter_01.log

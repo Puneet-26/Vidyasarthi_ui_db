@@ -325,7 +325,7 @@ class _StudentHomePage extends StatelessWidget {
                   return Column(
                     children: [
                       _AssignmentItem(
-                        subject: hw.subject,
+                        subject: hw.subjectId,
                         title: hw.title,
                         dueDate:
                             'Due ${hw.dueDate.difference(DateTime.now()).inDays} days',
@@ -912,6 +912,15 @@ class _StudentResultsPage extends StatefulWidget {
 }
 
 class _StudentResultsPageState extends State<_StudentResultsPage> {
+  String _calculateGrade(double percentage) {
+    if (percentage >= 90) return 'A+';
+    if (percentage >= 80) return 'A';
+    if (percentage >= 70) return 'B';
+    if (percentage >= 60) return 'C';
+    if (percentage >= 50) return 'D';
+    return 'F';
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.loading) {
@@ -968,17 +977,20 @@ class _StudentResultsPageState extends State<_StudentResultsPage> {
           const SizedBox(height: 16),
           ...widget.testResults.asMap().entries.map((entry) {
             final result = entry.value;
-            final percentage = result.percentage ?? 0;
-            final grade = result.grade ?? 'N/A';
+            final marksObtained = result.marksObtained.toDouble();
+            const maxMarks = 100.0;
+            final percentage =
+                maxMarks == 0 ? 0.0 : (marksObtained / maxMarks) * 100;
+            final grade = _calculateGrade(percentage);
             
             return _TestResultCard(
-              subject: result.subject ?? 'Unknown Subject',
-              testName: result.testName ?? 'Unknown Test',
-              marksObtained: result.marksObtained ?? 0,
-              maxMarks: result.maxMarks ?? 100,
+              subject: 'Subject',
+              testName: 'Test ${result.testId}',
+              marksObtained: marksObtained,
+              maxMarks: maxMarks,
               percentage: percentage,
               grade: grade,
-              status: result.status ?? 'completed',
+              status: result.status,
             );
           }),
           const SizedBox(height: 30),
