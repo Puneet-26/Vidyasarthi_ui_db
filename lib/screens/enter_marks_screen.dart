@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
-import '../widgets/shared_widgets.dart';
 import '../services/marks_service.dart';
 
 class EnterMarksScreen extends StatefulWidget {
@@ -137,7 +136,7 @@ class _EnterMarksScreenState extends State<EnterMarksScreen> {
       
       if (marksText.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Please enter marks for all students'),
             backgroundColor: AppColors.warning,
           ),
@@ -227,7 +226,7 @@ class _EnterMarksScreenState extends State<EnterMarksScreen> {
                 // Header Info
                 Container(
                   padding: const EdgeInsets.all(16),
-                  color: AppColors.teacherAccent.withOpacity(0.1),
+                  color: AppColors.teacherAccent.withValues(alpha: 0.1),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -241,7 +240,7 @@ class _EnterMarksScreenState extends State<EnterMarksScreen> {
                       const SizedBox(height: 4),
                       Text(
                         widget.batchName,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
                           color: AppColors.textLight,
                         ),
@@ -316,7 +315,7 @@ class _EnterMarksScreenState extends State<EnterMarksScreen> {
                                         ),
                                         Text(
                                           'Roll: $rollNumber',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 12,
                                             color: AppColors.textLight,
                                           ),
@@ -331,7 +330,7 @@ class _EnterMarksScreenState extends State<EnterMarksScreen> {
                                         vertical: 6,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: _getGradeColor(grade).withOpacity(0.1),
+                                        color: _getGradeColor(grade).withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
                                           color: _getGradeColor(grade),
@@ -384,10 +383,10 @@ class _EnterMarksScreenState extends State<EnterMarksScreen> {
                                       child: Container(
                                         padding: const EdgeInsets.all(12),
                                         decoration: BoxDecoration(
-                                          color: AppColors.info.withOpacity(0.1),
+                                          color: AppColors.info.withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(8),
                                           border: Border.all(
-                                            color: AppColors.info.withOpacity(0.3),
+                                            color: AppColors.info.withValues(alpha: 0.3),
                                           ),
                                         ),
                                         child: Column(
@@ -428,7 +427,7 @@ class _EnterMarksScreenState extends State<EnterMarksScreen> {
                     color: Colors.white,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, -2),
                       ),
@@ -497,9 +496,9 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [

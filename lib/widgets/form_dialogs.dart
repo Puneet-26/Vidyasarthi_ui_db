@@ -141,7 +141,7 @@ class _ProfessionalFormDialogState extends State<ProfessionalFormDialog> {
                               widget.description,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withValues(alpha: 0.8),
                               ),
                             ),
                           ],
@@ -153,7 +153,7 @@ class _ProfessionalFormDialogState extends State<ProfessionalFormDialog> {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -217,7 +217,7 @@ class _ProfessionalFormDialogState extends State<ProfessionalFormDialog> {
                         onPressed: widget.isLoading ? null : _handleSubmit,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
+                          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),

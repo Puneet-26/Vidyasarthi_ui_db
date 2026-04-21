@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
-import '../widgets/shared_widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:math';
 
@@ -194,7 +193,7 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
 
             // Batch Selection
             DropdownButtonFormField<String>(
-              value: _selectedBatch,
+              initialValue: _selectedBatch,
               decoration: InputDecoration(
                 labelText: 'Select Batch *',
                 prefixIcon: const Icon(Icons.class_),
@@ -221,7 +220,7 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
 
             // Subject Selection
             DropdownButtonFormField<String>(
-              value: _selectedSubject,
+              initialValue: _selectedSubject,
               decoration: InputDecoration(
                 labelText: 'Select Subject *',
                 prefixIcon: const Icon(Icons.book),
@@ -350,20 +349,20 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.info.withOpacity(0.1),
+                color: AppColors.info.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppColors.info.withOpacity(0.3),
+                  color: AppColors.info.withValues(alpha: 0.3),
                 ),
               ),
-              child: Row(
+              child: const Row(
                 children: [
                   Icon(
                     Icons.info_outline,
                     color: AppColors.info,
                     size: 20,
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Students and parents will be notified about this exam',

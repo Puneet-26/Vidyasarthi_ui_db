@@ -61,11 +61,12 @@ class _ParentDashboardState extends State<ParentDashboard> {
     debugPrint('Loading students for parent: $email');
     final students = await _db.getStudentsByParentEmail(email);
     debugPrint('Found ${students.length} students');
-    if (mounted)
+    if (mounted) {
       setState(() {
         _students = students;
         _loadingStudents = false;
       });
+    }
   }
 
   List<Widget> get _pages => [
@@ -130,8 +131,9 @@ class _ParentHomePageState extends State<_ParentHomePage> {
   @override
   void didUpdateWidget(covariant _ParentHomePage old) {
     super.didUpdateWidget(old);
-    if (old.selectedChild != widget.selectedChild)
+    if (old.selectedChild != widget.selectedChild) {
       _selectedChild = widget.selectedChild;
+    }
   }
 
   @override
@@ -652,7 +654,7 @@ class _ParentChildrenPage extends StatelessWidget {
                           ])),
                   const SizedBox(height: 16),
                 ]))
-            .toList(),
+            ,
         const SizedBox(height: 14),
       ]),
     );
@@ -677,8 +679,9 @@ class _ParentFeesPageState extends State<_ParentFeesPage> {
   @override
   void didUpdateWidget(covariant _ParentFeesPage old) {
     super.didUpdateWidget(old);
-    if (old.students != widget.students && widget.students.isNotEmpty)
+    if (old.students != widget.students && widget.students.isNotEmpty) {
       _loadPayments();
+    }
   }
 
   @override
@@ -692,11 +695,12 @@ class _ParentFeesPageState extends State<_ParentFeesPage> {
     setState(() => _loadingPayments = true);
     final p =
         await _db.getFeePaymentsByStudent(widget.students[_selectedChild].id);
-    if (mounted)
+    if (mounted) {
       setState(() {
         _payments = p;
         _loadingPayments = false;
       });
+    }
   }
 
   void _onChildSwitch(int i) {
@@ -729,7 +733,7 @@ class _ParentFeesPageState extends State<_ParentFeesPage> {
                           border: OutlineInputBorder())),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: method,
+                    initialValue: method,
                     decoration: const InputDecoration(
                         labelText: 'Method', border: OutlineInputBorder()),
                     items: const [
@@ -1253,7 +1257,7 @@ class _EventItem extends StatelessWidget {
           Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12)),
               child: Icon(icon, color: color, size: 20)),
           const SizedBox(width: 12),

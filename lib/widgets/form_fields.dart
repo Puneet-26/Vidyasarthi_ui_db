@@ -128,13 +128,13 @@ class _ProfessionalTextFieldState extends State<ProfessionalTextField> {
             decoration: InputDecoration(
               hintText: widget.hint,
               hintStyle: TextStyle(
-                color: AppColors.textLight.withOpacity(0.6),
+                color: AppColors.textLight.withValues(alpha: 0.6),
                 fontSize: 13,
               ),
               filled: true,
               fillColor: hasError
-                  ? Colors.red.withOpacity(0.05)
-                  : (hasFocus ? Colors.white : Colors.grey.withOpacity(0.05)),
+                  ? Colors.red.withValues(alpha: 0.05)
+                  : (hasFocus ? Colors.white : Colors.grey.withValues(alpha: 0.05)),
               prefixIcon: widget.prefixWidget ??
                   (widget.prefixIcon != null
                       ? Icon(
@@ -149,8 +149,8 @@ class _ProfessionalTextFieldState extends State<ProfessionalTextField> {
                       child: Icon(
                         widget.suffixIcon,
                         color: hasError
-                            ? Colors.red.withOpacity(0.7)
-                            : AppColors.primary.withOpacity(0.6),
+                          ? Colors.red.withValues(alpha: 0.7)
+                          : AppColors.primary.withValues(alpha: 0.6),
                         size: 20,
                       ),
                     )
@@ -158,19 +158,19 @@ class _ProfessionalTextFieldState extends State<ProfessionalTextField> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: hasError ? Colors.red.withOpacity(0.3) : Colors.transparent,
+                  color: hasError ? Colors.red.withValues(alpha: 0.3) : Colors.transparent,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: hasError ? Colors.red.withOpacity(0.3) : Colors.transparent,
+                  color: hasError ? Colors.red.withValues(alpha: 0.3) : Colors.transparent,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: hasError ? Colors.red.withOpacity(0.5) : AppColors.primary,
+                  color: hasError ? Colors.red.withValues(alpha: 0.5) : AppColors.primary,
                   width: 2,
                 ),
               ),
@@ -260,18 +260,18 @@ class _ProfessionalDropdownState<T> extends State<ProfessionalDropdown<T>> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: hasError ? Colors.red.withOpacity(0.05) : Colors.white,
+            color: hasError ? Colors.red.withValues(alpha: 0.05) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: hasError ? Colors.red.withOpacity(0.3) : Colors.transparent,
+              color: hasError ? Colors.red.withValues(alpha: 0.3) : Colors.transparent,
             ),
           ),
           child: DropdownButton<T>(
             value: widget.value,
-            hint: Text(
+              hint: Text(
               widget.hint,
               style: TextStyle(
-                color: AppColors.textLight.withOpacity(0.6),
+                color: AppColors.textLight.withValues(alpha: 0.6),
               ),
             ),
             items: widget.items,
@@ -284,7 +284,7 @@ class _ProfessionalDropdownState<T> extends State<ProfessionalDropdown<T>> {
             ),
             icon: Icon(
               Icons.keyboard_arrow_down_rounded,
-              color: AppColors.primary.withOpacity(0.6),
+              color: AppColors.primary.withValues(alpha: 0.6),
             ),
           ),
         ),
@@ -380,10 +380,10 @@ class _ProfessionalDateFieldState extends State<ProfessionalDateField> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
-              color: hasError ? Colors.red.withOpacity(0.05) : Colors.white,
+              color: hasError ? Colors.red.withValues(alpha: 0.05) : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: hasError ? Colors.red.withOpacity(0.3) : Colors.transparent,
+                color: hasError ? Colors.red.withValues(alpha: 0.3) : Colors.transparent,
               ),
             ),
             child: Row(
@@ -395,8 +395,8 @@ class _ProfessionalDateFieldState extends State<ProfessionalDateField> {
                       : 'Select date',
                   style: TextStyle(
                     color: widget.selectedDate != null
-                        ? AppColors.textDark
-                        : AppColors.textLight.withOpacity(0.6),
+                      ? AppColors.textDark
+                      : AppColors.textLight.withValues(alpha: 0.6),
                     fontSize: 13,
                   ),
                 ),
@@ -457,7 +457,7 @@ class _ProfessionalCheckboxState extends State<ProfessionalCheckbox> {
             height: 20,
             decoration: BoxDecoration(
               border: Border.all(
-                color: widget.value ? AppColors.primary : AppColors.textLight.withOpacity(0.3),
+                color: widget.value ? AppColors.primary : AppColors.textLight.withValues(alpha: 0.3),
                 width: 2,
               ),
               borderRadius: BorderRadius.circular(6),
@@ -550,9 +550,9 @@ class ProfessionalRadioGroup<T> extends StatelessWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: value == option.value
+                                color: value == option.value
                                   ? AppColors.primary
-                                  : AppColors.textLight.withOpacity(0.3),
+                                  : AppColors.textLight.withValues(alpha: 0.3),
                               width: 2,
                             ),
                           ),
@@ -685,10 +685,10 @@ class _ProfessionalNumberFieldState extends State<ProfessionalNumberField> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: hasError ? Colors.red.withOpacity(0.05) : Colors.white,
+            color: hasError ? Colors.red.withValues(alpha: 0.05) : Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: hasError ? Colors.red.withOpacity(0.3) : Colors.transparent,
+              color: hasError ? Colors.red.withValues(alpha: 0.3) : Colors.transparent,
             ),
           ),
           child: Row(
@@ -710,12 +710,12 @@ class _ProfessionalNumberFieldState extends State<ProfessionalNumberField> {
                     final intValue = int.tryParse(value);
                     widget.onChanged?.call(intValue);
                   },
-                  decoration: InputDecoration(
+                    decoration: InputDecoration(
                     hintText: widget.hint,
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.zero,
                     hintStyle: TextStyle(
-                      color: AppColors.textLight.withOpacity(0.6),
+                      color: AppColors.textLight.withValues(alpha: 0.6),
                     ),
                   ),
                 ),

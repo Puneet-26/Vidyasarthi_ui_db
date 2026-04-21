@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -9,7 +8,6 @@ class DataSeeder {
   DataSeeder._internal();
 
   SupabaseClient get _client => Supabase.instance.client;
-  final Random _random = Random();
 
   /// Seed all tables with demo data
   Future<void> seedDatabase() async {
@@ -518,7 +516,7 @@ class DataSeeder {
 
       for (final subjectId in subjectIds) {
         studentSubjects.add({
-          'id': 'ss_${studentId}_${subjectId}',
+          'id': 'ss_${studentId}_$subjectId',
           'student_id': studentId,
           'subject_id': subjectId,
           'enrollment_date': '2023-04-01',

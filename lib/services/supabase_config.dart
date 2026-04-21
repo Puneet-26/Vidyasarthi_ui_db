@@ -21,4 +21,27 @@ class SupabaseConfig {
   static bool validateConfiguration() {
     return supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
   }
+
+  /// Returns list of missing keys (empty when configuration is valid).
+  static List<String> missingKeys() {
+    final missing = <String>[];
+    if (dotenv.env['SUPABASE_URL'] == null || dotenv.env['SUPABASE_URL']!.isEmpty) {
+      missing.add('SUPABASE_URL');
+    }
+    if ((dotenv.env['SUPABASE_ANON_KEY'] == null || dotenv.env['SUPABASE_ANON_KEY']!.isEmpty) &&
+        (dotenv.env['SUPABASE_PUBLISHABLE_KEY'] == null || dotenv.env['SUPABASE_PUBLISHABLE_KEY']!.isEmpty)) {
+      missing.add('SUPABASE_ANON_KEY or SUPABASE_PUBLISHABLE_KEY');
+    }
+    return missing;
+  }
+
+  /// Perform a lightweight validation and emit debug logs when keys are missing.
+  static void logValidation() {
+    final missing = missingKeys();
+    if (missing.isEmpty) {
+      debugPrint('✓ Supabase config validated');
+    } else {
+      debugPrint('⚠️ Supabase config missing keys: ${missing.join(', ')}');
+    }
+  }
 }

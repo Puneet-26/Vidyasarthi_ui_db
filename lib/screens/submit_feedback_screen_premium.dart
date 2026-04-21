@@ -302,7 +302,7 @@ class _SubmitFeedbackScreenPremiumState extends State<SubmitFeedbackScreenPremiu
         ],
       ),
       child: DropdownButtonFormField<String>(
-        value: _selectedTeacher,
+        initialValue: _selectedTeacher,
         decoration: InputDecoration(
           prefixIcon: const Icon(Icons.person_rounded, color: Color(0xFF667EEA)),
           hintText: 'Choose a teacher',
@@ -401,14 +401,14 @@ class _SubmitFeedbackScreenPremiumState extends State<SubmitFeedbackScreenPremiu
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: const Color(0xFF667EEA).withOpacity(0.3),
+                        color: const Color(0xFF667EEA).withValues(alpha: 0.3),
                         blurRadius: 12,
                         offset: const Offset(0, 6),
                       ),
                     ]
                   : [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.03),
+                        color: Colors.black.withValues(alpha: 0.03),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -743,8 +743,8 @@ class _SubmitFeedbackScreenPremiumState extends State<SubmitFeedbackScreenPremiu
           children: [
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
                   colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
                 ),
                 shape: BoxShape.circle,

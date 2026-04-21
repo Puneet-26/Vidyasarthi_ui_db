@@ -250,8 +250,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
     if (_testsChannel != null) supabase.removeChannel(_testsChannel!);
     if (_timetableChannel != null) supabase.removeChannel(_timetableChannel!);
     if (_broadcastChannel != null) supabase.removeChannel(_broadcastChannel!);
-    if (_feePaymentsChannel != null)
+    if (_feePaymentsChannel != null) {
       supabase.removeChannel(_feePaymentsChannel!);
+    }
   }
 
   @override
@@ -473,19 +474,21 @@ class _StudentStatsRowState extends State<_StudentStatsRow> {
 
   Future<void> _loadAttendance() async {
     if (widget.student == null || widget.student!.id.isEmpty) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _attendancePct = 'N/A';
           _loading = false;
         });
+      }
       return;
     }
     final pct = await _db.getStudentAttendancePercentage(widget.student!.id);
-    if (mounted)
+    if (mounted) {
       setState(() {
         _attendancePct = pct;
         _loading = false;
       });
+    }
   }
 
   @override
@@ -571,11 +574,12 @@ class _SubjectPerformanceCardState extends State<_SubjectPerformanceCard> {
       return;
     }
     final perf = await _db.getStudentSubjectPerformance(widget.studentId);
-    if (mounted)
+    if (mounted) {
       setState(() {
         _performance = perf;
         _loading = false;
       });
+    }
   }
 
   @override
@@ -1242,8 +1246,7 @@ class _StudentResultsPage extends StatelessWidget {
             GlassCard(
               child: Column(
                 children: testResults.map((tr) {
-                  final percentage = (tr.marksObtained ?? 0) /
-                      100.0; // Assuming 100 as default max if missing
+                    final percentage = tr.marksObtained / 100.0;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 14),
                     child: LabeledProgressBar(
@@ -1607,7 +1610,7 @@ class _TodayClassBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.35),
+            color: AppColors.primary.withValues(alpha: 0.35),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -1656,12 +1659,12 @@ class _TodayClassBanner extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     startsIn,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -1772,7 +1775,7 @@ class _AssignmentItem extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text(
@@ -1855,7 +1858,7 @@ class _TimetableList extends StatelessWidget {
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
@@ -1868,7 +1871,7 @@ class _TimetableList extends StatelessWidget {
                       Text(
                         _TodayClassBanner._subjectName(
                             e.value.subjectId, subjects),
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textDark,
@@ -1916,7 +1919,7 @@ class _NoticeItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -1968,16 +1971,16 @@ class _HolidayNotice extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10)),
             child: Icon(icon, color: color, size: 20),
           ),
@@ -2000,7 +2003,7 @@ class _HolidayNotice extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(6)),
             child: Text('Holiday',
                 style: TextStyle(

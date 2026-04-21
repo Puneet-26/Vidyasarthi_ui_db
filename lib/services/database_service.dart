@@ -14,8 +14,6 @@ class DatabaseService {
   SupabaseClient get _client => Supabase.instance.client;
   SupabaseClient get client => _client;
 
-  String _tsId(String prefix) =>
-      '${prefix}_${DateTime.now().microsecondsSinceEpoch}';
 
   // ==================== SUBJECTS ====================
   Future<List<Subject>> getAllSubjects() async {
@@ -100,8 +98,9 @@ class DatabaseService {
   Teacher _teacherFromRow(Map<String, dynamic> d) {
     List<String> parseList(dynamic val) {
       if (val is List) return List<String>.from(val);
-      if (val is String && val.isNotEmpty)
+      if (val is String && val.isNotEmpty) {
         return val.split(',').map((e) => e.trim()).toList();
+      }
       return [];
     }
 
@@ -420,14 +419,17 @@ class DatabaseService {
       if (selectedBoard != null) studentData['board'] = selectedBoard;
       if (totalFees != null) studentData['total_fees'] = totalFees;
       if (feesPaid != null) studentData['fees_paid'] = feesPaid;
-      if (admissionDate != null)
+      if (admissionDate != null) {
         studentData['admission_date'] =
             admissionDate.toIso8601String().split('T')[0];
-      if (dateOfBirth != null)
+      }
+      if (dateOfBirth != null) {
         studentData['date_of_birth'] =
             dateOfBirth.toIso8601String().split('T')[0];
-      if (address != null && address.isNotEmpty)
+      }
+      if (address != null && address.isNotEmpty) {
         studentData['address'] = address;
+      }
 
       await _client.from('students').insert(studentData);
       debugPrint('✓ Student record created');
@@ -464,7 +466,7 @@ class DatabaseService {
 
       // 1. Auto-generate email from name
       final email =
-          name.toLowerCase().trim().replaceAll(' ', '.') + '@teachers.com';
+          '${name.toLowerCase().trim().replaceAll(' ', '.')}@teachers.com';
       final employeeId = 'EMP${DateTime.now().millisecondsSinceEpoch}';
 
       // 2. Create teacher auth credentials (skip if already exists)
@@ -497,12 +499,14 @@ class DatabaseService {
 
       if (batchId != null) teacherData['batch_id'] = batchId;
       if (qualification != null) teacherData['qualification'] = qualification;
-      if (experienceYears > 0)
+      if (experienceYears > 0) {
         teacherData['experience_years'] = experienceYears;
+      }
       if (salary > 0) teacherData['salary'] = salary;
-      if (joiningDate != null)
+      if (joiningDate != null) {
         teacherData['joining_date'] =
             joiningDate.toIso8601String().split('T')[0];
+      }
       if (subjects.isNotEmpty) teacherData['specialization'] = subjects[0];
 
       await _client.from('teachers').insert(teacherData);
@@ -770,7 +774,7 @@ class DatabaseService {
           .select()
           .ilike('parent_name', '%$parentEmail%');
 
-      if (response == null || (response as List).isEmpty) {
+      if ((response as List).isEmpty) {
         debugPrint('No students found for parent: $parentEmail');
         return [];
       }

@@ -6,27 +6,42 @@ import 'screens/login_screen.dart';
 import 'screens/loading_screen.dart';
 import 'screens/student_dashboard.dart';
 import 'services/supabase_config.dart';
-import 'services/data_seeder.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: '.env');
 
   try {
-    await Supabase.initialize(
-      url: SupabaseConfig.url,
-      anonKey: SupabaseConfig.anonKey,
-    );
-    debugPrint('✓ Supabase initialized');
+    await dotenv.load(fileName: '.env');
+    debugPrint('✓ .env loaded');
   } catch (e) {
-    debugPrint('❌ Supabase init error: $e');
+    debugPrint('❌ Dotenv load error: $e');
   }
 
-  runApp(const VidyaSarathiApp());
+  // Log and validate environment configuration.
+  SupabaseConfig.logValidation();
+  final supabaseOk = SupabaseConfig.validateConfiguration();
+
+  if (supabaseOk) {
+    try {
+      await Supabase.initialize(
+        url: SupabaseConfig.url,
+        anonKey: SupabaseConfig.anonKey,
+      );
+      debugPrint('✓ Supabase initialized');
+    } catch (e) {
+      debugPrint('❌ Supabase init error: $e');
+    }
+  } else {
+    debugPrint('⚠️ Skipping Supabase.initialize() due to missing config.');
+  }
+
+  runApp(VidyaSarathiApp(supabaseAvailable: supabaseOk));
 }
 
 class VidyaSarathiApp extends StatelessWidget {
-  const VidyaSarathiApp({super.key});
+  final bool supabaseAvailable;
+
+  const VidyaSarathiApp({super.key, this.supabaseAvailable = true});
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +49,7 @@ class VidyaSarathiApp extends StatelessWidget {
       title: 'VidyaSarathi',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const LoginScreen(),
+      home: supabaseAvailable ? const LoginScreen() : _StartupErrorScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),
         '/loading': (context) {
@@ -54,6 +69,38 @@ class VidyaSarathiApp extends StatelessWidget {
           return destination ?? const StudentDashboard();
         },
       },
+    );
+  }
+}
+
+class _StartupErrorScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Configuration Error')),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text(
+                'Supabase configuration is missing or invalid.\nPlease add SUPABASE_URL and SUPABASE_ANON_KEY to your .env file and include it in pubspec.yaml assets.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  SupabaseConfig.logValidation();
+                },
+                child: const Text('Re-check configuration (logs)'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

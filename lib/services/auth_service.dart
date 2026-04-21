@@ -145,7 +145,7 @@ class AuthService {
 
       return AppUser.fromJson(response);
     } catch (e) {
-      print('Error fetching user data: $e');
+      debugPrint('Error fetching user data: $e');
       return null;
     }
   }
@@ -163,7 +163,7 @@ class AuthService {
 
       return Student.fromJson(response);
     } catch (e) {
-      print('Error fetching student data: $e');
+      debugPrint('Error fetching student data: $e');
       return null;
     }
   }
@@ -173,7 +173,7 @@ class AuthService {
     try {
       await _client.auth.signOut();
     } catch (e) {
-      print('Error signing out: $e');
+      debugPrint('Error signing out: $e');
     }
   }
 }

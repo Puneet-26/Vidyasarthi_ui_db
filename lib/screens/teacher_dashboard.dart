@@ -9,7 +9,6 @@ import '../services/auth_session.dart';
 import '../models/models.dart';
 import 'login_screen.dart';
 import 'placeholder_screens.dart';
-import 'mark_attendance_screen.dart';
 import 'select_batch_for_attendance.dart';
 import 'schedule_exam_screen.dart';
 import 'enter_marks_screen.dart';
@@ -25,7 +24,6 @@ class TeacherDashboard extends StatefulWidget {
 
 class _TeacherDashboardState extends State<TeacherDashboard> {
   int _selectedIndex = 0;
-  int _approvedFeedbackCount = 0;
   int _noticeCount = 0;
   final _db = DatabaseService();
   Teacher? _currentTeacher;
@@ -78,7 +76,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         });
 
         if (_currentTeacher!.id.isNotEmpty) {
-          _loadApprovedFeedbackCount(_currentTeacher!.id);
+          // Feedback loading is handled inside the profile sheet
         }
         _loadTeacherNotices();
         if ((_currentTeacher!.batchId ?? '').isNotEmpty) {
@@ -90,12 +88,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     }
   }
 
-  Future<void> _loadApprovedFeedbackCount(String teacherId) async {
-    final feedbacks = await _db.getApprovedFeedbackForTeacher(teacherId);
-    if (mounted) {
-      setState(() => _approvedFeedbackCount = feedbacks.length);
-    }
-  }
+
 
   Future<void> _loadTeacherNotices() async {
     final notices = await _db.getBroadcastsForRole('teachers');
@@ -551,7 +544,7 @@ class _TeacherFeedbackCard extends StatelessWidget {
             // Date
             Row(
               children: [
-                Icon(Icons.access_time, size: 14, color: AppColors.textLight),
+                const Icon(Icons.access_time, size: 14, color: AppColors.textLight),
                 const SizedBox(width: 4),
                 Text(
                   '${feedback.submittedAt.day}/${feedback.submittedAt.month}/${feedback.submittedAt.year}',
@@ -771,7 +764,7 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
                 gradient: LinearGradient(
                   colors: [
                     AppColors.primary,
-                    AppColors.primary.withOpacity(0.8),
+                    AppColors.primary.withValues(alpha: 0.8),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -779,7 +772,7 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -790,7 +783,7 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -891,7 +884,7 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.12),
+              color: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
@@ -938,7 +931,7 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.12),
+                  color: AppColors.success.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -954,7 +947,7 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.warning.withOpacity(0.12),
+                  color: AppColors.warning.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -1049,11 +1042,12 @@ class _LiveClassCardsState extends State<_LiveClassCards> {
       return;
     }
     final classes = await _db.getTeacherClasses(email);
-    if (mounted)
+    if (mounted) {
       setState(() {
         _classes = classes;
         _loading = false;
       });
+    }
   }
 
   @override
@@ -1221,49 +1215,7 @@ class _ClassCard extends StatelessWidget {
   }
 }
 
-class _HomeworkCard extends StatelessWidget {
-  final String title;
-  final String batch;
-  final String due;
-  const _HomeworkCard(
-      {required this.title, required this.batch, required this.due});
-  @override
-  Widget build(BuildContext context) {
-    final isOverdue = due.toLowerCase().contains('overdue');
-    return GlassCard(
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: [
-          Icon(Icons.assignment_rounded,
-              color: isOverdue ? AppColors.error : AppColors.teacherAccent,
-              size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: TextStyle(
-                        fontSize: Responsive.sp(context, 13),
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textDark)),
-                Text(batch,
-                    style: TextStyle(
-                        fontSize: Responsive.sp(context, 11),
-                        color: AppColors.textMid)),
-              ],
-            ),
-          ),
-          Text(due,
-              style: TextStyle(
-                  fontSize: Responsive.sp(context, 11),
-                  fontWeight: FontWeight.w600,
-                  color: isOverdue ? AppColors.error : AppColors.textLight)),
-        ],
-      ),
-    );
-  }
-}
+// Removed unused _HomeworkCard widget.
 
 class _ClassDetailPage extends StatefulWidget {
   final String batch;
@@ -1381,7 +1333,7 @@ class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
   // Live student roster from DB
   List<Map<String, dynamic>> _students = [];
   // Live history from DB: date string -> list of attendance records
-  Map<String, List<Map<String, dynamic>>> _history = {};
+  final Map<String, List<Map<String, dynamic>>> _history = {};
 
   bool _loadingStudents = true;
   bool _loadingHistory = false;
@@ -1956,7 +1908,7 @@ class _MiniStat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -1973,19 +1925,7 @@ class _MiniStat extends StatelessWidget {
 }
 
 // ─── Test model (kept for backward compat with _ClassMarksTab) ───────────────
-class _TestEntry {
-  String title;
-  int maxMarks;
-  String status;
-  Map<String, int?> studentMarks;
-
-  _TestEntry({
-    required this.title,
-    required this.maxMarks,
-    required this.status,
-    required this.studentMarks,
-  });
-}
+// Removed unused _TestEntry model.
 
 class _ClassMarksTab extends StatefulWidget {
   final String batch;
@@ -2021,11 +1961,12 @@ class _ClassMarksTabState extends State<_ClassMarksTab> {
       if (matched.isNotEmpty) {
         _batchId = matched.first.id;
         final tests = await _marksService.getTestsByBatch(batchId: _batchId!);
-        if (mounted)
+        if (mounted) {
           setState(() {
             _tests = tests;
             _loading = false;
           });
+        }
       } else {
         if (mounted) setState(() => _loading = false);
       }
@@ -2377,7 +2318,7 @@ class _QuickActionsGrid extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
+                    color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(item['icon'] as IconData, color: color, size: 22),
@@ -2505,8 +2446,8 @@ class _TeacherSchedule extends StatelessWidget {
           child: GlassCard(
             padding: const EdgeInsets.all(14),
             color: status == 'current'
-                ? AppColors.success.withOpacity(0.08)
-                : null,
+              ? AppColors.success.withValues(alpha: 0.08)
+              : null,
             child: Row(
               children: [
                 Column(
@@ -2558,7 +2499,7 @@ class _TeacherSchedule extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.12),
+                    color: statusColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -2878,7 +2819,7 @@ class _SubmissionItem extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
+                    color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(5),
                   ),
                   child: const Text(
@@ -2947,11 +2888,12 @@ class _ClassFeedbackTabState extends State<_ClassFeedbackTab> {
       all.addAll(f);
     }
     all.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    if (mounted)
+    if (mounted) {
       setState(() {
         _feedbacks = all;
         _loading = false;
       });
+    }
   }
 
   void _showAddFeedbackDialog() {
@@ -2981,7 +2923,7 @@ class _ClassFeedbackTabState extends State<_ClassFeedbackTab> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: selectedCategory,
+                    initialValue: selectedCategory,
                     decoration: const InputDecoration(
                         labelText: 'Category', border: OutlineInputBorder()),
                     items: const [
@@ -3016,7 +2958,9 @@ class _ClassFeedbackTabState extends State<_ClassFeedbackTab> {
                         foregroundColor: Colors.white),
                     onPressed: () async {
                       if (selectedStudentId == null ||
-                          msgCtrl.text.trim().isEmpty) return;
+                          msgCtrl.text.trim().isEmpty) {
+                        return;
+                      }
                       final studentName = _students.firstWhere(
                           (s) => s['id'] == selectedStudentId)['name']!;
                       final feedback = TeacherFeedback(
@@ -3175,7 +3119,7 @@ class _TeacherProfileInfoRow extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.teacherAccent.withOpacity(0.1),
+            color: AppColors.teacherAccent.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: AppColors.teacherAccent, size: 18),

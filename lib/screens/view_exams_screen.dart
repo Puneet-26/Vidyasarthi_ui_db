@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../widgets/shared_widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
@@ -160,7 +159,7 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
           : RefreshIndicator(
               onRefresh: _loadExams,
               child: _exams.isEmpty
-                  ? Center(
+                  ? const Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -169,7 +168,7 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
                             size: 64,
                             color: AppColors.textLight,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: 16),
                           Text(
                             'No upcoming exams',
                             style: TextStyle(
@@ -223,7 +222,7 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: _getStatusColor(status)
-                                              .withOpacity(0.1),
+                                              .withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(12),
                                           border: Border.all(
                                             color: _getStatusColor(status),
@@ -254,7 +253,7 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
                                   const SizedBox(height: 12),
                                   Row(
                                     children: [
-                                      Icon(
+                                      const Icon(
                                         Icons.calendar_today,
                                         size: 16,
                                         color: AppColors.textLight,
@@ -263,7 +262,7 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
                                       Text(
                                         DateFormat('EEEE, MMM d, yyyy')
                                             .format(examDate),
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontSize: 14,
                                           color: AppColors.textLight,
                                         ),
@@ -273,7 +272,7 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
                                   const SizedBox(height: 8),
                                   Row(
                                     children: [
-                                      Icon(
+                                      const Icon(
                                         Icons.access_time,
                                         size: 16,
                                         color: AppColors.textLight,
@@ -281,7 +280,7 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
                                       const SizedBox(width: 8),
                                       Text(
                                         '${exam['start_time']} • ${exam['duration_minutes']} mins',
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontSize: 14,
                                           color: AppColors.textLight,
                                         ),
@@ -291,7 +290,7 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
                                   const SizedBox(height: 8),
                                   Row(
                                     children: [
-                                      Icon(
+                                      const Icon(
                                         Icons.grade,
                                         size: 16,
                                         color: AppColors.textLight,
@@ -299,7 +298,7 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
                                       const SizedBox(width: 8),
                                       Text(
                                         'Max Marks: ${exam['max_marks']}',
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontSize: 14,
                                           color: AppColors.textLight,
                                         ),
@@ -309,7 +308,7 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
                                           exam['room_number'].toString().isNotEmpty)
                                         Row(
                                           children: [
-                                            Icon(
+                                            const Icon(
                                               Icons.meeting_room,
                                               size: 16,
                                               color: AppColors.textLight,
@@ -317,7 +316,7 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
                                             const SizedBox(width: 4),
                                             Text(
                                               exam['room_number'],
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 fontSize: 14,
                                                 color: AppColors.textLight,
                                               ),
@@ -333,13 +332,13 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
                                       vertical: 6,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.warning.withOpacity(0.1),
+                                      color: AppColors.warning.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(
+                                        const Icon(
                                           Icons.timer,
                                           size: 14,
                                           color: AppColors.warning,
@@ -347,7 +346,7 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
                                         const SizedBox(width: 6),
                                         Text(
                                           timeRemaining,
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w600,
                                             color: AppColors.warning,
@@ -404,7 +403,7 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
                 exam['description'].toString().isNotEmpty) ...[
               Text(
                 exam['description'],
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.textLight,
                 ),
@@ -475,7 +474,7 @@ class _DetailRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textLight,
               ),

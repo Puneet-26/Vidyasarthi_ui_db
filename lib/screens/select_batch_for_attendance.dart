@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../widgets/shared_widgets.dart';
 import 'mark_attendance_screen.dart';
 
 class SelectBatchForAttendanceScreen extends StatelessWidget {
@@ -55,7 +54,7 @@ class SelectBatchForAttendanceScreen extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 12),
             child: ListTile(
               leading: CircleAvatar(
-                backgroundColor: AppColors.teacherAccent.withOpacity(0.2),
+                backgroundColor: AppColors.teacherAccent.withValues(alpha: 0.2),
                 child: const Icon(
                   Icons.class_,
                   color: AppColors.teacherAccent,
@@ -74,14 +73,14 @@ class SelectBatchForAttendanceScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     batch['subjectName'] as String,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.textLight,
                     ),
                   ),
                   Text(
                     '${batch['students']} students',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textLight,
                     ),

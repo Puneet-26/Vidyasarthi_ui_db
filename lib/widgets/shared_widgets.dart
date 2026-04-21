@@ -90,17 +90,17 @@ class GlassCard extends StatelessWidget {
     return Container(
       padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color ?? Colors.white.withOpacity(0.85),
+        color: color ?? Colors.white.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(borderRadius ?? 20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
+            color: AppColors.primary.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
         border: Border.all(
-          color: Colors.white.withOpacity(0.6),
+          color: Colors.white.withValues(alpha: 0.6),
           width: 1.2,
         ),
       ),
@@ -136,7 +136,7 @@ class StatCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 22),
@@ -241,9 +241,9 @@ class GradientAvatar extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color, color.withOpacity(0.6)],
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+          colors: [color, color.withValues(alpha: 0.6)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -312,7 +312,7 @@ class LabeledProgressBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           child: LinearProgressIndicator(
             value: value,
-            backgroundColor: color.withOpacity(0.12),
+            backgroundColor: color.withValues(alpha: 0.12),
             valueColor: AlwaysStoppedAnimation<Color>(color),
             minHeight: 8,
           ),
@@ -340,11 +340,11 @@ class VidyaBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
+        decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.95),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -366,7 +366,7 @@ class VidyaBottomNav extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: isActive
-                        ? activeColor.withOpacity(0.12)
+                        ? activeColor.withValues(alpha: 0.12)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -471,7 +471,7 @@ class DashboardHeader extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: roleColor.withOpacity(0.12),
+                  color: roleColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -631,7 +631,7 @@ class _BroadcastNoticesSheetState extends State<_BroadcastNoticesSheet> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.1),
+                        color: AppColors.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text('${_notices.length}',
@@ -668,10 +668,10 @@ class _BroadcastNoticesSheetState extends State<_BroadcastNoticesSheet> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: color.withOpacity(0.3)),
+                                border: Border.all(color: color.withValues(alpha: 0.3)),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: color.withOpacity(0.08),
+                                    color: color.withValues(alpha: 0.08),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
                                   ),
@@ -685,8 +685,8 @@ class _BroadcastNoticesSheetState extends State<_BroadcastNoticesSheet> {
                                     children: [
                                       Container(
                                         padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: color.withOpacity(0.12),
+                                          decoration: BoxDecoration(
+                                          color: color.withValues(alpha: 0.12),
                                           borderRadius: BorderRadius.circular(10),
                                         ),
                                         child: Icon(_priorityIcon(n.priority), size: 18, color: color),
@@ -710,7 +710,7 @@ class _BroadcastNoticesSheetState extends State<_BroadcastNoticesSheet> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                         decoration: BoxDecoration(
-                                          color: color.withOpacity(0.12),
+                                          color: color.withValues(alpha: 0.12),
                                           borderRadius: BorderRadius.circular(6),
                                         ),
                                         child: Text(n.priority.toUpperCase(),

@@ -76,7 +76,7 @@ class _NonTeachingStaffDashboardState extends State<NonTeachingStaffDashboard> {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.adminAccent.withOpacity(0.12),
+                    color: AppColors.adminAccent.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.account_circle_rounded,
@@ -93,7 +93,7 @@ class _NonTeachingStaffDashboardState extends State<NonTeachingStaffDashboard> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.adminAccent.withOpacity(0.12),
+                    color: AppColors.adminAccent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text('NON-TEACHING STAFF',
@@ -403,7 +403,7 @@ class _AdmissionsPageState extends State<_AdmissionsPage> {
                 children: [
                   const SizedBox(height: 40),
                   Icon(Icons.school_outlined,
-                      size: 64, color: AppColors.textLight.withOpacity(0.3)),
+                      size: 64, color: AppColors.textLight.withValues(alpha: 0.3)),
                   const SizedBox(height: 16),
                   Text(
                     'No students found',
@@ -438,7 +438,7 @@ class _AdmissionsPageState extends State<_AdmissionsPage> {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.12),
+                          color: AppColors.primary.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
                         child: Center(
@@ -492,8 +492,8 @@ class _AdmissionsPageState extends State<_AdmissionsPage> {
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: student.enrollmentStatus == 'active'
-                              ? AppColors.success.withOpacity(0.12)
-                              : AppColors.warning.withOpacity(0.12),
+                              ? AppColors.success.withValues(alpha: 0.12)
+                              : AppColors.warning.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -511,7 +511,7 @@ class _AdmissionsPageState extends State<_AdmissionsPage> {
                   ),
                 ),
               );
-            }).toList(),
+            }),
         ],
       ),
     );
@@ -698,7 +698,7 @@ class _NewAdmissionScreenState extends State<_NewAdmissionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SectionLabel('Student Details'),
+                  const _SectionLabel('Student Details'),
                   const SizedBox(height: 12),
                   _Field(
                       ctrl: _nameCtrl,
@@ -720,7 +720,7 @@ class _NewAdmissionScreenState extends State<_NewAdmissionScreen> {
                       keyboard: TextInputType.phone,
                       validator: (v) => v!.isEmpty ? 'Required' : null),
                   const SizedBox(height: 20),
-                  _SectionLabel('Parent Details'),
+                  const _SectionLabel('Parent Details'),
                   const SizedBox(height: 12),
                   _Field(
                       ctrl: _parentNameCtrl,
@@ -742,13 +742,13 @@ class _NewAdmissionScreenState extends State<_NewAdmissionScreen> {
                       keyboard: TextInputType.emailAddress,
                       validator: (v) => v!.isEmpty ? 'Required' : null),
                   const SizedBox(height: 20),
-                  _SectionLabel('Batch & Fees'),
+                  const _SectionLabel('Batch & Fees'),
                   const SizedBox(height: 12),
                   GlassCard(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     child: DropdownButtonFormField<String>(
-                      value: _selectedBatchId,
+                      initialValue: _selectedBatchId,
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         labelText: 'Select Batch',
@@ -877,7 +877,7 @@ class _CreateBatchScreenState extends State<_CreateBatchScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SectionLabel('Batch Details'),
+                  const _SectionLabel('Batch Details'),
                   const SizedBox(height: 12),
                   _Field(
                       ctrl: _nameCtrl,
@@ -1093,7 +1093,7 @@ class _TimeTablePageState extends State<_TimeTablePage> {
                                 width: 50,
                                 height: 50,
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.1),
+                                  color: AppColors.primary.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Icon(Icons.schedule_rounded,
@@ -1201,8 +1201,9 @@ class _AssignClassSheetState extends State<_AssignClassSheet> {
       context: context,
       initialTime: isStart ? _startTime : _endTime,
     );
-    if (picked != null)
+    if (picked != null) {
       setState(() => isStart ? _startTime = picked : _endTime = picked);
+    }
   }
 
   Future<void> _save() async {
@@ -1636,22 +1637,21 @@ class _BroadcastPageState extends State<_BroadcastPage> {
                               );
                               final success =
                                   await _dbService.createBroadcast(broadcast);
-                              if (mounted) {
-                                Navigator.pop(ctx);
-                                if (success) {
-                                  _fetchBroadcasts();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            'Broadcast sent successfully')),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content:
-                                            Text('Failed to send broadcast')),
-                                  );
-                                }
+                              if (!mounted) return;
+                              Navigator.pop(ctx);
+                              if (success) {
+                                _fetchBroadcasts();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content:
+                                          Text('Broadcast sent successfully')),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content:
+                                          Text('Failed to send broadcast')),
+                                );
                               }
                             },
                       icon: isSending
@@ -1762,7 +1762,7 @@ class _BroadcastPageState extends State<_BroadcastPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: audienceColor.withOpacity(0.1),
+                          color: audienceColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -1930,7 +1930,7 @@ class _FeesPage extends StatelessWidget {
                                   CircularProgressIndicator(
                                     value: valueIndicator,
                                     backgroundColor:
-                                        AppColors.primary.withOpacity(0.1),
+                                        AppColors.primary.withValues(alpha: 0.1),
                                     valueColor: AlwaysStoppedAnimation(
                                       student.feesPaid == student.totalFees
                                           ? Colors.green
@@ -1995,7 +1995,7 @@ class _StatBox extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -2044,7 +2044,7 @@ class _QuickActionTile extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: AppColors.primary, size: 20),

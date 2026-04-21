@@ -27,13 +27,13 @@ class FacultyScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header message
-            const GlassCard(
+            GlassCard(
               child: Row(
                 children: [
                   Icon(
@@ -68,11 +68,11 @@ class FacultyScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // Faculty Members
-            const SectionHeader(title: 'Our Faculty'),
-            const SizedBox(height: 14),
+            SectionHeader(title: 'Our Faculty'),
+            SizedBox(height: 14),
 
             _FacultyCard(
               name: 'Dr. Arun Kumar',
@@ -83,7 +83,7 @@ class FacultyScreen extends StatelessWidget {
               email: 'arun.kumar@vidyasarthi.edu.in',
               color: AppColors.primary,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
 
             _FacultyCard(
               name: 'Mrs. Priya Sharma',
@@ -94,7 +94,7 @@ class FacultyScreen extends StatelessWidget {
               email: 'priya.sharma@vidyasarthi.edu.in',
               color: AppColors.info,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
 
             _FacultyCard(
               name: 'Mr. Vikram Singh',
@@ -105,7 +105,7 @@ class FacultyScreen extends StatelessWidget {
               email: 'vikram.singh@vidyasarthi.edu.in',
               color: AppColors.success,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
 
             _FacultyCard(
               name: 'Dr. Meera Patel',
@@ -116,7 +116,7 @@ class FacultyScreen extends StatelessWidget {
               email: 'meera.patel@vidyasarthi.edu.in',
               color: AppColors.warning,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
 
             _FacultyCard(
               name: 'Mr. Rajesh Gupta',
@@ -125,10 +125,10 @@ class FacultyScreen extends StatelessWidget {
               qualification: 'M.Tech in Computer Science',
               experience: '8 years',
               email: 'rajesh.gupta@vidyasarthi.edu.in',
-              color: const Color(0xFF9C27B0),
+              color: Color(0xFF9C27B0),
             ),
 
-            const SizedBox(height: 30),
+            SizedBox(height: 30),
           ],
         ),
       ),

@@ -181,7 +181,7 @@ class _ViewAttendanceScreenState extends State<ViewAttendanceScreen> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
+                    const Text(
                       'Current Month Attendance',
                       style: TextStyle(
                         fontSize: 14,
@@ -205,7 +205,7 @@ class _ViewAttendanceScreenState extends State<ViewAttendanceScreen> {
                                   gradient: LinearGradient(
                                     colors: [
                                       AppColors.success,
-                                      AppColors.success.withOpacity(0.7),
+                                      AppColors.success.withValues(alpha: 0.7),
                                     ],
                                   ),
                                 ),
@@ -291,8 +291,8 @@ class _ViewAttendanceScreenState extends State<ViewAttendanceScreen> {
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
                             child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: _getStatusColor(status).withOpacity(0.2),
+                                leading: CircleAvatar(
+                                backgroundColor: _getStatusColor(status).withValues(alpha: 0.2),
                                 child: Icon(
                                   _getStatusIcon(status),
                                   color: _getStatusColor(status),
@@ -308,7 +308,7 @@ class _ViewAttendanceScreenState extends State<ViewAttendanceScreen> {
                               ),
                               subtitle: Text(
                                 'Batch: ${record['batch_id'] ?? 'N/A'}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 12,
                                   color: AppColors.textLight,
                                 ),
@@ -319,7 +319,7 @@ class _ViewAttendanceScreenState extends State<ViewAttendanceScreen> {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: _getStatusColor(status).withOpacity(0.1),
+                                  color: _getStatusColor(status).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: _getStatusColor(status),
@@ -375,7 +375,7 @@ class _SummaryItem extends StatelessWidget {
         ),
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 11,
             color: AppColors.textLight,
           ),

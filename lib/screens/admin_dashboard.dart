@@ -21,7 +21,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => _SimpleAdminProfileSheet(),
+      builder: (_) => const _SimpleAdminProfileSheet(),
     );
   }
 
@@ -72,10 +72,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
           index: _selectedIndex,
           children: [
             _DashboardTab(),
-            _StudentsTab(),
+            const _StudentsTab(),
             _TeachersTab(),
             _StaffTab(),
-            _ParentsTab(),
+            const _ParentsTab(),
           ],
         ),
       ),
@@ -111,11 +111,12 @@ class _AdminNotificationsSheetState extends State<_AdminNotificationsSheet> {
 
   Future<void> _load() async {
     final activities = await _db.getRecentActivityLog(limit: 15);
-    if (mounted)
+    if (mounted) {
       setState(() {
         _activities = activities;
         _loading = false;
       });
+    }
   }
 
   String _timeAgo(String isoString) {
@@ -257,64 +258,7 @@ class _AdminNotificationsSheetState extends State<_AdminNotificationsSheet> {
   }
 }
 
-class _NotificationItem extends StatelessWidget {
-  final String title;
-  final String desc;
-  final String time;
-  final IconData icon;
-  final Color color;
-
-  const _NotificationItem({
-    required this.title,
-    required this.desc,
-    required this.time,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textDark)),
-                const SizedBox(height: 2),
-                Text(desc,
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textLight)),
-                const SizedBox(height: 4),
-                Text(time,
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: color,
-                        fontWeight: FontWeight.w500)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// Removed unused notification widget to reduce analyzer noise.
 
 class _DashboardTab extends StatefulWidget {
   @override
@@ -679,31 +623,7 @@ class _DashboardTabState extends State<_DashboardTab> {
   }
 }
 
-class _ReportsTab extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SectionHeader(title: 'Reports'),
-          SizedBox(height: 14),
-          GlassCard(
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Text('Reports coming soon',
-                    style: TextStyle(color: AppColors.textLight)),
-              ),
-            ),
-          ),
-          SizedBox(height: 80),
-        ],
-      ),
-    );
-  }
-}
+// Removed unused Reports tab placeholder.
 
 // ============================================================
 //  LIVE STAT WIDGETS
@@ -1063,6 +983,7 @@ class _StudentsTabState extends State<_StudentsTab> {
   Future<void> _approveFeedback(AnonymousFeedback feedback) async {
     final success = await _db.approveFeedback(feedback.id, 'admin_001', null);
     if (success) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Feedback approved and sent to teacher'),
@@ -1077,6 +998,7 @@ class _StudentsTabState extends State<_StudentsTab> {
     final success =
         await _db.rejectFeedback(feedback.id, 'admin_001', 'Not appropriate');
     if (success) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Feedback rejected'),
@@ -1141,7 +1063,7 @@ class _StudentsTabState extends State<_StudentsTab> {
                   color: AppColors.success,
                   onTap: () async {
                     final added = await Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => _AddStudentScreen()));
+                        MaterialPageRoute(builder: (_) => const _AddStudentScreen()));
                     if (added == true) _loadStudentFeedback(); // refresh list
                   },
                 ),
@@ -1153,7 +1075,7 @@ class _StudentsTabState extends State<_StudentsTab> {
                   label: 'Add Batch',
                   color: AppColors.adminAccent,
                   onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => _AddBatchScreen())),
+                      MaterialPageRoute(builder: (_) => const _AddBatchScreen())),
                 ),
               ),
             ],
@@ -1167,7 +1089,7 @@ class _StudentsTabState extends State<_StudentsTab> {
                   label: 'View All',
                   color: AppColors.primary,
                   onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => _AllStudentsScreen())),
+                      MaterialPageRoute(builder: (_) => const _AllStudentsScreen())),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1225,7 +1147,7 @@ class _StudentsTabState extends State<_StudentsTab> {
                         ? AppColors.success
                         : AppColors.warning,
                   ),
-                ))).toList(),
+                ))),
 
           const SizedBox(height: 32),
           const Divider(),
@@ -1348,7 +1270,7 @@ class _TeachersTabState extends State<_TeachersTab> {
                   label: 'Add Teacher',
                   color: AppColors.teacherAccent,
                   onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => _AddTeacherScreen())),
+                      MaterialPageRoute(builder: (_) => const _AddTeacherScreen())),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1358,7 +1280,7 @@ class _TeachersTabState extends State<_TeachersTab> {
                   label: 'View All',
                   color: AppColors.primary,
                   onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => _AllTeachersScreen())),
+                      MaterialPageRoute(builder: (_) => const _AllTeachersScreen())),
                 ),
               ),
             ],
@@ -1470,7 +1392,7 @@ class _StaffTabState extends State<_StaffTab> {
                 onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => NonTeachingStaffDashboard())),
+                        builder: (_) => const NonTeachingStaffDashboard())),
               ),
               _StaffActionCard(
                 icon: Icons.schedule_rounded,
@@ -1479,7 +1401,7 @@ class _StaffTabState extends State<_StaffTab> {
                 onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => NonTeachingStaffDashboard())),
+                        builder: (_) => const NonTeachingStaffDashboard())),
               ),
               _StaffActionCard(
                 icon: Icons.campaign_rounded,
@@ -1549,6 +1471,7 @@ class _ParentsTabState extends State<_ParentsTab> {
   Future<void> _approveFeedback(AnonymousFeedback feedback) async {
     final success = await _db.approveFeedback(feedback.id, 'admin_001', null);
     if (success) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Feedback approved and sent to teacher'),
@@ -1563,6 +1486,7 @@ class _ParentsTabState extends State<_ParentsTab> {
     final success =
         await _db.rejectFeedback(feedback.id, 'admin_001', 'Not appropriate');
     if (success) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Feedback rejected'),
@@ -1897,194 +1821,17 @@ class _BannerStat extends StatelessWidget {
   }
 }
 
-class _ActivityItem extends StatelessWidget {
-  final String title;
-  final String desc;
-  final String time;
-  final IconData icon;
-  final Color color;
-
-  const _ActivityItem({
-    required this.title,
-    required this.desc,
-    required this.time,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: Responsive.sp(context, 13),
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textDark,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  desc,
-                  style: TextStyle(
-                    fontSize: Responsive.sp(context, 12),
-                    color: AppColors.textMid,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            time,
-            style: TextStyle(
-              fontSize: Responsive.sp(context, 10),
-              color: AppColors.textLight,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// Removed unused activity item widget.
 
 class _PendingAlerts extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return const GlassCard(
-      child: Column(
-        children: [
-          _AlertRow(
-            title: '23 Leave Applications pending approval',
-            priority: 'HIGH',
-            color: AppColors.error,
-          ),
-          Divider(color: AppColors.divider, height: 20),
-          _AlertRow(
-            title: '5 Teacher timetable conflicts to resolve',
-            priority: 'MED',
-            color: AppColors.warning,
-          ),
-          Divider(color: AppColors.divider, height: 20),
-          _AlertRow(
-            title: 'Board exam schedule needs to be published',
-            priority: 'HIGH',
-            color: AppColors.error,
-          ),
-          Divider(color: AppColors.divider, height: 20),
-          _AlertRow(
-            title: '8 New admission forms under review',
-            priority: 'LOW',
-            color: AppColors.info,
-          ),
-        ],
-      ),
-    );
+    // Alerts placeholder removed — not referenced.
+    return const SizedBox.shrink();
   }
 }
 
-class _AlertRow extends StatelessWidget {
-  final String title;
-  final String priority;
-  final Color color;
-
-  const _AlertRow(
-      {required this.title, required this.priority, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: Responsive.sp(context, 12),
-              fontWeight: FontWeight.w500,
-              color: AppColors.textMid,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            priority,
-            style: TextStyle(
-              fontSize: Responsive.sp(context, 9),
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// _TopClassesList removed - replaced by live _batchPerformance data in _DashboardTabState
-
-class _ProfileInfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _ProfileInfoRow(
-      {required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.adminAccent.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: AppColors.adminAccent, size: 18),
-        ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textLight,
-                    fontWeight: FontWeight.w500)),
-            Text(value,
-                style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textDark,
-                    fontWeight: FontWeight.w600)),
-          ],
-        ),
-      ],
-    );
-  }
-}
+// Removed unused _AlertRow to lower analyzer noise.
 
 // ============================================================
 //  SUPPORTING WIDGETS
@@ -2114,7 +1861,7 @@ class _ActionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 28),
@@ -2161,7 +1908,7 @@ class _StaffActionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 24),
@@ -2205,7 +1952,7 @@ class _StudentListItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.studentAccent.withOpacity(0.12),
+              color: AppColors.studentAccent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.person_rounded,
@@ -2237,7 +1984,7 @@ class _StudentListItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.12),
+              color: statusColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -2277,7 +2024,7 @@ class _TeacherListItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.teacherAccent.withOpacity(0.12),
+              color: AppColors.teacherAccent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.person_rounded,
@@ -2334,7 +2081,7 @@ class _PendingTaskItem extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
+            color: color.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, color: color, size: 18),
@@ -2353,7 +2100,7 @@ class _PendingTaskItem extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.12),
+            color: color.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
@@ -2394,7 +2141,7 @@ class _ParentActivityItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 18),
@@ -2463,7 +2210,7 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
   String _selectedClass = '7th';
   String _selectedBoard = 'CBSE';
   String? _selectedBatch;
-  List<String> _selectedSubjects = [];
+  final List<String> _selectedSubjects = [];
 
   // Parent Details
   final _parentNameController = TextEditingController();
@@ -2665,10 +2412,10 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
                   border:
                       Border.all(color: AppColors.info.withValues(alpha: 0.3)),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
                     Icon(Icons.info_outline, color: AppColors.info, size: 20),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Email will be auto-generated as: name@students.com and parentname@parents.com',
@@ -2755,7 +2502,7 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
-                          value: _selectedBatch,
+                          initialValue: _selectedBatch,
                           hint: const Text('Select a batch'),
                           decoration: InputDecoration(
                             filled: true,
@@ -2981,7 +2728,7 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
@@ -3275,11 +3022,11 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                   border: Border.all(
                       color: AppColors.adminAccent.withValues(alpha: 0.3)),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
                     Icon(Icons.info_outline,
                         color: AppColors.adminAccent, size: 20),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Batch name will be auto-generated based on class, division, and board',
@@ -3303,7 +3050,7 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                       color: AppColors.adminAccent.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.class_rounded,
+                    child: const Icon(Icons.class_rounded,
                         color: AppColors.adminAccent, size: 20),
                   ),
                   const SizedBox(width: 12),
@@ -3333,7 +3080,7 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _selectedClass,
+                    initialValue: _selectedClass,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
@@ -3382,7 +3129,7 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _selectedDiv,
+                    initialValue: _selectedDiv,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
@@ -3431,7 +3178,7 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _selectedBoard,
+                    initialValue: _selectedBoard,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
@@ -3882,8 +3629,8 @@ class _AddTeacherScreenState extends State<_AddTeacherScreen> {
   final _experienceController = TextEditingController(text: '0');
 
   // Subject and Class Assignment
-  List<String> _selectedSubjects = [];
-  List<String> _selectedClasses = [];
+  final List<String> _selectedSubjects = [];
+  final List<String> _selectedClasses = [];
   String _selectedBoard = 'CBSE';
   String? _selectedBatch;
 
@@ -4066,10 +3813,10 @@ class _AddTeacherScreenState extends State<_AddTeacherScreen> {
                   border:
                       Border.all(color: AppColors.info.withValues(alpha: 0.3)),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
                     Icon(Icons.info_outline, color: AppColors.info, size: 20),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Email will be auto-generated as: name@teachers.com',
@@ -4130,7 +3877,7 @@ class _AddTeacherScreenState extends State<_AddTeacherScreen> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: _selectedBatch,
+                      initialValue: _selectedBatch,
                       hint: const Text('Select a batch'),
                       decoration: InputDecoration(
                         filled: true,
@@ -4302,7 +4049,7 @@ class _AddTeacherScreenState extends State<_AddTeacherScreen> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
@@ -4620,94 +4367,7 @@ class _AllTeachersScreenState extends State<_AllTeachersScreen> {
   }
 }
 
-class _AdminAdmissionsScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text('Admissions',
-            style: TextStyle(
-                color: AppColors.textDark, fontWeight: FontWeight.w700)),
-      ),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(20),
-        child: GlassCard(
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.all(40),
-              child: Column(
-                children: [
-                  Icon(Icons.person_add_rounded,
-                      size: 64, color: AppColors.primary),
-                  SizedBox(height: 16),
-                  Text('Admission Management',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textDark)),
-                  SizedBox(height: 8),
-                  Text('View and manage all admission applications',
-                      style: TextStyle(color: AppColors.textLight)),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AdminTimetableScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgLight,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text('Timetable',
-            style: TextStyle(
-                color: AppColors.textDark, fontWeight: FontWeight.w700)),
-      ),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(20),
-        child: GlassCard(
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.all(40),
-              child: Column(
-                children: [
-                  Icon(Icons.schedule_rounded, size: 64, color: AppColors.info),
-                  SizedBox(height: 16),
-                  Text('Timetable Management',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textDark)),
-                  SizedBox(height: 8),
-                  Text('Create and manage class schedules',
-                      style: TextStyle(color: AppColors.textLight)),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+// Removed unused admin sub-screens (Admissions/Timetable) to reduce analyzer noise.
 
 class _AdminBroadcastScreen extends StatelessWidget {
   @override
@@ -4836,7 +4496,7 @@ class _AllParentsScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.parentAccent.withOpacity(0.12),
+                    color: AppColors.parentAccent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.family_restroom_rounded,
@@ -5002,7 +4662,7 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.1),
+                color: AppColors.success.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.check_circle_rounded,
@@ -5062,7 +4722,7 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -5100,7 +4760,7 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       color: selected
-                          ? _priorityColor(p).withOpacity(0.15)
+                          ? _priorityColor(p).withValues(alpha: 0.15)
                           : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
@@ -5373,6 +5033,7 @@ class _AdminProfileSheetState extends State<_AdminProfileSheet> {
   Future<void> _approveFeedback(AnonymousFeedback feedback) async {
     final success = await _db.approveFeedback(feedback.id, 'admin_001', null);
     if (success) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Feedback approved and sent to teacher'),
@@ -5388,6 +5049,7 @@ class _AdminProfileSheetState extends State<_AdminProfileSheet> {
     final success =
         await _db.rejectFeedback(feedback.id, 'admin_001', 'Not appropriate');
     if (success) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Feedback rejected'),
@@ -5737,7 +5399,7 @@ class _FeedbackCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Icon(Icons.access_time, size: 14, color: AppColors.textLight),
+              const Icon(Icons.access_time, size: 14, color: AppColors.textLight),
               const SizedBox(width: 4),
               Text(
                 '${feedback.submittedAt.day}/${feedback.submittedAt.month}/${feedback.submittedAt.year}',
@@ -5796,6 +5458,50 @@ class _FeedbackCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ProfileInfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _ProfileInfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.adminAccent.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: AppColors.adminAccent, size: 18),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textLight,
+                    fontWeight: FontWeight.w500)),
+            Text(value,
+                style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textDark,
+                    fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ],
     );
   }
 }

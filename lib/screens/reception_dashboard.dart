@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
@@ -229,7 +228,7 @@ class _AddStudentPageState extends State<_AddStudentPage> {
 
   DateTime? _dateOfBirth;
   String _selectedBatch = 'batch_12_science';
-  List<String> _selectedSubjects = [];
+  final List<String> _selectedSubjects = [];
   bool _isLoading = false;
 
   final List<Map<String, String>> _batches = [
@@ -504,7 +503,7 @@ class _AddStudentPageState extends State<_AddStudentPage> {
             const SizedBox(height: 16),
 
             DropdownButtonFormField<String>(
-              value: _selectedBatch,
+              initialValue: _selectedBatch,
               decoration: InputDecoration(
                 labelText: 'Select Batch',
                 prefixIcon:

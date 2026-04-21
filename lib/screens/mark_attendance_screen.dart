@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../widgets/shared_widgets.dart';
 import '../services/attendance_service.dart';
 
 class MarkAttendanceScreen extends StatefulWidget {
@@ -206,7 +205,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
                 // Header Info
                 Container(
                   padding: const EdgeInsets.all(16),
-                  color: AppColors.teacherAccent.withOpacity(0.1),
+                  color: AppColors.teacherAccent.withValues(alpha: 0.1),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -226,7 +225,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   widget.subjectName,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     color: AppColors.textLight,
                                   ),
@@ -247,7 +246,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 'Total: ${_students.length}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 13,
                                   color: AppColors.textLight,
                                 ),
@@ -357,7 +356,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
                                         ),
                                         Text(
                                           'Roll: $rollNumber',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 12,
                                             color: AppColors.textLight,
                                           ),
@@ -432,7 +431,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
                     color: Colors.white,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, -2),
                       ),
@@ -483,9 +482,9 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -535,7 +534,7 @@ class _StatusChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? color : color.withOpacity(0.1),
+          color: isSelected ? color : color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: color,
