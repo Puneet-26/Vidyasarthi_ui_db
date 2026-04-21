@@ -360,7 +360,8 @@ class _SubmitFeedbackScreenPremiumState extends State<SubmitFeedbackScreenPremiu
         onChanged: (value) {
           setState(() {
             _selectedTeacher = value;
-            _selectedTeacherName = _teachers.firstWhere((t) => t['id'] == value)['name'];
+            final teacher = _teachers.firstWhere((t) => t['id'] == value);
+            _selectedTeacherName = "${teacher['name']} (${teacher['subject']})";
           });
         },
       ),
@@ -374,13 +375,14 @@ class _SubmitFeedbackScreenPremiumState extends State<SubmitFeedbackScreenPremiu
       runSpacing: 10,
       children: _categories.map((cat) {
         final isSelected = _selectedCategory == cat['value'];
-        return GestureDetector(
+        return InkWell(
           onTap: () {
             setState(() {
               _selectedCategory = cat['value'] as String;
-              _selectedRating = 0; // Reset rating when category changes
+              // Removed rating reset to prevent frustrating UX
             });
           },
+          borderRadius: BorderRadius.circular(14),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -469,12 +471,13 @@ class _SubmitFeedbackScreenPremiumState extends State<SubmitFeedbackScreenPremiu
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(5, (index) {
-              return GestureDetector(
+              return InkWell(
                 onTap: () => setState(() => _selectedRating = index + 1),
+                borderRadius: BorderRadius.circular(20),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                   child: AnimatedScale(
-                    scale: _selectedRating >= index + 1 ? 1.1 : 1.0,
+                    scale: _selectedRating >= index + 1 ? 1.2 : 1.0,
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
                       index < _selectedRating

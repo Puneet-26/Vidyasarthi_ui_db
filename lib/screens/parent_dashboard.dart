@@ -1030,62 +1030,50 @@ class _ParentTeacherFeedbackPageState
         const SectionHeader(title: 'Feedback'),
         const SizedBox(height: 14),
         
-        // Send Anonymous Feedback Section
-        const GlassCard(
-          child: Row(
-            children: [
-              Icon(Icons.lock_rounded, color: AppColors.info, size: 28),
-              SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Send Anonymous Feedback',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textDark,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Share your thoughts with teachers anonymously',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textMid,
-                      ),
-                    ),
-                  ],
+        // Feedback Card (Now clickable)
+        InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => SubmitFeedbackScreenPremium(
+                  senderRole: 'parent',
+                  senderId: currentStudent.parentEmail,
                 ),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => SubmitFeedbackScreenPremium(
-                    senderRole: 'parent',
-                    senderId: currentStudent.parentEmail,
+            );
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: const GlassCard(
+            child: Row(
+              children: [
+                Icon(Icons.lock_rounded, color: AppColors.info, size: 28),
+                SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Send Anonymous Feedback',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Share your thoughts with teachers anonymously. Click here to begin.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textMid,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            },
-            icon: const Icon(Icons.add_rounded, size: 20),
-            label: const Text('Send Feedback to Teacher'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.parentAccent,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+                Icon(Icons.chevron_right_rounded, color: AppColors.textMid),
+              ],
             ),
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/database_service.dart';
@@ -25,7 +26,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
   List<Test> _tests = [];
   List<TestResult> _testResults = [];
   List<TimeTable> _timetable = [];
+  List<FeePayment> _feePayments = [];
+  int _noticeCount = 0;
   bool _loading = true;
+  bool _subscriptionsReady = false;
+  RealtimeChannel? _studentChannel;
+  RealtimeChannel? _homeworkChannel;
+  RealtimeChannel? _testsChannel;
+  RealtimeChannel? _timetableChannel;
+  RealtimeChannel? _broadcastChannel;
+  RealtimeChannel? _feePaymentsChannel;
 
   final _db = DatabaseService();
 
@@ -63,6 +73,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           homework: _homework,
           tests: _tests,
           timetable: _timetable,
+          noticeCount: _noticeCount,
           loading: _loading,
         ),
         _StudentSubjectsPage(subjects: _subjects, loading: _loading),
@@ -77,6 +88,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
   void initState() {
     super.initState();
     _loadStudentData();
+  }
+
+  @override
+  void dispose() {
+    _removeRealtimeSubscriptions();
+    super.dispose();
   }
 
   Future<void> _loadStudentData() async {
@@ -109,6 +126,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
       final tests = await _db.getTestsByBatch(student.batchId);
       final testResults = await _db.getTestResultsByStudent(student.id);
       final timetable = await _db.getTimeTableByBatch(student.batchId);
+      final feePayments = await _db.getFeePaymentsByStudent(student.id);
+      final notices = await _db.getBroadcastsForRole('students');
 
       if (mounted) {
         setState(() {
@@ -118,13 +137,121 @@ class _StudentDashboardState extends State<StudentDashboard> {
           _tests = tests;
           _testResults = testResults;
           _timetable = timetable;
+          _feePayments = feePayments;
+          _noticeCount = notices.length;
           _loading = false;
         });
+      }
+
+      if (!_subscriptionsReady) {
+        _setupRealtimeSubscriptions(student);
       }
     } catch (e) {
       debugPrint('Error loading student data: $e');
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _setupRealtimeSubscriptions(Student student) {
+    final supabase = Supabase.instance.client;
+
+    _studentChannel = supabase
+        .channel('student-row-${student.id}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'students',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'id',
+            value: student.id,
+          ),
+          callback: (_) => _loadStudentData(),
+        )
+        .subscribe();
+
+    _homeworkChannel = supabase
+        .channel('student-homework-${student.batchId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'homework',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'batch_id',
+            value: student.batchId,
+          ),
+          callback: (_) => _loadStudentData(),
+        )
+        .subscribe();
+
+    _testsChannel = supabase
+        .channel('student-tests-${student.batchId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'tests',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'batch_id',
+            value: student.batchId,
+          ),
+          callback: (_) => _loadStudentData(),
+        )
+        .subscribe();
+
+    _timetableChannel = supabase
+        .channel('student-timetable-${student.batchId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'timetables',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'batch_id',
+            value: student.batchId,
+          ),
+          callback: (_) => _loadStudentData(),
+        )
+        .subscribe();
+
+    _broadcastChannel = supabase
+        .channel('student-broadcasts')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'broadcasts',
+          callback: (_) => _loadStudentData(),
+        )
+        .subscribe();
+
+    _feePaymentsChannel = supabase
+        .channel('student-fee-payments-${student.id}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'fee_payments',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'student_id',
+            value: student.id,
+          ),
+          callback: (_) => _loadStudentData(),
+        )
+        .subscribe();
+
+    _subscriptionsReady = true;
+  }
+
+  void _removeRealtimeSubscriptions() {
+    final supabase = Supabase.instance.client;
+    if (_studentChannel != null) supabase.removeChannel(_studentChannel!);
+    if (_homeworkChannel != null) supabase.removeChannel(_homeworkChannel!);
+    if (_testsChannel != null) supabase.removeChannel(_testsChannel!);
+    if (_timetableChannel != null) supabase.removeChannel(_timetableChannel!);
+    if (_broadcastChannel != null) supabase.removeChannel(_broadcastChannel!);
+    if (_feePaymentsChannel != null)
+      supabase.removeChannel(_feePaymentsChannel!);
   }
 
   @override
@@ -152,6 +279,7 @@ class _StudentHomePage extends StatelessWidget {
   final List<Homework> homework;
   final List<Test> tests;
   final List<TimeTable> timetable;
+  final int noticeCount;
   final bool loading;
 
   const _StudentHomePage({
@@ -160,6 +288,7 @@ class _StudentHomePage extends StatelessWidget {
     required this.homework,
     required this.tests,
     required this.timetable,
+    required this.noticeCount,
     required this.loading,
   });
 
@@ -179,7 +308,7 @@ class _StudentHomePage extends StatelessWidget {
             role: 'STUDENT',
             subtitle: 'Student Dashboard',
             roleColor: AppColors.studentAccent,
-            notificationCount: 3,
+            notificationCount: noticeCount,
             onNotification: () => _showNoticesSheet(context),
             actionButtons: [
               GestureDetector(
@@ -220,115 +349,287 @@ class _StudentHomePage extends StatelessWidget {
           const SizedBox(height: 24),
 
           // Today's class banner
-          _TodayClassBanner(timetable: timetable),
+          _TodayClassBanner(timetable: timetable, subjects: subjects),
           const SizedBox(height: 24),
+
+          // Fees and reminders
+          if (student != null) ...[
+            _FeesOverviewCard(student: student!),
+            const SizedBox(height: 24),
+          ],
 
           // Timetable Today
           const SectionHeader(title: "Today's Timetable"),
           const SizedBox(height: 14),
-          _TimetableList(timetable: timetable),
+          _TimetableList(timetable: timetable, subjects: subjects),
           const SizedBox(height: 24),
 
-          // Stats Row — Attendance & Pending Tasks only
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    if (student != null) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ViewAttendanceScreen(
-                            studentId: student!.id,
-                            studentName: student!.name,
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  child: const StatCard(
-                    title: 'Attendance',
-                    value: '92%',
-                    icon: Icons.how_to_reg_rounded,
-                    color: AppColors.success,
-                    subtitle: 'This month',
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: StatCard(
-                  title: 'Pending Tasks',
-                  value: '4',
-                  icon: Icons.pending_actions_rounded,
-                  color: AppColors.error,
-                  subtitle: 'Due this week',
-                ),
-              ),
-            ],
+          // Stats Row — Attendance & Pending Tasks from live data
+          _StudentStatsRow(
+            student: student,
+            homework: homework,
           ),
           const SizedBox(height: 24),
 
-          // Subject Performance
+          // Subject Performance - from live test results
           const SectionHeader(title: 'Subject Performance'),
           const SizedBox(height: 14),
-          const GlassCard(
-            child: Column(
-              children: [
-                LabeledProgressBar(
-                    label: 'Mathematics',
-                    value: 0.85,
-                    color: AppColors.primary),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'Science', value: 0.78, color: AppColors.info),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'English', value: 0.91, color: AppColors.success),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'History', value: 0.65, color: AppColors.warning),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'Computer',
-                    value: 0.95,
-                    color: AppColors.studentAccent),
-              ],
-            ),
-          ),
+          _SubjectPerformanceCard(studentId: student?.id ?? ''),
           const SizedBox(height: 24),
 
-          // Upcoming Assignments
+          // Upcoming Exams
+          const SectionHeader(title: 'Upcoming Exams'),
+          const SizedBox(height: 14),
+          if (tests
+              .where((t) => t.status == 'scheduled' || t.status == 'ongoing')
+              .isEmpty)
+            const GlassCard(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: Text('No exams scheduled.',
+                    style: TextStyle(color: AppColors.textMid)),
+              ),
+            )
+          else
+            ...tests
+                .where((t) => t.status == 'scheduled' || t.status == 'ongoing')
+                .take(2)
+                .map((t) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _TestItem(
+                        title: t.title,
+                        date:
+                            '${t.testDate.day}/${t.testDate.month}/${t.testDate.year}',
+                        marks: t.totalMarks,
+                        color: AppColors.studentAccent,
+                      ),
+                    )),
+          const SizedBox(height: 24),
+
+          // Upcoming Assignments (Homework)
           const SectionHeader(title: 'Upcoming Assignments'),
           const SizedBox(height: 14),
-          const _AssignmentItem(
-            subject: 'Mathematics',
-            title: 'Chapter 5 - Quadratic Equations',
-            dueDate: 'Due Tomorrow',
-            color: AppColors.primary,
-            isUrgent: true,
-          ),
-          const SizedBox(height: 10),
-          const _AssignmentItem(
-            subject: 'Science',
-            title: 'Lab Report - Photosynthesis',
-            dueDate: 'Due in 3 days',
-            color: AppColors.info,
-            isUrgent: false,
-          ),
-          const SizedBox(height: 10),
-          const _AssignmentItem(
-            subject: 'English',
-            title: 'Essay - My Role Model',
-            dueDate: 'Due in 5 days',
-            color: AppColors.success,
-            isUrgent: false,
-          ),
+          if (homework.isEmpty)
+            const GlassCard(
+              padding: EdgeInsets.all(20),
+              child: Center(
+                child: Text('No upcoming assignments.',
+                    style: TextStyle(color: AppColors.textMid)),
+              ),
+            )
+          else
+            ...homework.take(3).map((h) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _AssignmentItem(
+                    subject: h.subjectId,
+                    title: h.title,
+                    dueDate:
+                        'Due: ${h.dueDate.day}/${h.dueDate.month}/${h.dueDate.year}',
+                    color: AppColors.primary,
+                    isUrgent: h.dueDate.difference(DateTime.now()).inDays < 2,
+                  ),
+                )),
           const SizedBox(height: 24),
 
           const SizedBox(height: 80),
         ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+//  LIVE STUDENT STAT WIDGETS
+// ============================================================
+
+class _StudentStatsRow extends StatefulWidget {
+  final Student? student;
+  final List<Homework> homework;
+
+  const _StudentStatsRow({required this.student, required this.homework});
+
+  @override
+  State<_StudentStatsRow> createState() => _StudentStatsRowState();
+}
+
+class _StudentStatsRowState extends State<_StudentStatsRow> {
+  final _db = DatabaseService();
+  String _attendancePct = '...';
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAttendance();
+  }
+
+  @override
+  void didUpdateWidget(_StudentStatsRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.student?.id != widget.student?.id && widget.student != null) {
+      _loadAttendance();
+    }
+  }
+
+  Future<void> _loadAttendance() async {
+    if (widget.student == null || widget.student!.id.isEmpty) {
+      if (mounted)
+        setState(() {
+          _attendancePct = 'N/A';
+          _loading = false;
+        });
+      return;
+    }
+    final pct = await _db.getStudentAttendancePercentage(widget.student!.id);
+    if (mounted)
+      setState(() {
+        _attendancePct = pct;
+        _loading = false;
+      });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pendingCount = widget.homework
+        .where((h) => h.status == 'active' && h.dueDate.isAfter(DateTime.now()))
+        .length;
+
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              if (widget.student != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ViewAttendanceScreen(
+                      studentId: widget.student!.id,
+                      studentName: widget.student!.name,
+                    ),
+                  ),
+                );
+              }
+            },
+            child: StatCard(
+              title: 'Attendance',
+              value: _loading ? '...' : '$_attendancePct%',
+              icon: Icons.how_to_reg_rounded,
+              color: AppColors.success,
+              subtitle: 'This month',
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: StatCard(
+            title: 'Pending Tasks',
+            value: '$pendingCount',
+            icon: Icons.pending_actions_rounded,
+            color: AppColors.error,
+            subtitle: 'Due this week',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SubjectPerformanceCard extends StatefulWidget {
+  final String studentId;
+
+  const _SubjectPerformanceCard({required this.studentId});
+
+  @override
+  State<_SubjectPerformanceCard> createState() =>
+      _SubjectPerformanceCardState();
+}
+
+class _SubjectPerformanceCardState extends State<_SubjectPerformanceCard> {
+  final _db = DatabaseService();
+  List<Map<String, dynamic>> _performance = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(_SubjectPerformanceCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.studentId != widget.studentId &&
+        widget.studentId.isNotEmpty) {
+      _load();
+    }
+  }
+
+  Future<void> _load() async {
+    if (widget.studentId.isEmpty) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    final perf = await _db.getStudentSubjectPerformance(widget.studentId);
+    if (mounted)
+      setState(() {
+        _performance = perf;
+        _loading = false;
+      });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const GlassCard(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
+    if (_performance.isEmpty) {
+      return const GlassCard(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Text(
+              'No test results yet. Performance will appear after exams.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textMid),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final colors = [
+      AppColors.primary,
+      AppColors.info,
+      AppColors.success,
+      AppColors.warning,
+      AppColors.studentAccent,
+    ];
+
+    return GlassCard(
+      child: Column(
+        children: _performance.asMap().entries.map((e) {
+          final p = e.value;
+          final color = colors[e.key % colors.length];
+          final pct = (p['avg_percentage'] as double).clamp(0.0, 100.0);
+          return Padding(
+            padding: EdgeInsets.only(
+                bottom: e.key < _performance.length - 1 ? 14 : 0),
+            child: LabeledProgressBar(
+              label: p['subject_name'] ?? 'Subject',
+              value: pct / 100.0,
+              color: color,
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -344,79 +645,95 @@ class _StudentSubjectsPage extends StatelessWidget {
 
   const _StudentSubjectsPage({required this.subjects, required this.loading});
 
-  static const _physicsModules = [
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'ongoing'},
-    {'status': 'pending'},
-    {'status': 'pending'},
-    {'status': 'pending'},
-    {'status': 'pending'},
-  ];
-  static const _chemModules = [
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'ongoing'},
-    {'status': 'pending'},
-    {'status': 'pending'},
-    {'status': 'pending'},
-  ];
-  static const _mathModules = [
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'ongoing'},
-    {'status': 'pending'},
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(20),
+    if (loading) return const Center(child: CircularProgressIndicator());
+
+    if (subjects.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.book_outlined, size: 64, color: AppColors.textLight),
+              SizedBox(height: 16),
+              Text('No subjects assigned yet.',
+                  style: TextStyle(color: AppColors.textMid, fontSize: 15)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final colors = [
+      AppColors.primary,
+      AppColors.info,
+      AppColors.success,
+      AppColors.warning,
+      AppColors.studentAccent,
+      AppColors.teacherAccent,
+    ];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'My Subjects'),
-          SizedBox(height: 16),
-          _SubjectCard(
-              name: 'Physics',
-              code: 'PHY101',
-              teacher: 'Mr. Arun Kumar',
-              progress: 0.65,
-              color: AppColors.primary,
-              modules: _physicsModules),
-          SizedBox(height: 12),
-          _SubjectCard(
-              name: 'Chemistry',
-              code: 'CHM101',
-              teacher: 'Mrs. Priya Sharma',
-              progress: 0.72,
-              color: AppColors.info,
-              modules: _chemModules),
-          SizedBox(height: 12),
-          _SubjectCard(
-              name: 'Mathematics',
-              code: 'MTH101',
-              teacher: 'Mr. Vikram Singh',
-              progress: 0.85,
-              color: AppColors.success,
-              modules: _mathModules),
-          SizedBox(height: 30),
+          const SectionHeader(title: 'My Subjects'),
+          const SizedBox(height: 16),
+          ...subjects.asMap().entries.map((e) {
+            final s = e.value;
+            final color = colors[e.key % colors.length];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GlassCard(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12)),
+                      child: Icon(Icons.book_rounded, color: color, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(s.name,
+                              style: TextStyle(
+                                  fontSize: Responsive.sp(context, 15),
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textDark)),
+                          Text(s.code,
+                              style: TextStyle(
+                                  fontSize: Responsive.sp(context, 12),
+                                  color: AppColors.textMid)),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(s.code.isNotEmpty ? s.code : 'Subject',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: color)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 30),
         ],
       ),
     );
@@ -723,45 +1040,54 @@ class _StudentTasksPage extends StatelessWidget {
       {required this.homework, required this.tests, required this.loading});
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(20),
+    if (loading) return const Center(child: CircularProgressIndicator());
+
+    final pendingHomework =
+        homework.where((h) => h.status == 'active').toList();
+    final upcomingTests = tests
+        .where((t) => t.status == 'scheduled' || t.status == 'ongoing')
+        .toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Pending Homework'),
-          SizedBox(height: 12),
-          _TaskItem(
-              title: 'Laws of Motion Problems',
-              subject: 'Physics',
-              due: 'Due in 3 days',
-              urgent: false),
-          SizedBox(height: 10),
-          _TaskItem(
-              title: 'Chemical Bonding Worksheet',
-              subject: 'Chemistry',
-              due: 'Due in 5 days',
-              urgent: false),
-          SizedBox(height: 10),
-          _TaskItem(
-              title: 'Integration Practice',
-              subject: 'Mathematics',
-              due: 'Due Tomorrow',
-              urgent: true),
-          SizedBox(height: 24),
-          SectionHeader(title: 'Upcoming Tests'),
-          SizedBox(height: 12),
-          _TestItem(
-              title: 'Mid-Term Physics Exam',
-              date: 'Mar 28, 2026',
-              marks: 100,
-              color: AppColors.primary),
-          SizedBox(height: 10),
-          _TestItem(
-              title: 'Mid-Term Mathematics Exam',
-              date: 'Apr 1, 2026',
-              marks: 100,
-              color: AppColors.studentAccent),
-          SizedBox(height: 30),
+          SectionHeader(title: 'Pending Homework (${pendingHomework.length})'),
+          const SizedBox(height: 12),
+          if (pendingHomework.isEmpty)
+            const Text('No pending homework.',
+                style: TextStyle(color: AppColors.textMid))
+          else
+            ...pendingHomework.map((h) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _TaskItem(
+                    title: h.title,
+                    subject: h
+                        .subjectId, // Ideally join to get name, but ID works for now
+                    due:
+                        'Due: ${h.dueDate.day}/${h.dueDate.month}/${h.dueDate.year}',
+                    urgent: h.dueDate.difference(DateTime.now()).inDays < 2,
+                  ),
+                )),
+          const SizedBox(height: 24),
+          SectionHeader(title: 'Upcoming Tests (${upcomingTests.length})'),
+          const SizedBox(height: 12),
+          if (upcomingTests.isEmpty)
+            const Text('No upcoming tests.',
+                style: TextStyle(color: AppColors.textMid))
+          else
+            ...upcomingTests.map((t) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _TestItem(
+                    title: t.title,
+                    date:
+                        '${t.testDate.day}/${t.testDate.month}/${t.testDate.year}',
+                    marks: t.totalMarks,
+                    color: AppColors.primary,
+                  ),
+                )),
+          const SizedBox(height: 30),
         ],
       ),
     );
@@ -896,34 +1222,42 @@ class _StudentResultsPage extends StatelessWidget {
   const _StudentResultsPage({required this.testResults, required this.loading});
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(20),
+    if (loading) return const Center(child: CircularProgressIndicator());
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Test Results'),
-          SizedBox(height: 16),
-          GlassCard(
-            child: Column(
-              children: [
-                LabeledProgressBar(
-                    label: 'Physics - Unit Test 1 (85/100)',
-                    value: 0.85,
-                    color: AppColors.primary),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'Chemistry - Unit Test 1 (91/100)',
-                    value: 0.91,
-                    color: AppColors.info),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'Mathematics - Unit Test 1 (76/100)',
-                    value: 0.76,
-                    color: AppColors.success),
-              ],
+          SectionHeader(title: 'Test Results (${testResults.length})'),
+          const SizedBox(height: 16),
+          if (testResults.isEmpty)
+            const GlassCard(
+              child: Center(
+                child: Text('No results recorded yet.',
+                    style: TextStyle(color: AppColors.textMid)),
+              ),
+            )
+          else
+            GlassCard(
+              child: Column(
+                children: testResults.map((tr) {
+                  final percentage = (tr.marksObtained ?? 0) /
+                      100.0; // Assuming 100 as default max if missing
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: LabeledProgressBar(
+                        label:
+                            '${tr.testId} - ${tr.status} (${tr.marksObtained}/100)',
+                        value: percentage.clamp(0.0, 1.0),
+                        color: percentage >= 0.75
+                            ? AppColors.success
+                            : AppColors.primary),
+                  );
+                }).toList(),
+              ),
             ),
-          ),
-          SizedBox(height: 30),
+          const SizedBox(height: 30),
         ],
       ),
     );
@@ -938,59 +1272,6 @@ class _StudentProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Fee data (replace with real data from Student model when wired up)
-    const double totalFees = 50000;
-    const double feesPaid = 30000;
-    const double feesDue = totalFees - feesPaid;
-    const String feeStatus = 'pending'; // 'active', 'pending', 'overdue'
-
-    final List<Map<String, dynamic>> installments = [
-      {
-        'label': 'Installment 1',
-        'amount': 15000.0,
-        'due': 'Jan 10, 2026',
-        'paid': true
-      },
-      {
-        'label': 'Installment 2',
-        'amount': 15000.0,
-        'due': 'Feb 10, 2026',
-        'paid': true
-      },
-      {
-        'label': 'Installment 3',
-        'amount': 10000.0,
-        'due': 'Mar 10, 2026',
-        'paid': false
-      },
-      {
-        'label': 'Installment 4',
-        'amount': 10000.0,
-        'due': 'Apr 10, 2026',
-        'paid': false
-      },
-    ];
-
-    Color statusColor;
-    String statusLabel;
-    IconData statusIcon;
-    switch (feeStatus) {
-      case 'overdue':
-        statusColor = AppColors.error;
-        statusLabel = 'Overdue';
-        statusIcon = Icons.warning_rounded;
-        break;
-      case 'active':
-        statusColor = AppColors.success;
-        statusLabel = 'Fully Paid';
-        statusIcon = Icons.check_circle_rounded;
-        break;
-      default:
-        statusColor = AppColors.warning;
-        statusLabel = 'Partially Paid';
-        statusIcon = Icons.pending_rounded;
-    }
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -1013,7 +1294,8 @@ class _StudentProfilePage extends StatelessWidget {
                       color: AppColors.textDark))),
           Center(
               child: Text('Student • ${student?.studentClass ?? 'N/A'}',
-                  style: const TextStyle(fontSize: 13, color: AppColors.textMid))),
+                  style:
+                      const TextStyle(fontSize: 13, color: AppColors.textMid))),
           const SizedBox(height: 24),
 
           // Personal Info
@@ -1052,107 +1334,6 @@ class _StudentProfilePage extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Fee Summary
-          const SectionHeader(title: 'Fee Summary'),
-          const SizedBox(height: 12),
-          GlassCard(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: _FeeSummaryTile(
-                        label: 'Total Fees',
-                        amount: totalFees,
-                        color: AppColors.textDark,
-                        icon: Icons.account_balance_wallet_outlined,
-                      ),
-                    ),
-                    Container(width: 1, height: 48, color: AppColors.divider),
-                    const Expanded(
-                      child: _FeeSummaryTile(
-                        label: 'Fees Paid',
-                        amount: feesPaid,
-                        color: AppColors.success,
-                        icon: Icons.check_circle_outline_rounded,
-                      ),
-                    ),
-                    Container(width: 1, height: 48, color: AppColors.divider),
-                    const Expanded(
-                      child: _FeeSummaryTile(
-                        label: 'Fees Due',
-                        amount: feesDue,
-                        color:
-                            feesDue > 0 ? AppColors.error : AppColors.success,
-                        icon: feesDue > 0
-                            ? Icons.error_outline_rounded
-                            : Icons.check_circle_outline_rounded,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                // Progress bar
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: feesPaid / totalFees,
-                    minHeight: 8,
-                    backgroundColor: AppColors.divider,
-                    valueColor: AlwaysStoppedAnimation<Color>(statusColor),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('${((feesPaid / totalFees) * 100).round()}% paid',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: statusColor,
-                            fontWeight: FontWeight.w600)),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(statusIcon, size: 13, color: statusColor),
-                          const SizedBox(width: 4),
-                          Text(statusLabel,
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: statusColor)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Installments
-          const SectionHeader(title: 'Installments'),
-          const SizedBox(height: 12),
-          ...installments.map((inst) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _InstallmentTile(
-                  label: inst['label'] as String,
-                  amount: inst['amount'] as double,
-                  dueDate: inst['due'] as String,
-                  paid: inst['paid'] as bool,
-                ),
-              )),
-          const SizedBox(height: 20),
-
           // Logout
           SizedBox(
             width: double.infinity,
@@ -1171,6 +1352,79 @@ class _StudentProfilePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeesOverviewCard extends StatelessWidget {
+  final Student student;
+  const _FeesOverviewCard({required this.student});
+
+  @override
+  Widget build(BuildContext context) {
+    final total = student.totalFees <= 0 ? 1.0 : student.totalFees;
+    final paid = student.feesPaid.clamp(0, total);
+    final due = (total - paid).clamp(0, total);
+    final ratio = (paid / total).clamp(0.0, 1.0);
+    final hasDue = due > 0;
+
+    return GlassCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(title: 'Fees & Reminders'),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Paid: ₹${paid.toStringAsFixed(0)} / ₹${total.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textDark,
+                  ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (hasDue ? AppColors.warning : AppColors.success)
+                      .withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  hasDue ? 'Due ₹${due.toStringAsFixed(0)}' : 'Fully Paid',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: hasDue ? AppColors.warning : AppColors.success,
+                  ),
+                ),
+              )
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: ratio,
+              minHeight: 8,
+              backgroundColor: AppColors.divider,
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(AppColors.primary),
+            ),
+          ),
+          if (hasDue) ...[
+            const SizedBox(height: 10),
+            const Text(
+              'Reminder: Pending fees detected. Please contact reception/account office.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMid),
+            ),
+          ],
         ],
       ),
     );
@@ -1317,11 +1571,31 @@ class _ProfileRow extends StatelessWidget {
 
 class _TodayClassBanner extends StatelessWidget {
   final List<TimeTable> timetable;
+  final List<Subject> subjects;
 
-  const _TodayClassBanner({required this.timetable});
+  const _TodayClassBanner({required this.timetable, required this.subjects});
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final day = _weekdayName(now.weekday);
+    final todays = timetable
+        .where((t) => t.day.toLowerCase() == day.toLowerCase())
+        .toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    final next = todays.cast<TimeTable?>().firstWhere(
+          (t) => t != null && t.startTime.compareTo(_time24(now)) >= 0,
+          orElse: () => todays.isNotEmpty ? todays.first : null,
+        );
+
+    final subject = next?.subjectId.isNotEmpty == true
+        ? _subjectName(next!.subjectId, subjects)
+        : 'No class';
+    final timing = next == null
+        ? 'No classes scheduled today'
+        : '${_formatTime(next.startTime)} - ${_formatTime(next.endTime)}${next.room != null && next.room!.isNotEmpty ? '  •  Room ${next.room}' : ''}';
+    final startsIn = next == null ? 'Enjoy your day' : 'Check timetable below';
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -1354,7 +1628,7 @@ class _TodayClassBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Mathematics',
+                  subject,
                   style: TextStyle(
                     fontSize: Responsive.sp(context, 20),
                     fontWeight: FontWeight.w700,
@@ -1369,7 +1643,7 @@ class _TodayClassBanner extends StatelessWidget {
                         size: Responsive.sp(context, 14)),
                     const SizedBox(width: 4),
                     Text(
-                      '10:30 AM  •  Room 204',
+                      timing,
                       style: TextStyle(
                         fontSize: Responsive.sp(context, 12),
                         color: Colors.white70,
@@ -1385,8 +1659,8 @@ class _TodayClassBanner extends StatelessWidget {
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Text(
-                    'Starts in 25 min',
+                  child: Text(
+                    startsIn,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -1401,6 +1675,39 @@ class _TodayClassBanner extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static String _weekdayName(int day) {
+    const days = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
+    return days[day - 1];
+  }
+
+  static String _time24(DateTime dt) =>
+      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
+  static String _formatTime(String value) {
+    final p = value.split(':');
+    if (p.length < 2) return value;
+    final hour = int.tryParse(p[0]) ?? 0;
+    final minute = p[1];
+    final suffix = hour >= 12 ? 'PM' : 'AM';
+    final hr12 = hour % 12 == 0 ? 12 : hour % 12;
+    return '$hr12:$minute $suffix';
+  }
+
+  static String _subjectName(String subjectId, List<Subject> subjects) {
+    for (final s in subjects) {
+      if (s.id == subjectId) return s.name;
+    }
+    return subjectId;
   }
 }
 
@@ -1495,43 +1802,34 @@ class _AssignmentItem extends StatelessWidget {
 
 class _TimetableList extends StatelessWidget {
   final List<TimeTable> timetable;
+  final List<Subject> subjects;
 
-  const _TimetableList({required this.timetable});
-  final List<Map<String, String>> periods = const [
-    {
-      'time': '08:00',
-      'subject': 'English',
-      'teacher': 'Mrs. Priya Nair',
-      'room': '101'
-    },
-    {
-      'time': '09:00',
-      'subject': 'Mathematics',
-      'teacher': 'Mr. Rajan Kumar',
-      'room': '204'
-    },
-    {
-      'time': '10:30',
-      'subject': 'Science',
-      'teacher': 'Dr. Shalini Rao',
-      'room': 'Lab 2'
-    },
-    {'time': '12:00', 'subject': 'Lunch Break', 'teacher': '', 'room': ''},
-    {
-      'time': '13:00',
-      'subject': 'History',
-      'teacher': 'Mr. Anand Joshi',
-      'room': '108'
-    },
-  ];
+  const _TimetableList({required this.timetable, required this.subjects});
 
   @override
   Widget build(BuildContext context) {
+    final day = _TodayClassBanner._weekdayName(DateTime.now().weekday);
+    final periods = timetable
+        .where((t) => t.day.toLowerCase() == day.toLowerCase())
+        .toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+    if (periods.isEmpty) {
+      return const GlassCard(
+        padding: EdgeInsets.all(20),
+        child: Center(
+          child: Text(
+            'No timetable entries for today.',
+            style: TextStyle(color: AppColors.textMid),
+          ),
+        ),
+      );
+    }
+
     return GlassCard(
       padding: const EdgeInsets.all(4),
       child: Column(
         children: periods.asMap().entries.map((e) {
-          final isLunch = e.value['subject'] == 'Lunch Break';
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
@@ -1545,7 +1843,7 @@ class _TimetableList extends StatelessWidget {
                 SizedBox(
                   width: 48,
                   child: Text(
-                    e.value['time']!,
+                    e.value.startTime,
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -1558,7 +1856,7 @@ class _TimetableList extends StatelessWidget {
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: isLunch ? AppColors.warning : AppColors.primary,
+                    color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -1568,17 +1866,17 @@ class _TimetableList extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        e.value['subject']!,
+                        _TodayClassBanner._subjectName(
+                            e.value.subjectId, subjects),
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color:
-                              isLunch ? AppColors.warning : AppColors.textDark,
+                          color: AppColors.textDark,
                         ),
                       ),
-                      if (e.value['teacher']!.isNotEmpty)
+                      if (e.value.teacherId.isNotEmpty)
                         Text(
-                          '${e.value['teacher']} • Room ${e.value['room']}',
+                          '${e.value.teacherId}${e.value.room != null && e.value.room!.isNotEmpty ? ' • Room ${e.value.room}' : ''}',
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppColors.textLight,
@@ -1714,14 +2012,13 @@ class _HolidayNotice extends StatelessWidget {
   }
 }
 
-
 // ============================================================
 //  STUDENT FEEDBACK PAGE
 // ============================================================
 
 class _StudentFeedbackPage extends StatefulWidget {
   final String studentId;
-  
+
   const _StudentFeedbackPage({required this.studentId});
 
   @override
@@ -1740,7 +2037,8 @@ class _StudentFeedbackPageState extends State<_StudentFeedbackPage> {
   }
 
   Future<void> _loadMyFeedback() async {
-    final feedback = await _db.getMySubmittedFeedback(widget.studentId, 'student');
+    final feedback =
+        await _db.getMySubmittedFeedback(widget.studentId, 'student');
     if (mounted) {
       setState(() {
         _myFeedback = feedback;
@@ -1758,65 +2056,53 @@ class _StudentFeedbackPageState extends State<_StudentFeedbackPage> {
         children: [
           const SectionHeader(title: 'Anonymous Feedback'),
           const SizedBox(height: 14),
-          
-          // Info card
-          const GlassCard(
-            child: Row(
-              children: [
-                Icon(Icons.info_outline_rounded, color: AppColors.info, size: 28),
-                SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Send Anonymous Feedback',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Your feedback is completely anonymous. Teachers will not know who sent it.',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textMid,
-                        ),
-                      ),
-                    ],
+
+          // Feedback Card (Now clickable)
+          InkWell(
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SubmitFeedbackScreenPremium(
+                    senderRole: 'student',
+                    senderId: widget.studentId,
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Send Feedback Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SubmitFeedbackScreenPremium(
-                      senderRole: 'student',
-                      senderId: widget.studentId,
+              );
+              _loadMyFeedback();
+            },
+            borderRadius: BorderRadius.circular(20),
+            child: const GlassCard(
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline_rounded,
+                      color: AppColors.info, size: 28),
+                  SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Send Anonymous Feedback',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textDark,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Your feedback is completely anonymous. Click here to send feedback to a teacher.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textMid,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                );
-                _loadMyFeedback(); // Refresh after returning
-              },
-              icon: const Icon(Icons.add_rounded, size: 20),
-              label: const Text('Send Feedback to Teacher'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.studentAccent,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                  Icon(Icons.chevron_right_rounded, color: AppColors.textMid),
+                ],
               ),
             ),
           ),
@@ -1825,7 +2111,7 @@ class _StudentFeedbackPageState extends State<_StudentFeedbackPage> {
           // My Submitted Feedback
           const SectionHeader(title: 'My Submitted Feedback'),
           const SizedBox(height: 14),
-          
+
           if (_loading)
             const Center(child: CircularProgressIndicator())
           else if (_myFeedback.isEmpty)
@@ -1835,7 +2121,8 @@ class _StudentFeedbackPageState extends State<_StudentFeedbackPage> {
                   padding: EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      Icon(Icons.feedback_outlined, size: 48, color: AppColors.textLight),
+                      Icon(Icons.feedback_outlined,
+                          size: 48, color: AppColors.textLight),
                       SizedBox(height: 12),
                       Text(
                         'No feedback submitted yet',
@@ -1851,9 +2138,9 @@ class _StudentFeedbackPageState extends State<_StudentFeedbackPage> {
             )
           else
             ..._myFeedback.map((feedback) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _FeedbackStatusCard(feedback: feedback),
-            )),
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _FeedbackStatusCard(feedback: feedback),
+                )),
 
           const SizedBox(height: 30),
         ],
@@ -1921,7 +2208,8 @@ class _FeedbackStatusCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
@@ -1961,7 +2249,9 @@ class _FeedbackStatusCard extends StatelessWidget {
                 ...List.generate(
                   5,
                   (i) => Icon(
-                    i < feedback.rating! ? Icons.star_rounded : Icons.star_outline_rounded,
+                    i < feedback.rating!
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
                     size: 16,
                     color: AppColors.warning,
                   ),
@@ -1977,7 +2267,8 @@ class _FeedbackStatusCard extends StatelessWidget {
               ),
             ],
           ),
-          if (feedback.adminNotes != null && feedback.adminNotes!.isNotEmpty) ...[
+          if (feedback.adminNotes != null &&
+              feedback.adminNotes!.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(10),
@@ -1987,7 +2278,8 @@ class _FeedbackStatusCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.admin_panel_settings_rounded, size: 16, color: AppColors.textMid),
+                  const Icon(Icons.admin_panel_settings_rounded,
+                      size: 16, color: AppColors.textMid),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

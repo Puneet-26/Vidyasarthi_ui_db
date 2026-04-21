@@ -29,21 +29,45 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
   DateTime? _selectedDate;
   bool _isSaving = false;
 
-  final List<Map<String, String>> _batches = [
-    {'id': 'batch_12_science_a', 'name': 'Class 12 Science A'},
-    {'id': 'batch_12_science_b', 'name': 'Class 12 Science B'},
-    {'id': 'batch_11_science_a', 'name': 'Class 11 Science A'},
-    {'id': 'batch_11_science_b', 'name': 'Class 11 Science B'},
-    {'id': 'batch_10_a', 'name': 'Class 10 A'},
-  ];
+  List<Map<String, String>> _batches = [];
+  List<Map<String, String>> _subjects = [];
+  bool _isLoadingData = true;
 
-  final List<Map<String, String>> _subjects = [
-    {'id': 'sub_physics', 'name': 'Physics'},
-    {'id': 'sub_chemistry', 'name': 'Chemistry'},
-    {'id': 'sub_mathematics', 'name': 'Mathematics'},
-    {'id': 'sub_biology', 'name': 'Biology'},
-    {'id': 'sub_english', 'name': 'English'},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    try {
+      final client = Supabase.instance.client;
+      
+      // Fetch Batches
+      final batchesData = await client.from('batches').select('id, name');
+      
+      // Fetch Subjects
+      final subjectsData = await client.from('subjects').select('id, name');
+
+      if (mounted) {
+        setState(() {
+          _batches = List<Map<String, dynamic>>.from(batchesData)
+              .map((b) => {'id': b['id'].toString(), 'name': b['name'].toString()})
+              .toList();
+          _subjects = List<Map<String, dynamic>>.from(subjectsData)
+              .map((s) => {'id': s['id'].toString(), 'name': s['name'].toString()})
+              .toList();
+          _isLoadingData = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading initial data: $e');
+      if (mounted) {
+        setState(() => _isLoadingData = false);
+        _showError('Failed to load batches/subjects. Please check database connection.');
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -140,11 +164,13 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
         backgroundColor: AppColors.teacherAccent,
         foregroundColor: Colors.white,
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+      body: _isLoadingData 
+        ? const Center(child: CircularProgressIndicator())
+        : Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
             // Exam Title
             TextFormField(
               controller: _titleController,

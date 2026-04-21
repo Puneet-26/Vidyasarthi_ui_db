@@ -725,7 +725,7 @@ class _BroadcastNoticesSheetState extends State<_BroadcastNoticesSheet> {
                                           color: AppColors.textMid,
                                           height: 1.5)),
                                   const SizedBox(height: 8),
-                                  Text('From: Admin • ${n.targetAudience}',
+                                  Text('From: ${n.sentBy} • ${n.targetAudience}',
                                       style: TextStyle(fontSize: 11, color: Colors.grey[400])),
                                 ],
                               ),

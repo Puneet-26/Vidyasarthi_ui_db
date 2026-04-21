@@ -60,10 +60,15 @@ class DatabaseService {
 
   Future<Teacher?> getTeacherById(String teacherId) async {
     try {
-      final response =
-          await _client.from('teachers').select().eq('id', teacherId).single();
+      final response = await _client
+          .from('users')
+          .select()
+          .eq('id', teacherId)
+          .eq('role', 'teacher')
+          .single();
       return _teacherFromRow(response);
     } catch (e) {
+      debugPrint('Error fetchTeacherById: $e');
       return null;
     }
   }
@@ -72,28 +77,18 @@ class DatabaseService {
     try {
       debugPrint('Looking up teacher by email: $email');
       final response = await _client
-          .from('teachers')
+          .from('users')
           .select()
           .eq('email', email.trim().toLowerCase())
+          .eq('role', 'teacher')
           .maybeSingle();
-      
+
       if (response == null) {
-        debugPrint('Teacher not found with email: $email');
-        // Try case-insensitive search as fallback
-        final allTeachers = await _client.from('teachers').select();
-        final match = (allTeachers as List).firstWhere(
-          (t) => (t['email'] ?? '').toString().toLowerCase() == email.trim().toLowerCase(),
-          orElse: () => <String, dynamic>{},
-        );
-        if (match.isEmpty) {
-          debugPrint('Teacher not found in fallback search either');
-          return null;
-        }
-        debugPrint('Teacher found via fallback: ${match['name']}');
-        return _teacherFromRow(match);
+        debugPrint('Teacher not found with email: $email in users table');
+        return null;
       }
-      
-      debugPrint('Teacher found: ${response['name']}');
+
+      debugPrint('Teacher found in users table: ${response['name']}');
       return _teacherFromRow(response);
     } catch (e) {
       debugPrint('Error fetching teacher by email: $e');
@@ -105,15 +100,18 @@ class DatabaseService {
   Teacher _teacherFromRow(Map<String, dynamic> d) {
     List<String> parseList(dynamic val) {
       if (val is List) return List<String>.from(val);
-      if (val is String && val.isNotEmpty) return val.split(',').map((e) => e.trim()).toList();
+      if (val is String && val.isNotEmpty)
+        return val.split(',').map((e) => e.trim()).toList();
       return [];
     }
+
     return Teacher(
       id: d['id']?.toString() ?? '',
       userId: d['user_id']?.toString() ?? d['id']?.toString() ?? '',
       name: d['name']?.toString() ?? '',
       email: d['email']?.toString() ?? '',
-      phoneNumber: d['phone']?.toString() ?? d['phone_number']?.toString() ?? '',
+      phoneNumber:
+          d['phone']?.toString() ?? d['phone_number']?.toString() ?? '',
       employeeId: d['employee_id']?.toString() ?? '',
       subjects: parseList(d['subjects']),
       classes: parseList(d['classes']),
@@ -122,10 +120,13 @@ class DatabaseService {
       qualification: d['qualification']?.toString(),
       experienceYears: (d['experience_years'] as num?)?.toInt() ?? 0,
       salary: (d['salary'] as num?)?.toDouble() ?? 0.0,
-      joiningDate: d['joining_date'] != null ? DateTime.tryParse(d['joining_date'].toString()) : null,
+      joiningDate: d['joining_date'] != null
+          ? DateTime.tryParse(d['joining_date'].toString())
+          : null,
       specialization: d['specialization']?.toString(),
       isActive: d['is_active'] as bool? ?? true,
-      createdAt: DateTime.tryParse(d['created_at']?.toString() ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(d['created_at']?.toString() ?? '') ??
+          DateTime.now(),
     );
   }
 
@@ -163,7 +164,7 @@ class DatabaseService {
 
   // Helper: build Student from a students-table row (name/email stored directly)
   Student studentFromRow(Map<String, dynamic> d) => _studentFromRow(d);
-  
+
   Student _studentFromRow(Map<String, dynamic> d) {
     return Student(
       id: d['id'] ?? '',
@@ -176,14 +177,19 @@ class DatabaseService {
       parentPhone: d['parent_phone'] ?? '',
       batchId: d['batch_id'] ?? '',
       rollNumber: d['roll_number'] ?? '',
-      dateOfBirth: DateTime.tryParse(d['date_of_birth'] ?? '') ?? DateTime.now(),
+      dateOfBirth:
+          DateTime.tryParse(d['date_of_birth'] ?? '') ?? DateTime.now(),
       address: d['address'] ?? '',
-      admissionDate: DateTime.tryParse(d['admission_date'] ?? '') ?? DateTime.now(),
-      enrollmentDate: DateTime.tryParse(d['enrollment_date'] ?? d['admission_date'] ?? '') ?? DateTime.now(),
+      admissionDate:
+          DateTime.tryParse(d['admission_date'] ?? '') ?? DateTime.now(),
+      enrollmentDate: DateTime.tryParse(
+              d['enrollment_date'] ?? d['admission_date'] ?? '') ??
+          DateTime.now(),
       totalFees: (d['total_fees'] ?? 0).toDouble(),
       feesPaid: (d['fees_paid'] ?? 0).toDouble(),
       feeStatus: d['fee_status'] ?? 'pending',
-      enrollmentStatus: d['enrollment_status'] ?? d['enrollment_st'] ?? 'active',
+      enrollmentStatus:
+          d['enrollment_status'] ?? d['enrollment_st'] ?? 'active',
       isActive: d['is_active'] ?? true,
       subjectIds: [],
       studentClass: d['class'],
@@ -374,7 +380,8 @@ class DatabaseService {
         });
         debugPrint('✓ Student auth credentials created');
       } catch (e) {
-        debugPrint('Student auth credentials may already exist, continuing: $e');
+        debugPrint(
+            'Student auth credentials may already exist, continuing: $e');
       }
 
       // 2. Create parent auth credentials (skip if already exists)
@@ -396,7 +403,7 @@ class DatabaseService {
       // This format is used by getStudentsByParentEmail() to filter students
       // DO NOT CHANGE without updating the filtering logic
       final parentNameWithEmail = '$parentName ($parentEmail)';
-      
+
       // Only insert columns that actually exist in the students table
       final studentData = <String, dynamic>{
         'name': name,
@@ -406,17 +413,22 @@ class DatabaseService {
         'parent_phone': parentPhone,
         'enrollment_status': 'active',
       };
-      
+
       // batch_id is uuid type - only add if valid
       if (batchId.isNotEmpty) studentData['batch_id'] = batchId;
       if (selectedClass != null) studentData['class'] = selectedClass;
       if (selectedBoard != null) studentData['board'] = selectedBoard;
       if (totalFees != null) studentData['total_fees'] = totalFees;
       if (feesPaid != null) studentData['fees_paid'] = feesPaid;
-      if (admissionDate != null) studentData['admission_date'] = admissionDate.toIso8601String().split('T')[0];
-      if (dateOfBirth != null) studentData['date_of_birth'] = dateOfBirth.toIso8601String().split('T')[0];
-      if (address != null && address.isNotEmpty) studentData['address'] = address;
-      
+      if (admissionDate != null)
+        studentData['admission_date'] =
+            admissionDate.toIso8601String().split('T')[0];
+      if (dateOfBirth != null)
+        studentData['date_of_birth'] =
+            dateOfBirth.toIso8601String().split('T')[0];
+      if (address != null && address.isNotEmpty)
+        studentData['address'] = address;
+
       await _client.from('students').insert(studentData);
       debugPrint('✓ Student record created');
 
@@ -451,7 +463,8 @@ class DatabaseService {
       debugPrint('Adding teacher: $name');
 
       // 1. Auto-generate email from name
-      final email = name.toLowerCase().trim().replaceAll(' ', '.') + '@teachers.com';
+      final email =
+          name.toLowerCase().trim().replaceAll(' ', '.') + '@teachers.com';
       final employeeId = 'EMP${DateTime.now().millisecondsSinceEpoch}';
 
       // 2. Create teacher auth credentials (skip if already exists)
@@ -465,7 +478,8 @@ class DatabaseService {
         });
         debugPrint('✓ Teacher auth credentials created');
       } catch (e) {
-        debugPrint('Teacher auth credentials may already exist, continuing: $e');
+        debugPrint(
+            'Teacher auth credentials may already exist, continuing: $e');
       }
 
       // 3. Insert into teachers table
@@ -480,14 +494,17 @@ class DatabaseService {
         'board': board,
         'is_active': true,
       };
-      
+
       if (batchId != null) teacherData['batch_id'] = batchId;
       if (qualification != null) teacherData['qualification'] = qualification;
-      if (experienceYears > 0) teacherData['experience_years'] = experienceYears;
+      if (experienceYears > 0)
+        teacherData['experience_years'] = experienceYears;
       if (salary > 0) teacherData['salary'] = salary;
-      if (joiningDate != null) teacherData['joining_date'] = joiningDate.toIso8601String().split('T')[0];
+      if (joiningDate != null)
+        teacherData['joining_date'] =
+            joiningDate.toIso8601String().split('T')[0];
       if (subjects.isNotEmpty) teacherData['specialization'] = subjects[0];
-      
+
       await _client.from('teachers').insert(teacherData);
       debugPrint('✓ Teacher record created');
 
@@ -752,12 +769,12 @@ class DatabaseService {
           .from('students')
           .select()
           .ilike('parent_name', '%$parentEmail%');
-      
+
       if (response == null || (response as List).isEmpty) {
         debugPrint('No students found for parent: $parentEmail');
         return [];
       }
-      
+
       return (response as List).map((data) {
         // Calculate fee status based on actual fees
         final totalFees = (data['total_fees'] ?? 0).toDouble();
@@ -771,7 +788,8 @@ class DatabaseService {
             : 'pending';
 
         // Get class info - use class column if available, otherwise use batch_id
-        final classInfo = data['class'] ?? data['batch_id']?.toString() ?? 'N/A';
+        final classInfo =
+            data['class'] ?? data['batch_id']?.toString() ?? 'N/A';
 
         return Student(
           id: data['id']?.toString() ?? '',
@@ -788,7 +806,7 @@ class DatabaseService {
           feesPaid: feesPaid,
           feeStatus: feeStatus,
           enrollmentStatus: data['enrollment_status'] ?? 'active',
-          enrollmentDate: data['enrollment_date'] != null 
+          enrollmentDate: data['enrollment_date'] != null
               ? DateTime.parse(data['enrollment_date'])
               : (data['admission_date'] != null
                   ? DateTime.parse(data['admission_date'])
@@ -833,17 +851,18 @@ class DatabaseService {
           .from('broadcasts')
           .select()
           .order('sent_date', ascending: false);
-      
+
       final all = (response as List).map((b) => Broadcast.fromJson(b)).toList();
-      
+
       // Filter: show if target matches role OR target is 'all'
       final filtered = all.where((b) {
         final t = b.targetAudience.toLowerCase().trim();
         final r = role.toLowerCase().trim();
         return t == 'all' || t == r;
       }).toList();
-      
-      debugPrint('Found ${filtered.length} broadcasts for $role (total: ${all.length})');
+
+      debugPrint(
+          'Found ${filtered.length} broadcasts for $role (total: ${all.length})');
       return filtered;
     } catch (e) {
       debugPrint('Error fetching broadcasts for $role: $e');
@@ -945,7 +964,7 @@ class DatabaseService {
   }
 
   // ==================== ANONYMOUS FEEDBACK ====================
-  
+
   /// Get all teachers for feedback selection
   Future<List<Map<String, String>>> getAllTeachersForFeedback() async {
     try {
@@ -955,41 +974,23 @@ class DatabaseService {
           .select('id, name, email')
           .eq('role', 'teacher')
           .order('name');
-      
+
       final users = usersResponse as List;
-      
+
       // Then get teacher details for each user
       final List<Map<String, String>> teachersWithSubjects = [];
-      
+
       for (var user in users) {
-        try {
-          final teacherResponse = await _client
-              .from('teachers')
-              .select('specialization')
-              .eq('user_id', user['id'])
-              .maybeSingle();
-          
-          final specialization = teacherResponse != null 
-              ? (teacherResponse['specialization'] as String? ?? 'General')
-              : 'General';
-          
-          teachersWithSubjects.add({
-            'id': user['id'] as String,
-            'name': user['name'] as String,
-            'email': user['email'] as String,
-            'subject': specialization,
-          });
-        } catch (e) {
-          // If teacher details not found, add with default subject
-          teachersWithSubjects.add({
-            'id': user['id'] as String,
-            'name': user['name'] as String,
-            'email': user['email'] as String,
-            'subject': 'General',
-          });
-        }
+        // Fallback to 'General' as we are not querying a non-existent 'teachers' table
+        teachersWithSubjects.add({
+          'id': user['id'].toString(),
+          'name': user['name'] as String,
+          'email': user['email'] as String,
+          'subject':
+              'Faculty', // Minimal fallback that doesn't rely on missing table
+        });
       }
-      
+
       return teachersWithSubjects;
     } catch (e) {
       debugPrint('Error fetching teachers: $e');
@@ -1017,7 +1018,7 @@ class DatabaseService {
           .select()
           .eq('status', 'pending')
           .order('submitted_at', ascending: false);
-      
+
       return (response as List)
           .map((f) => AnonymousFeedback.fromJson(f))
           .toList();
@@ -1034,7 +1035,7 @@ class DatabaseService {
           .from('anonymous_feedback')
           .select()
           .order('submitted_at', ascending: false);
-      
+
       return (response as List)
           .map((f) => AnonymousFeedback.fromJson(f))
           .toList();
@@ -1045,7 +1046,8 @@ class DatabaseService {
   }
 
   /// Approve feedback (admin action)
-  Future<bool> approveFeedback(String feedbackId, String adminId, String? notes) async {
+  Future<bool> approveFeedback(
+      String feedbackId, String adminId, String? notes) async {
     try {
       await _client.from('anonymous_feedback').update({
         'status': 'approved',
@@ -1053,7 +1055,7 @@ class DatabaseService {
         'reviewed_at': DateTime.now().toIso8601String(),
         'admin_notes': notes,
       }).eq('id', feedbackId);
-      
+
       debugPrint('✓ Feedback approved');
       return true;
     } catch (e) {
@@ -1063,7 +1065,8 @@ class DatabaseService {
   }
 
   /// Reject feedback (admin action)
-  Future<bool> rejectFeedback(String feedbackId, String adminId, String? notes) async {
+  Future<bool> rejectFeedback(
+      String feedbackId, String adminId, String? notes) async {
     try {
       await _client.from('anonymous_feedback').update({
         'status': 'rejected',
@@ -1071,7 +1074,7 @@ class DatabaseService {
         'reviewed_at': DateTime.now().toIso8601String(),
         'admin_notes': notes,
       }).eq('id', feedbackId);
-      
+
       debugPrint('✓ Feedback rejected');
       return true;
     } catch (e) {
@@ -1081,7 +1084,8 @@ class DatabaseService {
   }
 
   /// Get approved feedback for a specific teacher
-  Future<List<AnonymousFeedback>> getApprovedFeedbackForTeacher(String teacherId) async {
+  Future<List<AnonymousFeedback>> getApprovedFeedbackForTeacher(
+      String teacherId) async {
     try {
       final response = await _client
           .from('anonymous_feedback')
@@ -1089,7 +1093,7 @@ class DatabaseService {
           .eq('teacher_id', teacherId)
           .eq('status', 'approved')
           .order('submitted_at', ascending: false);
-      
+
       return (response as List)
           .map((f) => AnonymousFeedback.fromJson(f))
           .toList();
@@ -1106,7 +1110,7 @@ class DatabaseService {
         'is_read_by_teacher': true,
         'read_at': DateTime.now().toIso8601String(),
       }).eq('id', feedbackId);
-      
+
       return true;
     } catch (e) {
       debugPrint('Error marking feedback as read: $e');
@@ -1115,7 +1119,8 @@ class DatabaseService {
   }
 
   /// Get feedback submitted by a specific user (for tracking their own submissions)
-  Future<List<AnonymousFeedback>> getMySubmittedFeedback(String senderId, String senderRole) async {
+  Future<List<AnonymousFeedback>> getMySubmittedFeedback(
+      String senderId, String senderRole) async {
     try {
       final response = await _client
           .from('anonymous_feedback')
@@ -1123,13 +1128,468 @@ class DatabaseService {
           .eq('sender_id', senderId)
           .eq('sender_role', senderRole)
           .order('submitted_at', ascending: false);
-      
+
       return (response as List)
           .map((f) => AnonymousFeedback.fromJson(f))
           .toList();
     } catch (e) {
       debugPrint('Error fetching my feedback: $e');
       return [];
+    }
+  }
+
+  // ==================== ADMIN DASHBOARD STATS ====================
+
+  /// Fetch all key stats for the admin dashboard in a single call.
+  /// Returns a map with counts and percentages derived from live DB data.
+  Future<Map<String, dynamic>> getAdminDashboardStats() async {
+    try {
+      final results = await Future.wait([
+        _client
+            .from('students')
+            .select('id, enrollment_status, total_fees, fees_paid'),
+        _client.from('teachers').select('id, is_active'),
+        _client.from('batches').select('id'),
+        _client.from('attendance').select('status').gte(
+            'date',
+            DateTime.now()
+                .subtract(const Duration(days: 30))
+                .toIso8601String()
+                .split('T')[0]),
+        _client
+            .from('broadcasts')
+            .select('id')
+            .order('sent_date', ascending: false)
+            .limit(5),
+      ]);
+
+      final students = results[0] as List;
+      final teachers = results[1] as List;
+      final batches = results[2] as List;
+      final attendance = results[3] as List;
+
+      final totalStudents = students.length;
+      final activeStudents =
+          students.where((s) => s['enrollment_status'] == 'active').length;
+      final totalTeachers = teachers.length;
+      final activeTeachers =
+          teachers.where((t) => t['is_active'] == true).length;
+      final totalBatches = batches.length;
+
+      // Fee stats
+      int feePending = 0;
+      double totalFeesSum = 0;
+      double feesPaidSum = 0;
+      for (final s in students) {
+        final total = (s['total_fees'] ?? 0).toDouble();
+        final paid = (s['fees_paid'] ?? 0).toDouble();
+        totalFeesSum += total;
+        feesPaidSum += paid;
+        if (total > paid) feePending++;
+      }
+
+      // Attendance percentage (last 30 days)
+      double attendancePct = 0;
+      if (attendance.isNotEmpty) {
+        final present =
+            attendance.where((a) => a['status'] == 'present').length;
+        attendancePct = (present / attendance.length) * 100;
+      }
+
+      return {
+        'total_students': totalStudents,
+        'active_students': activeStudents,
+        'total_teachers': totalTeachers,
+        'active_teachers': activeTeachers,
+        'total_batches': totalBatches,
+        'fee_pending_count': feePending,
+        'total_fees': totalFeesSum,
+        'fees_paid': feesPaidSum,
+        'attendance_pct': attendancePct.toStringAsFixed(1),
+      };
+    } catch (e) {
+      debugPrint('Error fetching admin dashboard stats: $e');
+      return {
+        'total_students': 0,
+        'active_students': 0,
+        'total_teachers': 0,
+        'active_teachers': 0,
+        'total_batches': 0,
+        'fee_pending_count': 0,
+        'total_fees': 0.0,
+        'fees_paid': 0.0,
+        'attendance_pct': '0.0',
+      };
+    }
+  }
+
+  /// Fetch recent activity log entries from multiple tables.
+  /// Returns a unified list sorted by timestamp descending.
+  Future<List<Map<String, dynamic>>> getRecentActivityLog(
+      {int limit = 20}) async {
+    final activities = <Map<String, dynamic>>[];
+
+    try {
+      // Recent students (admissions)
+      final recentStudents = await _client
+          .from('students')
+          .select('name, created_at, enrollment_status')
+          .order('created_at', ascending: false)
+          .limit(5);
+      for (final s in recentStudents as List) {
+        final createdAt = s['created_at'];
+        if (createdAt != null) {
+          activities.add({
+            'type': 'student_added',
+            'title': 'New Student Enrolled',
+            'desc': '${s['name']} joined as a student',
+            'time': createdAt.toString(),
+            'icon': 'person_add',
+            'color': 'success',
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Activity log - students error: $e');
+    }
+
+    try {
+      // Recent teachers
+      final recentTeachers = await _client
+          .from('teachers')
+          .select('name, created_at')
+          .order('created_at', ascending: false)
+          .limit(3);
+      for (final t in recentTeachers as List) {
+        final createdAt = t['created_at'];
+        if (createdAt != null) {
+          activities.add({
+            'type': 'teacher_added',
+            'title': 'Teacher Onboarded',
+            'desc': '${t['name']} joined the teaching staff',
+            'time': createdAt.toString(),
+            'icon': 'school',
+            'color': 'teacher',
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Activity log - teachers error: $e');
+    }
+
+    try {
+      // Recent fee payments
+      final recentFees = await _client
+          .from('fee_payments')
+          .select('amount, payment_date, student_id')
+          .order('payment_date', ascending: false)
+          .limit(5);
+      for (final f in recentFees as List) {
+        final payDate = f['payment_date'];
+        if (payDate != null) {
+          activities.add({
+            'type': 'fee_payment',
+            'title': 'Fee Payment Received',
+            'desc': '₹${f['amount']} payment recorded',
+            'time': payDate.toString(),
+            'icon': 'payment',
+            'color': 'warning',
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Activity log - fees error: $e');
+    }
+
+    try {
+      // Recent broadcasts
+      final recentBroadcasts = await _client
+          .from('broadcasts')
+          .select('title, sent_date, sent_by, target_audience')
+          .order('sent_date', ascending: false)
+          .limit(5);
+      for (final b in recentBroadcasts as List) {
+        final sentDate = b['sent_date'];
+        if (sentDate != null) {
+          activities.add({
+            'type': 'notice_sent',
+            'title': 'Notice Published',
+            'desc': '${b['title']} sent to ${b['target_audience']}',
+            'time': sentDate.toString(),
+            'icon': 'campaign',
+            'color': 'info',
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Activity log - broadcasts error: $e');
+    }
+
+    // Sort by time descending
+    activities.sort((a, b) {
+      try {
+        final ta = DateTime.parse(a['time']);
+        final tb = DateTime.parse(b['time']);
+        return tb.compareTo(ta);
+      } catch (_) {
+        return 0;
+      }
+    });
+
+    return activities.take(limit).toList();
+  }
+
+  /// Get attendance summary per batch for admin dashboard.
+  Future<List<Map<String, dynamic>>> getBatchAttendanceSummaries() async {
+    try {
+      final batches = await getAllBatches();
+      final today = DateTime.now();
+      final monthStart = DateTime(today.year, today.month, 1);
+
+      final summaries = <Map<String, dynamic>>[];
+      for (final batch in batches) {
+        try {
+          final response = await _client
+              .from('attendance')
+              .select('status')
+              .eq('batch_id', batch.id)
+              .gte('date', monthStart.toIso8601String().split('T')[0]);
+
+          final records = response as List;
+          final present = records.where((r) => r['status'] == 'present').length;
+          final total = records.length;
+          final pct = total > 0 ? (present / total) : 0.0;
+
+          summaries.add({
+            'batch_id': batch.id,
+            'batch_name': batch.name,
+            'attendance_pct': pct,
+            'present': present,
+            'total': total,
+          });
+        } catch (_) {}
+      }
+      return summaries;
+    } catch (e) {
+      debugPrint('Error fetching batch attendance summaries: $e');
+      return [];
+    }
+  }
+
+  /// Get student performance summary per batch (average marks).
+  Future<List<Map<String, dynamic>>> getBatchPerformanceSummaries() async {
+    try {
+      final batches = await getAllBatches();
+      final summaries = <Map<String, dynamic>>[];
+
+      for (final batch in batches) {
+        try {
+          final response = await _client
+              .from('test_results')
+              .select('percentage')
+              .not('percentage', 'is', null);
+
+          final records = response as List;
+          if (records.isEmpty) continue;
+
+          double total = 0;
+          for (final r in records) {
+            total += (r['percentage'] ?? 0).toDouble();
+          }
+          final avg = total / records.length;
+
+          summaries.add({
+            'batch_id': batch.id,
+            'batch_name': batch.name,
+            'avg_score': avg,
+          });
+        } catch (_) {}
+      }
+
+      summaries.sort((a, b) =>
+          (b['avg_score'] as double).compareTo(a['avg_score'] as double));
+      return summaries;
+    } catch (e) {
+      debugPrint('Error fetching batch performance summaries: $e');
+      return [];
+    }
+  }
+
+  // ==================== TEACHER STATS ====================
+
+  /// Get attendance summary for a teacher's batches.
+  Future<Map<String, dynamic>> getTeacherAttendanceSummary(
+      String teacherEmail) async {
+    try {
+      // Find teacher record
+      final teacherRow = await _client
+          .from('teachers')
+          .select('id, batch_id, classes')
+          .eq('email', teacherEmail.toLowerCase())
+          .maybeSingle();
+
+      if (teacherRow == null) {
+        return {'total_marked': 0, 'this_month': 0, 'batches': []};
+      }
+
+      final batchId = teacherRow['batch_id']?.toString();
+      if (batchId == null || batchId.isEmpty) {
+        return {'total_marked': 0, 'this_month': 0, 'batches': []};
+      }
+
+      final today = DateTime.now();
+      final monthStart = DateTime(today.year, today.month, 1);
+
+      final response = await _client
+          .from('attendance')
+          .select('date, status')
+          .eq('batch_id', batchId)
+          .gte('date', monthStart.toIso8601String().split('T')[0]);
+
+      final records = response as List;
+      final present = records.where((r) => r['status'] == 'present').length;
+      final total = records.length;
+      final pct =
+          total > 0 ? (present / total * 100).toStringAsFixed(1) : '0.0';
+
+      return {
+        'total_marked': total,
+        'present': present,
+        'absent': total - present,
+        'percentage': pct,
+        'batch_id': batchId,
+      };
+    } catch (e) {
+      debugPrint('Error fetching teacher attendance summary: $e');
+      return {'total_marked': 0, 'this_month': 0, 'batches': []};
+    }
+  }
+
+  /// Get real classes/batches for a teacher.
+  Future<List<Map<String, dynamic>>> getTeacherClasses(
+      String teacherEmail) async {
+    try {
+      final teacherRow = await _client
+          .from('teachers')
+          .select('id, batch_id, subjects, classes, name')
+          .eq('email', teacherEmail.toLowerCase())
+          .maybeSingle();
+
+      if (teacherRow == null) return [];
+
+      final batchId = teacherRow['batch_id']?.toString();
+      if (batchId == null || batchId.isEmpty) return [];
+
+      // Get batch info
+      final batchRow = await _client
+          .from('batches')
+          .select('id, batch_name')
+          .eq('id', batchId)
+          .maybeSingle();
+
+      final batchName = batchRow?['batch_name']?.toString() ?? batchId;
+
+      // Get student count
+      final studentsResp = await _client
+          .from('students')
+          .select('id')
+          .eq('batch_id', batchId)
+          .eq('enrollment_status', 'active');
+
+      final studentCount = (studentsResp as List).length;
+
+      // Parse subjects
+      List<String> subjects = [];
+      final rawSubjects = teacherRow['subjects'];
+      if (rawSubjects is List) {
+        subjects = List<String>.from(rawSubjects);
+      } else if (rawSubjects is String && rawSubjects.isNotEmpty) {
+        subjects = rawSubjects.split(',').map((s) => s.trim()).toList();
+      }
+
+      return [
+        {
+          'batch_id': batchId,
+          'batch_name': batchName,
+          'subject': subjects.isNotEmpty ? subjects.first : 'General',
+          'student_count': studentCount,
+          'teacher_id': teacherRow['id']?.toString() ?? '',
+        }
+      ];
+    } catch (e) {
+      debugPrint('Error fetching teacher classes: $e');
+      return [];
+    }
+  }
+
+  // ==================== STUDENT PERFORMANCE ====================
+
+  /// Get subject-wise performance for a student based on test results.
+  Future<List<Map<String, dynamic>>> getStudentSubjectPerformance(
+      String studentId) async {
+    try {
+      // Get all test results for this student with test info
+      final response = await _client
+          .from('test_results')
+          .select(
+              'percentage, marks_obtained, max_marks, tests!inner(subject_id, title)')
+          .eq('student_id', studentId);
+
+      final records = response as List;
+      if (records.isEmpty) return [];
+
+      // Group by subject_id
+      final Map<String, List<double>> subjectPercentages = {};
+      for (final r in records) {
+        final subjectId = r['tests']?['subject_id']?.toString() ?? 'unknown';
+        final pct = (r['percentage'] ?? 0).toDouble();
+        subjectPercentages.putIfAbsent(subjectId, () => []).add(pct);
+      }
+
+      // Get subject names
+      final subjects = await getAllSubjects();
+      final subjectMap = {for (final s in subjects) s.id: s.name};
+
+      final result = <Map<String, dynamic>>[];
+      subjectPercentages.forEach((subjectId, percentages) {
+        final avg = percentages.reduce((a, b) => a + b) / percentages.length;
+        result.add({
+          'subject_id': subjectId,
+          'subject_name': subjectMap[subjectId] ?? subjectId,
+          'avg_percentage': avg,
+          'test_count': percentages.length,
+        });
+      });
+
+      result.sort((a, b) => (b['avg_percentage'] as double)
+          .compareTo(a['avg_percentage'] as double));
+      return result;
+    } catch (e) {
+      debugPrint('Error fetching student subject performance: $e');
+      return [];
+    }
+  }
+
+  /// Get student attendance percentage for current month.
+  Future<String> getStudentAttendancePercentage(String studentId) async {
+    try {
+      final today = DateTime.now();
+      final monthStart = DateTime(today.year, today.month, 1);
+
+      final response = await _client
+          .from('attendance')
+          .select('status')
+          .eq('student_id', studentId)
+          .gte('date', monthStart.toIso8601String().split('T')[0]);
+
+      final records = response as List;
+      if (records.isEmpty) return '0.0';
+
+      final present = records.where((r) => r['status'] == 'present').length;
+      return (present / records.length * 100).toStringAsFixed(1);
+    } catch (e) {
+      debugPrint('Error fetching student attendance percentage: $e');
+      return '0.0';
     }
   }
 }

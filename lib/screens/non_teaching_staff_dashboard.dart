@@ -618,6 +618,11 @@ class _NewAdmissionScreenState extends State<_NewAdmissionScreen> {
         feeStatus: 'pending',
         enrollmentStatus: 'active',
         enrollmentDate: DateTime.now(),
+        rollNumber: 'TMP-${DateTime.now().millisecondsSinceEpoch}',
+        dateOfBirth: DateTime.now(),
+        address: '',
+        admissionDate: DateTime.now(),
+        isActive: true,
       );
       final ok = await _dbService.createStudent(student);
       if (!ok) throw Exception('Failed to save student record');

@@ -724,7 +724,7 @@ class Broadcast {
       id: json['id'] ?? '',
       title: json['title'] ?? '',
       message: json['message'] ?? '',
-      sentBy: 'Admin', // sent_by is a UUID in DB, always show 'Admin'
+      sentBy: json['sent_by']?.toString() ?? 'System',
       sentDate:
           DateTime.parse(json['sent_date'] ?? DateTime.now().toIso8601String()),
       targetAudience: json['target_audience'] ?? 'all',

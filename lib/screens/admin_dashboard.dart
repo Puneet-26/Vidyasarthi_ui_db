@@ -4,6 +4,7 @@ import '../widgets/shared_widgets.dart';
 import '../services/database_service.dart';
 import '../models/models.dart';
 import 'login_screen.dart';
+import 'non_teaching_staff_dashboard.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -87,7 +88,82 @@ void _showNotificationsSheet(BuildContext context) {
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
-    builder: (_) => DraggableScrollableSheet(
+    builder: (_) => _AdminNotificationsSheet(),
+  );
+}
+
+class _AdminNotificationsSheet extends StatefulWidget {
+  @override
+  State<_AdminNotificationsSheet> createState() =>
+      _AdminNotificationsSheetState();
+}
+
+class _AdminNotificationsSheetState extends State<_AdminNotificationsSheet> {
+  final _db = DatabaseService();
+  List<Map<String, dynamic>> _activities = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final activities = await _db.getRecentActivityLog(limit: 15);
+    if (mounted)
+      setState(() {
+        _activities = activities;
+        _loading = false;
+      });
+  }
+
+  String _timeAgo(String isoString) {
+    try {
+      final dt = DateTime.parse(isoString).toLocal();
+      final diff = DateTime.now().difference(dt);
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${dt.day}/${dt.month}/${dt.year}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  IconData _icon(String type) {
+    switch (type) {
+      case 'student_added':
+        return Icons.person_add_rounded;
+      case 'teacher_added':
+        return Icons.school_rounded;
+      case 'fee_payment':
+        return Icons.account_balance_wallet_rounded;
+      case 'notice_sent':
+        return Icons.campaign_rounded;
+      default:
+        return Icons.info_rounded;
+    }
+  }
+
+  Color _color(String colorKey) {
+    switch (colorKey) {
+      case 'success':
+        return AppColors.success;
+      case 'teacher':
+        return AppColors.teacherAccent;
+      case 'warning':
+        return AppColors.warning;
+      case 'info':
+        return AppColors.info;
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
       initialChildSize: 0.55,
       minChildSize: 0.4,
       maxChildSize: 0.85,
@@ -111,52 +187,74 @@ void _showNotificationsSheet(BuildContext context) {
               ),
             ),
             const SizedBox(height: 20),
-            const Text('Alerts & Notices',
+            const Text('Recent Activity',
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textDark)),
             const SizedBox(height: 16),
             Expanded(
-              child: ListView(
-                controller: scrollController,
-                children: const [
-                  _NotificationItem(
-                    title: 'Fee Reminder',
-                    desc: '45 parents have pending Q4 fees',
-                    time: '1 hour ago',
-                    icon: Icons.account_balance_wallet_rounded,
-                    color: AppColors.warning,
-                  ),
-                  _NotificationItem(
-                    title: 'New Admission',
-                    desc: 'Rohan Mehta application pending approval',
-                    time: '3 hours ago',
-                    icon: Icons.person_add_rounded,
-                    color: AppColors.primary,
-                  ),
-                  _NotificationItem(
-                    title: 'Timetable Conflict',
-                    desc: '2 scheduling conflicts detected in Class 10',
-                    time: '5 hours ago',
-                    icon: Icons.warning_rounded,
-                    color: AppColors.error,
-                  ),
-                  _NotificationItem(
-                    title: 'New Teacher Onboarded',
-                    desc: 'Ms. Kavita Singh joined as Science teacher',
-                    time: '2 days ago',
-                    icon: Icons.person_rounded,
-                    color: AppColors.success,
-                  ),
-                ],
-              ),
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _activities.isEmpty
+                      ? const Center(
+                          child: Text('No recent activity.',
+                              style: TextStyle(color: AppColors.textLight)))
+                      : ListView.separated(
+                          controller: scrollController,
+                          itemCount: _activities.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (_, i) {
+                            final a = _activities[i];
+                            final color = _color(a['color'] ?? '');
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: color.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(_icon(a['type'] ?? ''),
+                                      color: color, size: 20),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(a['title'] ?? '',
+                                          style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.textDark)),
+                                      const SizedBox(height: 2),
+                                      Text(a['desc'] ?? '',
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              color: AppColors.textLight)),
+                                      const SizedBox(height: 4),
+                                      Text(_timeAgo(a['time'] ?? ''),
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              color: color,
+                                              fontWeight: FontWeight.w500)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
             ),
           ],
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _NotificationItem extends StatelessWidget {
@@ -218,58 +316,364 @@ class _NotificationItem extends StatelessWidget {
   }
 }
 
-class _DashboardTab extends StatelessWidget {
+class _DashboardTab extends StatefulWidget {
+  @override
+  State<_DashboardTab> createState() => _DashboardTabState();
+}
+
+class _DashboardTabState extends State<_DashboardTab> {
+  final _db = DatabaseService();
+  Map<String, dynamic> _stats = {};
+  List<Map<String, dynamic>> _batchAttendance = [];
+  List<Map<String, dynamic>> _batchPerformance = [];
+  List<Map<String, dynamic>> _activityLog = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData() async {
+    setState(() => _loading = true);
+    final results = await Future.wait([
+      _db.getAdminDashboardStats(),
+      _db.getBatchAttendanceSummaries(),
+      _db.getBatchPerformanceSummaries(),
+      _db.getRecentActivityLog(limit: 5),
+    ]);
+    if (mounted) {
+      setState(() {
+        _stats = results[0] as Map<String, dynamic>;
+        _batchAttendance = results[1] as List<Map<String, dynamic>>;
+        _batchPerformance = results[2] as List<Map<String, dynamic>>;
+        _activityLog = results[3] as List<Map<String, dynamic>>;
+        _loading = false;
+      });
+    }
+  }
+
+  String _timeAgo(String isoString) {
+    try {
+      final dt = DateTime.parse(isoString).toLocal();
+      final diff = DateTime.now().difference(dt);
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${dt.day}/${dt.month}/${dt.year}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  IconData _activityIcon(String type) {
+    switch (type) {
+      case 'student_added':
+        return Icons.person_add_rounded;
+      case 'teacher_added':
+        return Icons.school_rounded;
+      case 'fee_payment':
+        return Icons.payment_rounded;
+      case 'notice_sent':
+        return Icons.campaign_rounded;
+      default:
+        return Icons.info_rounded;
+    }
+  }
+
+  Color _activityColor(String colorKey) {
+    switch (colorKey) {
+      case 'success':
+        return AppColors.success;
+      case 'teacher':
+        return AppColors.teacherAccent;
+      case 'warning':
+        return AppColors.warning;
+      case 'info':
+        return AppColors.info;
+      default:
+        return AppColors.primary;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          DashboardHeader(
-            name: 'Admin',
-            role: 'ADMIN',
-            roleColor: AppColors.adminAccent,
-            notificationCount: 8,
-            onNotification: () => _showNotificationsSheet(context),
-          ),
-          const SizedBox(height: 24),
-          _SchoolSummaryBanner(),
-          const SizedBox(height: 24),
-          const SectionHeader(
-              title: 'Department Attendance', action: 'Full Report'),
-          const SizedBox(height: 14),
-          const GlassCard(
-            child: Column(
-              children: [
-                LabeledProgressBar(
-                    label: 'Primary (Std 1-5)',
-                    value: 0.96,
-                    color: AppColors.success),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'Middle (Std 6-8)',
-                    value: 0.91,
-                    color: AppColors.primary),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'Secondary (Std 9-10)',
-                    value: 0.88,
-                    color: AppColors.teacherAccent),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'Senior (Std 11-12)',
-                    value: 0.94,
-                    color: AppColors.warning),
-              ],
+    final totalStudents = _stats['total_students'] ?? 0;
+    final totalTeachers = _stats['total_teachers'] ?? 0;
+    final totalBatches = _stats['total_batches'] ?? 0;
+    final feePending = _stats['fee_pending_count'] ?? 0;
+    final attendancePct = _stats['attendance_pct'] ?? '0.0';
+
+    return RefreshIndicator(
+      onRefresh: _loadDashboardData,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DashboardHeader(
+              name: 'Admin',
+              role: 'ADMIN',
+              roleColor: AppColors.adminAccent,
+              notificationCount: _loading ? 0 : feePending,
+              onNotification: () => _showNotificationsSheet(context),
             ),
-          ),
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Top Performing Classes'),
-          const SizedBox(height: 14),
-          _TopClassesList(),
-          const SizedBox(height: 80),
-        ],
+            const SizedBox(height: 24),
+            _SchoolSummaryBannerLive(
+              totalStudents: totalStudents,
+              totalTeachers: totalTeachers,
+              totalBatches: totalBatches,
+              loading: _loading,
+            ),
+            const SizedBox(height: 24),
+
+            // Key Stats Row
+            if (_loading)
+              const Center(child: CircularProgressIndicator())
+            else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: StatCard(
+                      title: 'Total Students',
+                      value: '$totalStudents',
+                      icon: Icons.school_rounded,
+                      color: AppColors.primary,
+                      subtitle: 'Enrolled',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: StatCard(
+                      title: 'Total Teachers',
+                      value: '$totalTeachers',
+                      icon: Icons.person_rounded,
+                      color: AppColors.teacherAccent,
+                      subtitle: 'Active',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: StatCard(
+                      title: 'Attendance',
+                      value: '$attendancePct%',
+                      icon: Icons.how_to_reg_rounded,
+                      color: AppColors.success,
+                      subtitle: 'This month',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: StatCard(
+                      title: 'Fee Pending',
+                      value: '$feePending',
+                      icon: Icons.warning_rounded,
+                      color: AppColors.warning,
+                      subtitle: 'Students',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 24),
+
+            // Batch Attendance
+            const SectionHeader(title: 'Batch Attendance (This Month)'),
+            const SizedBox(height: 14),
+            if (_loading)
+              const Center(child: CircularProgressIndicator())
+            else if (_batchAttendance.isEmpty)
+              const GlassCard(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('No attendance data yet.',
+                        style: TextStyle(color: AppColors.textMid)),
+                  ),
+                ),
+              )
+            else
+              GlassCard(
+                child: Column(
+                  children: _batchAttendance.asMap().entries.map((e) {
+                    final b = e.value;
+                    final colors = [
+                      AppColors.success,
+                      AppColors.primary,
+                      AppColors.teacherAccent,
+                      AppColors.warning,
+                      AppColors.info,
+                    ];
+                    final color = colors[e.key % colors.length];
+                    return Padding(
+                      padding: EdgeInsets.only(
+                          bottom: e.key < _batchAttendance.length - 1 ? 14 : 0),
+                      child: LabeledProgressBar(
+                        label: b['batch_name'] ?? 'Batch',
+                        value: (b['attendance_pct'] as double).clamp(0.0, 1.0),
+                        color: color,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            const SizedBox(height: 24),
+
+            // Top Performing Batches
+            const SectionHeader(title: 'Top Performing Batches'),
+            const SizedBox(height: 14),
+            if (_loading)
+              const Center(child: CircularProgressIndicator())
+            else if (_batchPerformance.isEmpty)
+              const GlassCard(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('No performance data yet.',
+                        style: TextStyle(color: AppColors.textMid)),
+                  ),
+                ),
+              )
+            else
+              GlassCard(
+                padding: const EdgeInsets.all(4),
+                child: Column(
+                  children: _batchPerformance
+                      .take(5)
+                      .toList()
+                      .asMap()
+                      .entries
+                      .map((e) {
+                    final b = e.value;
+                    final colors = [
+                      AppColors.success,
+                      AppColors.primary,
+                      AppColors.teacherAccent,
+                      AppColors.warning,
+                      AppColors.info,
+                    ];
+                    final color = colors[e.key % colors.length];
+                    final avg = (b['avg_score'] as double).toStringAsFixed(1);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        border: e.key < _batchPerformance.length - 1
+                            ? const Border(
+                                bottom: BorderSide(color: AppColors.divider))
+                            : null,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(
+                              child: Text('#${e.key + 1}',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      color: color)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(b['batch_name'] ?? 'Batch',
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textDark)),
+                          ),
+                          Text('$avg%',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: color)),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            const SizedBox(height: 24),
+
+            // Recent Activity Feed
+            const SectionHeader(title: 'Recent Activity'),
+            const SizedBox(height: 14),
+            if (_loading)
+              const Center(child: CircularProgressIndicator())
+            else if (_activityLog.isEmpty)
+              const GlassCard(
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('No recent activity.',
+                        style: TextStyle(color: AppColors.textMid)),
+                  ),
+                ),
+              )
+            else
+              ..._activityLog.map((a) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: GlassCard(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: _activityColor(a['color'] ?? '')
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              _activityIcon(a['type'] ?? ''),
+                              color: _activityColor(a['color'] ?? ''),
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(a['title'] ?? '',
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textDark)),
+                                const SizedBox(height: 2),
+                                Text(a['desc'] ?? '',
+                                    style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textMid,
+                                        height: 1.4)),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            _timeAgo(a['time'] ?? ''),
+                            style: const TextStyle(
+                                fontSize: 10, color: AppColors.textLight),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )),
+            const SizedBox(height: 80),
+          ],
+        ),
       ),
     );
   }
@@ -301,42 +705,317 @@ class _ReportsTab extends StatelessWidget {
   }
 }
 
-class _ActivitiesTab extends StatelessWidget {
+// ============================================================
+//  LIVE STAT WIDGETS
+// ============================================================
+
+class _LiveStudentStats extends StatefulWidget {
+  @override
+  State<_LiveStudentStats> createState() => _LiveStudentStatsState();
+}
+
+class _LiveStudentStatsState extends State<_LiveStudentStats> {
+  final _db = DatabaseService();
+  int _total = 0;
+  int _newThisMonth = 0;
+  String _avgAttendance = '0.0';
+  int _feePending = 0;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final stats = await _db.getAdminDashboardStats();
+    final students = await _db.getAllStudents();
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    final newThisMonth =
+        students.where((s) => s.enrollmentDate.isAfter(monthStart)).length;
+    if (mounted) {
+      setState(() {
+        _total = stats['total_students'] ?? 0;
+        _newThisMonth = newThisMonth;
+        _avgAttendance = stats['attendance_pct'] ?? '0.0';
+        _feePending = stats['fee_pending_count'] ?? 0;
+        _loading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SectionHeader(title: 'Recent Activities'),
-          SizedBox(height: 14),
-          _ActivityItem(
-            title: 'New Teacher Onboarded',
-            desc: 'Ms. Kavita Singh joined as Science teacher for Class 7',
-            time: '1 hour ago',
-            icon: Icons.person_add_rounded,
-            color: AppColors.success,
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                title: 'Total Students',
+                value: '$_total',
+                icon: Icons.school_rounded,
+                color: AppColors.primary,
+                subtitle: 'Enrolled',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: StatCard(
+                title: 'New This Month',
+                value: '$_newThisMonth',
+                icon: Icons.trending_up_rounded,
+                color: AppColors.success,
+                subtitle: 'Admissions',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                title: 'Avg Attendance',
+                value: '$_avgAttendance%',
+                icon: Icons.how_to_reg_rounded,
+                color: AppColors.info,
+                subtitle: 'This month',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: StatCard(
+                title: 'Fee Pending',
+                value: '$_feePending',
+                icon: Icons.warning_rounded,
+                color: AppColors.warning,
+                subtitle: 'Students',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _LiveTeacherStats extends StatefulWidget {
+  @override
+  State<_LiveTeacherStats> createState() => _LiveTeacherStatsState();
+}
+
+class _LiveTeacherStatsState extends State<_LiveTeacherStats> {
+  final _db = DatabaseService();
+  int _total = 0;
+  int _totalBatches = 0;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final stats = await _db.getAdminDashboardStats();
+    if (mounted) {
+      setState(() {
+        _total = stats['total_teachers'] ?? 0;
+        _totalBatches = stats['total_batches'] ?? 0;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    return Row(
+      children: [
+        Expanded(
+          child: StatCard(
+            title: 'Total Teachers',
+            value: '$_total',
+            icon: Icons.person_rounded,
+            color: AppColors.teacherAccent,
+            subtitle: 'Active',
           ),
-          SizedBox(height: 8),
-          _ActivityItem(
-            title: 'Fee Reminder Sent',
-            desc: '45 parents notified for pending Q4 fees',
-            time: '3 hours ago',
-            icon: Icons.send_rounded,
-            color: AppColors.warning,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: StatCard(
+            title: 'Total Batches',
+            value: '$_totalBatches',
+            icon: Icons.class_rounded,
+            color: AppColors.primary,
+            subtitle: 'Configured',
           ),
-          SizedBox(height: 8),
-          _ActivityItem(
-            title: 'Timetable Updated',
-            desc: 'Class 10-A timetable revised for exam preparation',
-            time: '2 days ago',
-            icon: Icons.schedule_rounded,
-            color: AppColors.adminAccent,
-          ),
-          SizedBox(height: 80),
-        ],
-      ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LiveParentStats extends StatefulWidget {
+  @override
+  State<_LiveParentStats> createState() => _LiveParentStatsState();
+}
+
+class _LiveParentStatsState extends State<_LiveParentStats> {
+  final _db = DatabaseService();
+  int _totalStudents = 0;
+  int _feePaid = 0;
+  int _feePending = 0;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final students = await _db.getAllStudents();
+    int paid = 0;
+    int pending = 0;
+    for (final s in students) {
+      if (s.totalFees > 0 && s.feesPaid >= s.totalFees) {
+        paid++;
+      } else if (s.totalFees > s.feesPaid) {
+        pending++;
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _totalStudents = students.length;
+        _feePaid = paid;
+        _feePending = pending;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                title: 'Total Students',
+                value: '$_totalStudents',
+                icon: Icons.people_rounded,
+                color: AppColors.parentAccent,
+                subtitle: 'Enrolled',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: StatCard(
+                title: 'Fees Cleared',
+                value: '$_feePaid',
+                icon: Icons.check_circle_rounded,
+                color: AppColors.success,
+                subtitle: 'Students',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                title: 'Fee Pending',
+                value: '$_feePending',
+                icon: Icons.pending_rounded,
+                color: AppColors.warning,
+                subtitle: 'Students',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _LiveParentActivity extends StatefulWidget {
+  @override
+  State<_LiveParentActivity> createState() => _LiveParentActivityState();
+}
+
+class _LiveParentActivityState extends State<_LiveParentActivity> {
+  final _db = DatabaseService();
+  List<Map<String, dynamic>> _activities = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final all = await _db.getRecentActivityLog(limit: 10);
+    final feeActivities = all.where((a) => a['type'] == 'fee_payment').toList();
+    if (mounted) {
+      setState(() {
+        _activities = feeActivities.take(5).toList();
+        _loading = false;
+      });
+    }
+  }
+
+  String _timeAgo(String isoString) {
+    try {
+      final dt = DateTime.parse(isoString).toLocal();
+      final diff = DateTime.now().difference(dt);
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      if (diff.inDays < 7) return '${diff.inDays}d ago';
+      return '${dt.day}/${dt.month}/${dt.year}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_activities.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Center(
+          child: Text('No fee activity yet.',
+              style: TextStyle(color: Colors.grey[500])),
+        ),
+      );
+    }
+    return Column(
+      children: _activities
+          .map((a) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _ParentActivityItem(
+                  parentName: 'Fee Payment',
+                  activity: a['desc'] ?? '',
+                  time: _timeAgo(a['time'] ?? ''),
+                  icon: Icons.payment_rounded,
+                  color: AppColors.success,
+                ),
+              ))
+          .toList(),
     );
   }
 }
@@ -367,7 +1046,8 @@ class _StudentsTabState extends State<_StudentsTab> {
   Future<void> _loadStudentFeedback() async {
     setState(() => _loading = true);
     final allFeedbacks = await _db.getPendingFeedbackForAdmin();
-    final studentFeedbacks = allFeedbacks.where((f) => f.senderRole == 'student').toList();
+    final studentFeedbacks =
+        allFeedbacks.where((f) => f.senderRole == 'student').toList();
     final allStudents = await _db.getAllStudents();
     // Sort by enrollment date descending, take last 5
     final recent = allStudents.reversed.take(5).toList();
@@ -394,7 +1074,8 @@ class _StudentsTabState extends State<_StudentsTab> {
   }
 
   Future<void> _rejectFeedback(AnonymousFeedback feedback) async {
-    final success = await _db.rejectFeedback(feedback.id, 'admin_001', 'Not appropriate');
+    final success =
+        await _db.rejectFeedback(feedback.id, 'admin_001', 'Not appropriate');
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -495,8 +1176,11 @@ class _StudentsTabState extends State<_StudentsTab> {
                   icon: Icons.campaign_rounded,
                   label: 'Send Notice',
                   color: AppColors.info,
-                  onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const _SendNoticeScreen(target: 'Students'))),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              const _SendNoticeScreen(target: 'Students'))),
                 ),
               ),
             ],
@@ -506,53 +1190,7 @@ class _StudentsTabState extends State<_StudentsTab> {
           // Student Stats
           const SectionHeader(title: 'Student Overview'),
           const SizedBox(height: 14),
-          const Row(
-            children: [
-              Expanded(
-                child: StatCard(
-                  title: 'Total Students',
-                  value: '60',
-                  icon: Icons.school_rounded,
-                  color: AppColors.primary,
-                  subtitle: 'Active',
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: StatCard(
-                  title: 'New This Month',
-                  value: '5',
-                  icon: Icons.trending_up_rounded,
-                  color: AppColors.success,
-                  subtitle: 'Admissions',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Row(
-            children: [
-              Expanded(
-                child: StatCard(
-                  title: 'Avg Attendance',
-                  value: '94%',
-                  icon: Icons.how_to_reg_rounded,
-                  color: AppColors.info,
-                  subtitle: 'This month',
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: StatCard(
-                  title: 'Fee Pending',
-                  value: '6',
-                  icon: Icons.warning_rounded,
-                  color: AppColors.warning,
-                  subtitle: 'Students',
-                ),
-              ),
-            ],
-          ),
+          _LiveStudentStats(),
           const SizedBox(height: 24),
 
           // Recent Students - from database
@@ -575,14 +1213,19 @@ class _StudentsTabState extends State<_StudentsTab> {
             )
           else
             ...(_recentStudents.map((s) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _StudentListItem(
-                name: s.name,
-                batch: s.studentClass != null ? 'Class ${s.studentClass}' : s.email,
-                status: s.enrollmentStatus == 'active' ? 'Active' : 'Pending',
-                statusColor: s.enrollmentStatus == 'active' ? AppColors.success : AppColors.warning,
-              ),
-            ))).toList(),
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _StudentListItem(
+                    name: s.name,
+                    batch: s.studentClass != null
+                        ? 'Class ${s.studentClass}'
+                        : s.email,
+                    status:
+                        s.enrollmentStatus == 'active' ? 'Active' : 'Pending',
+                    statusColor: s.enrollmentStatus == 'active'
+                        ? AppColors.success
+                        : AppColors.warning,
+                  ),
+                ))).toList(),
 
           const SizedBox(height: 32),
           const Divider(),
@@ -595,7 +1238,8 @@ class _StudentsTabState extends State<_StudentsTab> {
               const SectionHeader(title: 'Student Feedback Review'),
               if (_studentFeedbacks.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
@@ -612,7 +1256,7 @@ class _StudentsTabState extends State<_StudentsTab> {
             ],
           ),
           const SizedBox(height: 14),
-          
+
           _loading
               ? const Center(child: CircularProgressIndicator())
               : _studentFeedbacks.isEmpty
@@ -659,7 +1303,32 @@ class _StudentsTabState extends State<_StudentsTab> {
   }
 }
 
-class _TeachersTab extends StatelessWidget {
+class _TeachersTab extends StatefulWidget {
+  @override
+  State<_TeachersTab> createState() => _TeachersTabState();
+}
+
+class _TeachersTabState extends State<_TeachersTab> {
+  final _db = DatabaseService();
+  List<Teacher> _teachers = [];
+  bool _loadingTeachers = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTeachers();
+  }
+
+  Future<void> _loadTeachers() async {
+    final teachers = await _db.getAllTeachers();
+    if (mounted) {
+      setState(() {
+        _teachers = teachers;
+        _loadingTeachers = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -702,8 +1371,11 @@ class _TeachersTab extends StatelessWidget {
                   icon: Icons.campaign_rounded,
                   label: 'Send Notice',
                   color: AppColors.warning,
-                  onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const _SendNoticeScreen(target: 'Teachers'))),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              const _SendNoticeScreen(target: 'Teachers'))),
                 ),
               ),
             ],
@@ -713,75 +1385,36 @@ class _TeachersTab extends StatelessWidget {
           // Teacher Stats
           const SectionHeader(title: 'Teacher Overview'),
           const SizedBox(height: 14),
-          const Row(
-            children: [
-              Expanded(
-                child: StatCard(
-                  title: 'Total Teachers',
-                  value: '3',
-                  icon: Icons.person_rounded,
-                  color: AppColors.teacherAccent,
-                  subtitle: 'Active',
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: StatCard(
-                  title: 'Classes Today',
-                  value: '10',
-                  icon: Icons.class_rounded,
-                  color: AppColors.primary,
-                  subtitle: 'Scheduled',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Row(
-            children: [
-              Expanded(
-                child: StatCard(
-                  title: 'Attendance',
-                  value: '98%',
-                  icon: Icons.how_to_reg_rounded,
-                  color: AppColors.success,
-                  subtitle: 'Marked',
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: StatCard(
-                  title: 'On Leave',
-                  value: '1',
-                  icon: Icons.event_busy_rounded,
-                  color: AppColors.warning,
-                  subtitle: 'Today',
-                ),
-              ),
-            ],
-          ),
+          _LiveTeacherStats(),
           const SizedBox(height: 24),
 
           // Teacher List
           const SectionHeader(title: 'Teaching Staff'),
           const SizedBox(height: 14),
-          const _TeacherListItem(
-              name: 'Mrs. Priya Nair',
-              subject: 'Physics',
-              classes: '3 Classes',
-              statusColor: AppColors.success),
-          const SizedBox(height: 8),
-          const _TeacherListItem(
-              name: 'Mr. Arun Kumar',
-              subject: 'Mathematics',
-              classes: '4 Classes',
-              statusColor: AppColors.success),
-          const SizedBox(height: 8),
-          const _TeacherListItem(
-              name: 'Dr. Meena Verma',
-              subject: 'Chemistry',
-              classes: '3 Classes',
-              statusColor: AppColors.success),
+          if (_loadingTeachers)
+            const Center(child: CircularProgressIndicator())
+          else if (_teachers.isEmpty)
+            const GlassCard(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(18),
+                  child: Text('No teachers found',
+                      style: TextStyle(color: AppColors.textMid)),
+                ),
+              ),
+            )
+          else
+            ..._teachers.map((t) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _TeacherListItem(
+                    name: t.name,
+                    subject:
+                        t.subjects.isNotEmpty ? t.subjects.first : 'General',
+                    classes: '${t.classes.length} Classes',
+                    statusColor:
+                        t.isActive ? AppColors.success : AppColors.warning,
+                  ),
+                )),
 
           const SizedBox(height: 80),
         ],
@@ -790,7 +1423,27 @@ class _TeachersTab extends StatelessWidget {
   }
 }
 
-class _StaffTab extends StatelessWidget {
+class _StaffTab extends StatefulWidget {
+  @override
+  State<_StaffTab> createState() => _StaffTabState();
+}
+
+class _StaffTabState extends State<_StaffTab> {
+  final _db = DatabaseService();
+  int _feeReminderCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFeeReminders();
+  }
+
+  Future<void> _loadFeeReminders() async {
+    final students = await _db.getAllStudents();
+    final due = students.where((s) => s.totalFees > s.feesPaid).length;
+    if (mounted) setState(() => _feeReminderCount = due);
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -817,14 +1470,16 @@ class _StaffTab extends StatelessWidget {
                 onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => _AdminAdmissionsScreen())),
+                        builder: (_) => NonTeachingStaffDashboard())),
               ),
               _StaffActionCard(
                 icon: Icons.schedule_rounded,
                 label: 'Timetable',
                 color: AppColors.info,
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => _AdminTimetableScreen())),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => NonTeachingStaffDashboard())),
               ),
               _StaffActionCard(
                 icon: Icons.campaign_rounded,
@@ -837,31 +1492,17 @@ class _StaffTab extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Pending Tasks
-          const SectionHeader(title: 'Pending Tasks'),
+          // Fee reminders only
+          const SectionHeader(title: 'Fee Reminders'),
           const SizedBox(height: 14),
-          const GlassCard(
+          GlassCard(
             child: Column(
               children: [
                 _PendingTaskItem(
-                  title: 'Admission Applications',
-                  count: '7',
-                  icon: Icons.person_add_rounded,
-                  color: AppColors.primary,
-                ),
-                Divider(color: AppColors.divider, height: 20),
-                _PendingTaskItem(
-                  title: 'Fee Reminders',
-                  count: '14',
+                  title: 'Students with pending fees',
+                  count: '$_feeReminderCount',
                   icon: Icons.notifications_rounded,
                   color: AppColors.warning,
-                ),
-                Divider(color: AppColors.divider, height: 20),
-                _PendingTaskItem(
-                  title: 'Timetable Conflicts',
-                  count: '2',
-                  icon: Icons.warning_rounded,
-                  color: AppColors.error,
                 ),
               ],
             ),
@@ -895,7 +1536,8 @@ class _ParentsTabState extends State<_ParentsTab> {
   Future<void> _loadPendingFeedback() async {
     setState(() => _loading = true);
     final allFeedbacks = await _db.getPendingFeedbackForAdmin();
-    final parentFeedbacks = allFeedbacks.where((f) => f.senderRole == 'parent').toList();
+    final parentFeedbacks =
+        allFeedbacks.where((f) => f.senderRole == 'parent').toList();
     if (mounted) {
       setState(() {
         _pendingFeedbacks = parentFeedbacks;
@@ -918,7 +1560,8 @@ class _ParentsTabState extends State<_ParentsTab> {
   }
 
   Future<void> _rejectFeedback(AnonymousFeedback feedback) async {
-    final success = await _db.rejectFeedback(feedback.id, 'admin_001', 'Not appropriate');
+    final success =
+        await _db.rejectFeedback(feedback.id, 'admin_001', 'Not appropriate');
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -992,8 +1635,11 @@ class _ParentsTabState extends State<_ParentsTab> {
                   icon: Icons.message_rounded,
                   label: 'Send Notice',
                   color: AppColors.info,
-                  onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const _SendNoticeScreen(target: 'Parents'))),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                              const _SendNoticeScreen(target: 'Parents'))),
                 ),
               ),
             ],
@@ -1017,81 +1663,13 @@ class _ParentsTabState extends State<_ParentsTab> {
           // Parent Stats
           const SectionHeader(title: 'Parent Overview'),
           const SizedBox(height: 14),
-          const Row(
-            children: [
-              Expanded(
-                child: StatCard(
-                  title: 'Active Users',
-                  value: '48',
-                  icon: Icons.verified_user_rounded,
-                  color: AppColors.success,
-                  subtitle: 'This month',
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: StatCard(
-                  title: 'Fee Paid',
-                  value: '42',
-                  icon: Icons.check_circle_rounded,
-                  color: AppColors.success,
-                  subtitle: 'Parents',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Row(
-            children: [
-              Expanded(
-                child: StatCard(
-                  title: 'Fee Pending',
-                  value: '8',
-                  icon: Icons.pending_rounded,
-                  color: AppColors.warning,
-                  subtitle: 'Parents',
-                ),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: StatCard(
-                  title: 'Messages Sent',
-                  value: '15',
-                  icon: Icons.message_rounded,
-                  color: AppColors.info,
-                  subtitle: 'This week',
-                ),
-              ),
-            ],
-          ),
+          _LiveParentStats(),
           const SizedBox(height: 24),
 
-          // Recent Parent Activity
-          const SectionHeader(title: 'Recent Activity'),
+          // Recent Parent Activity - from fee payments
+          const SectionHeader(title: 'Recent Fee Activity'),
           const SizedBox(height: 14),
-          const _ParentActivityItem(
-            parentName: 'Mr. Rajesh Sharma',
-            activity: 'Paid fees for Aryan Sharma',
-            time: '2 hours ago',
-            icon: Icons.payment_rounded,
-            color: AppColors.success,
-          ),
-          const SizedBox(height: 8),
-          const _ParentActivityItem(
-            parentName: 'Mrs. Sunita Patel',
-            activity: 'Viewed report card',
-            time: '5 hours ago',
-            icon: Icons.description_rounded,
-            color: AppColors.info,
-          ),
-          const SizedBox(height: 8),
-          const _ParentActivityItem(
-            parentName: 'Mr. Vikram Mehta',
-            activity: 'Sent message to teacher',
-            time: 'Yesterday',
-            icon: Icons.message_rounded,
-            color: AppColors.primary,
-          ),
+          _LiveParentActivity(),
 
           const SizedBox(height: 32),
 
@@ -1102,7 +1680,8 @@ class _ParentsTabState extends State<_ParentsTab> {
               const SectionHeader(title: 'Parent Feedback Review'),
               if (_pendingFeedbacks.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
@@ -1119,7 +1698,7 @@ class _ParentsTabState extends State<_ParentsTab> {
             ],
           ),
           const SizedBox(height: 14),
-          
+
           _loading
               ? const Center(child: CircularProgressIndicator())
               : _pendingFeedbacks.isEmpty
@@ -1166,9 +1745,38 @@ class _ParentsTabState extends State<_ParentsTab> {
   }
 }
 
-class _SchoolSummaryBanner extends StatelessWidget {
+class _SchoolSummaryBannerLive extends StatelessWidget {
+  final int totalStudents;
+  final int totalTeachers;
+  final int totalBatches;
+  final bool loading;
+
+  const _SchoolSummaryBannerLive({
+    required this.totalStudents,
+    required this.totalTeachers,
+    required this.totalBatches,
+    required this.loading,
+  });
+
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    final quarter = 'Q${((now.month - 1) ~/ 3) + 1} • ${months[now.month - 1]}';
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -1180,7 +1788,7 @@ class _SchoolSummaryBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.adminAccent.withOpacity(0.35),
+            color: AppColors.adminAccent.withValues(alpha: 0.35),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -1205,7 +1813,7 @@ class _SchoolSummaryBanner extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Academic Year 2025-2026',
+                      'Academic Year ${now.year}-${now.year + 1}',
                       style: TextStyle(
                         fontSize: Responsive.sp(context, 12),
                         color: Colors.white70,
@@ -1218,11 +1826,11 @@ class _SchoolSummaryBanner extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  'Q4 • March',
+                  quarter,
                   style: TextStyle(
                     fontSize: Responsive.sp(context, 12),
                     fontWeight: FontWeight.w600,
@@ -1233,17 +1841,25 @@ class _SchoolSummaryBanner extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          const Row(
-            children: [
-              _BannerStat(label: 'Classes', value: '6'),
-              SizedBox(width: 24),
-              _BannerStat(label: 'Staff', value: '12'),
-              SizedBox(width: 24),
-              _BannerStat(label: 'NAAC Grade', value: 'A+'),
-              SizedBox(width: 24),
-              _BannerStat(label: 'Passing', value: '98%'),
-            ],
-          ),
+          if (loading)
+            const Center(
+              child: SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                    color: Colors.white, strokeWidth: 2),
+              ),
+            )
+          else
+            Row(
+              children: [
+                _BannerStat(label: 'Students', value: '$totalStudents'),
+                const SizedBox(width: 24),
+                _BannerStat(label: 'Teachers', value: '$totalTeachers'),
+                const SizedBox(width: 24),
+                _BannerStat(label: 'Batches', value: '$totalBatches'),
+              ],
+            ),
         ],
       ),
     );
@@ -1427,108 +2043,7 @@ class _AlertRow extends StatelessWidget {
   }
 }
 
-class _TopClassesList extends StatelessWidget {
-  final List<Map<String, dynamic>> classes = const [
-    {
-      'name': 'Class 10-A',
-      'teacher': 'Mr. Arun Pillai',
-      'score': 92,
-      'color': AppColors.success
-    },
-    {
-      'name': 'Class 12-S',
-      'teacher': 'Dr. Meena Verma',
-      'score': 89,
-      'color': AppColors.primary
-    },
-    {
-      'name': 'Class 9-B',
-      'teacher': 'Mrs. Sunita Rao',
-      'score': 87,
-      'color': AppColors.teacherAccent
-    },
-    {
-      'name': 'Class 11-C',
-      'teacher': 'Mr. Kiran Shah',
-      'score': 85,
-      'color': AppColors.warning
-    },
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      padding: const EdgeInsets.all(4),
-      child: Column(
-        children: classes.asMap().entries.map((e) {
-          final cls = e.value;
-          final color = cls['color'] as Color;
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              border: e.key < classes.length - 1
-                  ? const Border(bottom: BorderSide(color: AppColors.divider))
-                  : null,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '#${e.key + 1}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: color,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        cls['name'] as String,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                      Text(
-                        cls['teacher'] as String,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textLight,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  '${cls['score']}%',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
+// _TopClassesList removed - replaced by live _batchPerformance data in _DashboardTabState
 
 class _ProfileInfoRow extends StatelessWidget {
   final IconData icon;
@@ -1962,7 +2477,7 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
 
   final List<String> _classes = ['7th', '8th', '9th', '10th', '11th', '12th'];
   final List<String> _boards = ['CBSE', 'SSC'];
-  
+
   // Sample subjects (you can load from database)
   final List<Map<String, String>> _availableSubjects = [
     {'id': 'sub_math', 'name': 'Mathematics'},
@@ -1986,10 +2501,12 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
     final batches = await _db.getAllBatches();
     if (mounted) {
       setState(() {
-        _availableBatches = batches.map((b) => {
-          'id': b.id,
-          'name': b.name,
-        }).toList();
+        _availableBatches = batches
+            .map((b) => {
+                  'id': b.id,
+                  'name': b.name,
+                })
+            .toList();
         _loadingBatches = false;
       });
     }
@@ -2042,7 +2559,8 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
     try {
       // Auto-generate emails from names
       final studentEmail = _generateEmail(_nameController.text, 'students.com');
-      final parentEmail = _generateEmail(_parentNameController.text, 'parents.com');
+      final parentEmail =
+          _generateEmail(_parentNameController.text, 'parents.com');
 
       // Call the simple database method
       final success = await _db.addStudentSimple(
@@ -2075,20 +2593,25 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
                 children: [
                   const Text('✅ Student added successfully!'),
                   const SizedBox(height: 4),
-                  Text('Student Email: $studentEmail', style: const TextStyle(fontSize: 12)),
-                  Text('Parent Email: $parentEmail', style: const TextStyle(fontSize: 12)),
-                  const Text('Password: Student@123 / Parent@123', style: TextStyle(fontSize: 12)),
+                  Text('Student Email: $studentEmail',
+                      style: const TextStyle(fontSize: 12)),
+                  Text('Parent Email: $parentEmail',
+                      style: const TextStyle(fontSize: 12)),
+                  const Text('Password: Student@123 / Parent@123',
+                      style: TextStyle(fontSize: 12)),
                 ],
               ),
               backgroundColor: Colors.green,
               duration: const Duration(seconds: 5),
             ),
           );
-          Navigator.pop(context, true); // true = student was added, trigger refresh
+          Navigator.pop(
+              context, true); // true = student was added, trigger refresh
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('❌ Failed to add student. Check console for details.'),
+              content:
+                  Text('❌ Failed to add student. Check console for details.'),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 5),
             ),
@@ -2139,7 +2662,8 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.info.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
+                  border:
+                      Border.all(color: AppColors.info.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -2158,33 +2682,43 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Student Details Section
               _buildSectionHeader('Student Details', Icons.person_rounded),
               const SizedBox(height: 16),
-              _buildTextField('Full Name *', _nameController, 'Enter student name'),
+              _buildTextField(
+                  'Full Name *', _nameController, 'Enter student name'),
               const SizedBox(height: 12),
-              _buildTextField('Phone', _phoneController, '10-digit mobile number', keyboardType: TextInputType.phone, maxLength: 10),
+              _buildTextField(
+                  'Phone', _phoneController, '10-digit mobile number',
+                  keyboardType: TextInputType.phone, maxLength: 10),
               const SizedBox(height: 12),
-              _buildDateField('Date of Birth', _dateOfBirth, (date) => setState(() => _dateOfBirth = date)),
+              _buildDateField('Date of Birth', _dateOfBirth,
+                  (date) => setState(() => _dateOfBirth = date)),
               const SizedBox(height: 12),
-              _buildTextField('Address', _addressController, 'Enter full address', maxLines: 2),
-              
+              _buildTextField(
+                  'Address', _addressController, 'Enter full address',
+                  maxLines: 2),
+
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 24),
-              
+
               // Academic Details Section
               _buildSectionHeader('Academic Details', Icons.school_rounded),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
-                    child: _buildDropdown('Class *', _selectedClass, _classes, (value) => setState(() => _selectedClass = value!), isRequired: true),
+                    child: _buildDropdown('Class *', _selectedClass, _classes,
+                        (value) => setState(() => _selectedClass = value!),
+                        isRequired: true),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildDropdown('Board *', _selectedBoard, _boards, (value) => setState(() => _selectedBoard = value!), isRequired: true),
+                    child: _buildDropdown('Board *', _selectedBoard, _boards,
+                        (value) => setState(() => _selectedBoard = value!),
+                        isRequired: true),
                   ),
                 ],
               ),
@@ -2199,10 +2733,12 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 18),
+                          Icon(Icons.warning_amber_rounded,
+                              color: Colors.orange, size: 18),
                           SizedBox(width: 8),
                           Text('No batches found. Create a batch first.',
-                              style: TextStyle(fontSize: 13, color: Colors.orange)),
+                              style: TextStyle(
+                                  fontSize: 13, color: Colors.orange)),
                         ],
                       ),
                     )
@@ -2234,60 +2770,80 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                              borderSide: const BorderSide(
+                                  color: AppColors.primary, width: 2),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 14),
                           ),
-                          items: _availableBatches.map((b) => DropdownMenuItem<String>(
-                            value: b['id'],
-                            child: Text(b['name']!),
-                          )).toList(),
-                          onChanged: (value) => setState(() => _selectedBatch = value),
-                          validator: (value) => value == null ? 'Please select a batch' : null,
+                          items: _availableBatches
+                              .map((b) => DropdownMenuItem<String>(
+                                    value: b['id'],
+                                    child: Text(b['name']!),
+                                  ))
+                              .toList(),
+                          onChanged: (value) =>
+                              setState(() => _selectedBatch = value),
+                          validator: (value) =>
+                              value == null ? 'Please select a batch' : null,
                         ),
                       ],
                     ),
               const SizedBox(height: 12),
-              _buildDateField('Admission Date *', _admissionDate, (date) => setState(() => _admissionDate = date)),
+              _buildDateField('Admission Date *', _admissionDate,
+                  (date) => setState(() => _admissionDate = date)),
               const SizedBox(height: 12),
               _buildSubjectSelector(),
-              
+
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 24),
-              
+
               // Parent Details Section
-              _buildSectionHeader('Parent/Guardian Details', Icons.family_restroom_rounded),
+              _buildSectionHeader(
+                  'Parent/Guardian Details', Icons.family_restroom_rounded),
               const SizedBox(height: 16),
-              _buildTextField('Parent Name *', _parentNameController, 'Enter parent name'),
+              _buildTextField(
+                  'Parent Name *', _parentNameController, 'Enter parent name'),
               const SizedBox(height: 12),
-              _buildTextField('Parent Phone *', _parentPhoneController, '10-digit mobile number', keyboardType: TextInputType.phone, maxLength: 10),
+              _buildTextField('Parent Phone *', _parentPhoneController,
+                  '10-digit mobile number',
+                  keyboardType: TextInputType.phone, maxLength: 10),
               const SizedBox(height: 12),
-              _buildTextField('Emergency Contact', _emergencyContactController, '10-digit mobile number', keyboardType: TextInputType.phone, maxLength: 10),
+              _buildTextField('Emergency Contact', _emergencyContactController,
+                  '10-digit mobile number',
+                  keyboardType: TextInputType.phone, maxLength: 10),
               const SizedBox(height: 12),
-              _buildTextField('Parent Address', _parentAddressController, 'Enter address', maxLines: 2),
-              
+              _buildTextField(
+                  'Parent Address', _parentAddressController, 'Enter address',
+                  maxLines: 2),
+
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 24),
-              
+
               // Fee Details Section
-              _buildSectionHeader('Fee Details', Icons.account_balance_wallet_rounded),
+              _buildSectionHeader(
+                  'Fee Details', Icons.account_balance_wallet_rounded),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
-                    child: _buildTextField('Total Fees', _totalFeesController, '0', keyboardType: TextInputType.number),
+                    child: _buildTextField(
+                        'Total Fees', _totalFeesController, '0',
+                        keyboardType: TextInputType.number),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildTextField('Fees Paid', _feesPaidController, '0', keyboardType: TextInputType.number),
+                    child: _buildTextField(
+                        'Fees Paid', _feesPaidController, '0',
+                        keyboardType: TextInputType.number),
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Submit Button
               SizedBox(
                 width: double.infinity,
@@ -2351,7 +2907,10 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, String hint, {
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller,
+    String hint, {
     TextInputType? keyboardType,
     int maxLines = 1,
     int? maxLength,
@@ -2390,20 +2949,25 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
-          validator: label.contains('*') ? (value) {
-            if (value == null || value.isEmpty) {
-              return 'This field is required';
-            }
-            return null;
-          } : null,
+          validator: label.contains('*')
+              ? (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'This field is required';
+                  }
+                  return null;
+                }
+              : null,
         ),
       ],
     );
   }
 
-  Widget _buildDropdown(String label, String? value, List<String> items, Function(String?) onChanged, {bool isRequired = false}) {
+  Widget _buildDropdown(String label, String? value, List<String> items,
+      Function(String?) onChanged,
+      {bool isRequired = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2433,22 +2997,28 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
-          items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+          items: items
+              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+              .toList(),
           onChanged: onChanged,
-          validator: isRequired ? (value) {
-            if (value == null || value.isEmpty) {
-              return 'This field is required';
-            }
-            return null;
-          } : null,
+          validator: isRequired
+              ? (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'This field is required';
+                  }
+                  return null;
+                }
+              : null,
         ),
       ],
     );
   }
 
-  Widget _buildDateField(String label, DateTime? date, Function(DateTime) onDateSelected) {
+  Widget _buildDateField(
+      String label, DateTime? date, Function(DateTime) onDateSelected) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2484,13 +3054,16 @@ class _AddStudentScreenState extends State<_AddStudentScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  date != null ? '${date.day}/${date.month}/${date.year}' : 'Select date',
+                  date != null
+                      ? '${date.day}/${date.month}/${date.year}'
+                      : 'Select date',
                   style: TextStyle(
                     fontSize: 14,
                     color: date != null ? AppColors.textDark : Colors.grey[500],
                   ),
                 ),
-                const Icon(Icons.calendar_today, size: 18, color: AppColors.primary),
+                const Icon(Icons.calendar_today,
+                    size: 18, color: AppColors.primary),
               ],
             ),
           ),
@@ -2634,7 +3207,7 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                 children: [
                   const Text('✅ Batch created successfully!'),
                   const SizedBox(height: 4),
-                  Text('Batch: ${_batchNameController.text}', 
+                  Text('Batch: ${_batchNameController.text}',
                       style: const TextStyle(fontSize: 12)),
                 ],
               ),
@@ -2647,7 +3220,8 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('❌ Failed to create batch. Check console for details.'),
+              content:
+                  Text('❌ Failed to create batch. Check console for details.'),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 5),
             ),
@@ -2698,11 +3272,13 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.adminAccent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.adminAccent.withValues(alpha: 0.3)),
+                  border: Border.all(
+                      color: AppColors.adminAccent.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: AppColors.adminAccent, size: 20),
+                    Icon(Icons.info_outline,
+                        color: AppColors.adminAccent, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -2717,7 +3293,7 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Batch Details Section
               Row(
                 children: [
@@ -2727,7 +3303,8 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                       color: AppColors.adminAccent.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.class_rounded, color: AppColors.adminAccent, size: 20),
+                    child: Icon(Icons.class_rounded,
+                        color: AppColors.adminAccent, size: 20),
                   ),
                   const SizedBox(width: 12),
                   const Text(
@@ -2741,7 +3318,7 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               // Class Dropdown
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2770,14 +3347,16 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.adminAccent, width: 2),
+                        borderSide: const BorderSide(
+                            color: AppColors.adminAccent, width: 2),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
                     ),
-                    items: _classes.map((cls) => DropdownMenuItem(
-                      value: cls, 
-                      child: Text(cls)
-                    )).toList(),
+                    items: _classes
+                        .map((cls) =>
+                            DropdownMenuItem(value: cls, child: Text(cls)))
+                        .toList(),
                     onChanged: (value) {
                       setState(() {
                         _selectedClass = value!;
@@ -2788,7 +3367,7 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              
+
               // Division Dropdown
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2817,14 +3396,16 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.adminAccent, width: 2),
+                        borderSide: const BorderSide(
+                            color: AppColors.adminAccent, width: 2),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
                     ),
-                    items: _divisions.map((div) => DropdownMenuItem(
-                      value: div, 
-                      child: Text(div)
-                    )).toList(),
+                    items: _divisions
+                        .map((div) =>
+                            DropdownMenuItem(value: div, child: Text(div)))
+                        .toList(),
                     onChanged: (value) {
                       setState(() {
                         _selectedDiv = value!;
@@ -2835,7 +3416,7 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              
+
               // Board Dropdown
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2864,14 +3445,16 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.adminAccent, width: 2),
+                        borderSide: const BorderSide(
+                            color: AppColors.adminAccent, width: 2),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
                     ),
-                    items: _boards.map((board) => DropdownMenuItem(
-                      value: board, 
-                      child: Text(board)
-                    )).toList(),
+                    items: _boards
+                        .map((board) =>
+                            DropdownMenuItem(value: board, child: Text(board)))
+                        .toList(),
                     onChanged: (value) {
                       setState(() {
                         _selectedBoard = value!;
@@ -2882,7 +3465,7 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              
+
               // Generated Batch Name (Read-only)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2898,7 +3481,8 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                   const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(12),
@@ -2915,9 +3499,9 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Submit Button
               SizedBox(
                 width: double.infinity,
@@ -2967,7 +3551,8 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                   ),
                   if (!_loadingBatches)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: AppColors.adminAccent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
@@ -2997,11 +3582,13 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                           child: Center(
                             child: Column(
                               children: [
-                                Icon(Icons.class_outlined, size: 40, color: Colors.grey[400]),
+                                Icon(Icons.class_outlined,
+                                    size: 40, color: Colors.grey[400]),
                                 const SizedBox(height: 8),
                                 Text(
                                   'No batches created yet',
-                                  style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                                  style: TextStyle(
+                                      fontSize: 13, color: Colors.grey[500]),
                                 ),
                               ],
                             ),
@@ -3011,7 +3598,8 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                           children: _existingBatches.map((batch) {
                             return Container(
                               margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 14),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
@@ -3029,7 +3617,8 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: AppColors.adminAccent.withValues(alpha: 0.1),
+                                      color: AppColors.adminAccent
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: const Icon(Icons.class_rounded,
@@ -3047,9 +3636,11 @@ class _AddBatchScreenState extends State<_AddBatchScreen> {
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: AppColors.success.withValues(alpha: 0.1),
+                                      color: AppColors.success
+                                          .withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: const Text(
@@ -3176,7 +3767,8 @@ class _AllStudentsScreenState extends State<_AllStudentsScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.studentAccent.withValues(alpha: 0.12),
+                              color: AppColors.studentAccent
+                                  .withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(Icons.person_rounded,
@@ -3205,7 +3797,8 @@ class _AllStudentsScreenState extends State<_AllStudentsScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: statusColor.withValues(alpha: 0.12),
+                                        color:
+                                            statusColor.withValues(alpha: 0.12),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
@@ -3222,7 +3815,8 @@ class _AllStudentsScreenState extends State<_AllStudentsScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: feeStatusColor.withValues(alpha: 0.12),
+                                        color: feeStatusColor.withValues(
+                                            alpha: 0.12),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
@@ -3322,10 +3916,12 @@ class _AddTeacherScreenState extends State<_AddTeacherScreen> {
     final batches = await _db.getAllBatches();
     if (mounted) {
       setState(() {
-        _availableBatches = batches.map((b) => {
-          'id': b.id,
-          'name': b.name,
-        }).toList();
+        _availableBatches = batches
+            .map((b) => {
+                  'id': b.id,
+                  'name': b.name,
+                })
+            .toList();
         _loadingBatches = false;
       });
     }
@@ -3403,8 +3999,10 @@ class _AddTeacherScreenState extends State<_AddTeacherScreen> {
                 children: [
                   const Text('✅ Teacher added successfully!'),
                   const SizedBox(height: 4),
-                  Text('Email: $teacherEmail', style: const TextStyle(fontSize: 12)),
-                  const Text('Password: Teacher@123', style: TextStyle(fontSize: 12)),
+                  Text('Email: $teacherEmail',
+                      style: const TextStyle(fontSize: 12)),
+                  const Text('Password: Teacher@123',
+                      style: TextStyle(fontSize: 12)),
                 ],
               ),
               backgroundColor: Colors.green,
@@ -3465,7 +4063,8 @@ class _AddTeacherScreenState extends State<_AddTeacherScreen> {
                 decoration: BoxDecoration(
                   color: AppColors.info.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
+                  border:
+                      Border.all(color: AppColors.info.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -3484,30 +4083,38 @@ class _AddTeacherScreenState extends State<_AddTeacherScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Teacher Details Section
               _buildSectionHeader('Teacher Details', Icons.person_rounded),
               const SizedBox(height: 16),
-              _buildTextField('Full Name *', _nameController, 'Enter teacher name'),
+              _buildTextField(
+                  'Full Name *', _nameController, 'Enter teacher name'),
               const SizedBox(height: 12),
-              _buildTextField('Phone Number *', _phoneController, '10-digit mobile number', keyboardType: TextInputType.phone, maxLength: 10),
+              _buildTextField(
+                  'Phone Number *', _phoneController, '10-digit mobile number',
+                  keyboardType: TextInputType.phone, maxLength: 10),
               const SizedBox(height: 12),
-              _buildTextField('Qualification', _qualificationController, 'e.g., M.Sc, B.Ed'),
+              _buildTextField('Qualification', _qualificationController,
+                  'e.g., M.Sc, B.Ed'),
               const SizedBox(height: 12),
-              _buildTextField('Experience (Years)', _experienceController, '0', keyboardType: TextInputType.number),
-              
+              _buildTextField('Experience (Years)', _experienceController, '0',
+                  keyboardType: TextInputType.number),
+
               const SizedBox(height: 24),
               const Divider(),
               const SizedBox(height: 24),
-              
+
               // Subject and Class Assignment Section
-              _buildSectionHeader('Subject & Class Assignment', Icons.school_rounded),
+              _buildSectionHeader(
+                  'Subject & Class Assignment', Icons.school_rounded),
               const SizedBox(height: 16),
               _buildSubjectSelector(),
               const SizedBox(height: 16),
               _buildClassSelector(),
               const SizedBox(height: 12),
-              _buildDropdown('Board *', _selectedBoard, _boards, (value) => setState(() => _selectedBoard = value!), isRequired: true),
+              _buildDropdown('Board *', _selectedBoard, _boards,
+                  (value) => setState(() => _selectedBoard = value!),
+                  isRequired: true),
               const SizedBox(height: 12),
               if (_availableBatches.isNotEmpty)
                 Column(
@@ -3538,21 +4145,26 @@ class _AddTeacherScreenState extends State<_AddTeacherScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                          borderSide: const BorderSide(
+                              color: AppColors.primary, width: 2),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
                       ),
-                      items: _availableBatches.map((b) => DropdownMenuItem<String>(
-                        value: b['id'],
-                        child: Text(b['name']!),
-                      )).toList(),
-                      onChanged: (value) => setState(() => _selectedBatch = value),
+                      items: _availableBatches
+                          .map((b) => DropdownMenuItem<String>(
+                                value: b['id'],
+                                child: Text(b['name']!),
+                              ))
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => _selectedBatch = value),
                     ),
                   ],
                 ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Submit Button
               SizedBox(
                 width: double.infinity,
@@ -3616,7 +4228,10 @@ class _AddTeacherScreenState extends State<_AddTeacherScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, String hint, {
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller,
+    String hint, {
     TextInputType? keyboardType,
     int maxLines = 1,
     int? maxLength,
@@ -3655,20 +4270,25 @@ class _AddTeacherScreenState extends State<_AddTeacherScreen> {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
-          validator: label.contains('*') ? (value) {
-            if (value == null || value.isEmpty) {
-              return 'This field is required';
-            }
-            return null;
-          } : null,
+          validator: label.contains('*')
+              ? (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'This field is required';
+                  }
+                  return null;
+                }
+              : null,
         ),
       ],
     );
   }
 
-  Widget _buildDropdown(String label, String? value, List<String> items, Function(String?) onChanged, {bool isRequired = false}) {
+  Widget _buildDropdown(String label, String? value, List<String> items,
+      Function(String?) onChanged,
+      {bool isRequired = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3698,22 +4318,28 @@ class _AddTeacherScreenState extends State<_AddTeacherScreen> {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
-          items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+          items: items
+              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+              .toList(),
           onChanged: onChanged,
-          validator: isRequired ? (value) {
-            if (value == null || value.isEmpty) {
-              return 'This field is required';
-            }
-            return null;
-          } : null,
+          validator: isRequired
+              ? (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'This field is required';
+                  }
+                  return null;
+                }
+              : null,
         ),
       ],
     );
   }
 
-  Widget _buildDateField(String label, DateTime? date, Function(DateTime) onDateSelected) {
+  Widget _buildDateField(
+      String label, DateTime? date, Function(DateTime) onDateSelected) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3749,13 +4375,16 @@ class _AddTeacherScreenState extends State<_AddTeacherScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  date != null ? '${date.day}/${date.month}/${date.year}' : 'Select date',
+                  date != null
+                      ? '${date.day}/${date.month}/${date.year}'
+                      : 'Select date',
                   style: TextStyle(
                     fontSize: 14,
                     color: date != null ? AppColors.textDark : Colors.grey[500],
                   ),
                 ),
-                const Icon(Icons.calendar_today, size: 18, color: AppColors.primary),
+                const Icon(Icons.calendar_today,
+                    size: 18, color: AppColors.primary),
               ],
             ),
           ),
@@ -3950,7 +4579,8 @@ class _AllTeachersScreenState extends State<_AllTeachersScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.teacherAccent.withValues(alpha: 0.12),
+                              color: AppColors.teacherAccent
+                                  .withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(Icons.person_rounded,
@@ -3969,11 +4599,13 @@ class _AllTeachersScreenState extends State<_AllTeachersScreen> {
                                 const SizedBox(height: 2),
                                 Text('$subjectsText • $classesText',
                                     style: const TextStyle(
-                                        fontSize: 11, color: AppColors.textMid)),
+                                        fontSize: 11,
+                                        color: AppColors.textMid)),
                                 const SizedBox(height: 2),
                                 Text(teacher.email,
                                     style: const TextStyle(
-                                        fontSize: 10, color: AppColors.textLight)),
+                                        fontSize: 10,
+                                        color: AppColors.textLight)),
                               ],
                             ),
                           ),
@@ -4257,24 +4889,33 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
 
   Color _priorityColor(String p) {
     switch (p) {
-      case 'high': return AppColors.warning;
-      case 'urgent': return AppColors.error;
-      default: return AppColors.info;
+      case 'high':
+        return AppColors.warning;
+      case 'urgent':
+        return AppColors.error;
+      default:
+        return AppColors.info;
     }
   }
 
   IconData _priorityIcon(String p) {
     switch (p) {
-      case 'high': return Icons.priority_high_rounded;
-      case 'urgent': return Icons.warning_rounded;
-      default: return Icons.notifications_rounded;
+      case 'high':
+        return Icons.priority_high_rounded;
+      case 'urgent':
+        return Icons.warning_rounded;
+      default:
+        return Icons.notifications_rounded;
     }
   }
 
   Future<void> _sendNotice() async {
-    if (_titleController.text.trim().isEmpty || _messageController.text.trim().isEmpty) {
+    if (_titleController.text.trim().isEmpty ||
+        _messageController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in title and message'), backgroundColor: Colors.orange),
+        const SnackBar(
+            content: Text('Please fill in title and message'),
+            backgroundColor: Colors.orange),
       );
       return;
     }
@@ -4285,7 +4926,7 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
       final db = DatabaseService();
       final targetAudience = widget.target.toLowerCase();
       final id = 'bcast_${DateTime.now().millisecondsSinceEpoch}';
-      
+
       // Try with sent_by first, fall back without it if FK fails
       try {
         await db.client.from('broadcasts').insert({
@@ -4344,7 +4985,8 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text('Send Notice to ${widget.target}',
-            style: const TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700)),
+            style: const TextStyle(
+                color: AppColors.textDark, fontWeight: FontWeight.w700)),
       ),
       body: _sent ? _buildSuccessView() : _buildForm(),
     );
@@ -4363,11 +5005,15 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
                 color: AppColors.success.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_circle_rounded, size: 72, color: AppColors.success),
+              child: const Icon(Icons.check_circle_rounded,
+                  size: 72, color: AppColors.success),
             ),
             const SizedBox(height: 24),
             const Text('Notice Sent!',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textDark)),
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark)),
             const SizedBox(height: 8),
             Text('Your notice has been sent to all ${widget.target}.',
                 textAlign: TextAlign.center,
@@ -4388,9 +5034,11 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Send Another', style: TextStyle(fontWeight: FontWeight.w700)),
+                child: const Text('Send Another',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ),
             const SizedBox(height: 12),
@@ -4420,17 +5068,25 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.group_rounded, size: 16, color: AppColors.primary),
+                const Icon(Icons.group_rounded,
+                    size: 16, color: AppColors.primary),
                 const SizedBox(width: 6),
                 Text('To: ${widget.target}',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary)),
               ],
             ),
           ),
           const SizedBox(height: 20),
 
           // Priority selector
-          const Text('Priority', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+          const Text('Priority',
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark)),
           const SizedBox(height: 10),
           Row(
             children: _priorities.map((p) {
@@ -4440,9 +5096,12 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
                 child: GestureDetector(
                   onTap: () => setState(() => _priority = p),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: selected ? _priorityColor(p).withOpacity(0.15) : Colors.white,
+                      color: selected
+                          ? _priorityColor(p).withOpacity(0.15)
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: selected ? _priorityColor(p) : Colors.grey[300]!,
@@ -4452,13 +5111,21 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(_priorityIcon(p), size: 14, color: selected ? _priorityColor(p) : AppColors.textLight),
+                        Icon(_priorityIcon(p),
+                            size: 14,
+                            color: selected
+                                ? _priorityColor(p)
+                                : AppColors.textLight),
                         const SizedBox(width: 4),
                         Text(p[0].toUpperCase() + p.substring(1),
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: selected ? FontWeight.w700 : FontWeight.normal,
-                              color: selected ? _priorityColor(p) : AppColors.textMid,
+                              fontWeight: selected
+                                  ? FontWeight.w700
+                                  : FontWeight.normal,
+                              color: selected
+                                  ? _priorityColor(p)
+                                  : AppColors.textMid,
                             )),
                       ],
                     ),
@@ -4470,7 +5137,11 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
           const SizedBox(height: 20),
 
           // Title
-          const Text('Title *', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+          const Text('Title *',
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark)),
           const SizedBox(height: 8),
           TextField(
             controller: _titleController,
@@ -4478,16 +5149,28 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
               hintText: 'e.g. Holiday Notice, Fee Reminder...',
               filled: true,
               fillColor: Colors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!)),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!)),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: AppColors.primary, width: 2)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
           ),
           const SizedBox(height: 16),
 
           // Message
-          const Text('Message *', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+          const Text('Message *',
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark)),
           const SizedBox(height: 8),
           TextField(
             controller: _messageController,
@@ -4496,9 +5179,16 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
               hintText: 'Write your notice here...',
               filled: true,
               fillColor: Colors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!)),
+              enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!)),
+              focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: AppColors.primary, width: 2)),
               contentPadding: const EdgeInsets.all(16),
             ),
           ),
@@ -4511,14 +5201,20 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
             child: ElevatedButton.icon(
               onPressed: _isSending ? null : _sendNotice,
               icon: _isSending
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2))
                   : const Icon(Icons.send_rounded),
               label: Text(_isSending ? 'Sending...' : 'Send Notice',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w700)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.adminAccent,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
@@ -4528,7 +5224,6 @@ class _SendNoticeScreenState extends State<_SendNoticeScreen> {
     );
   }
 }
-
 
 // ─── Simple Admin Profile Sheet ───────────────────────────────────────────────
 class _SimpleAdminProfileSheet extends StatelessWidget {
@@ -4561,7 +5256,7 @@ class _SimpleAdminProfileSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               // Profile Header
               Container(
                 width: 64,
@@ -4583,7 +5278,8 @@ class _SimpleAdminProfileSheet extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.adminAccent.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
@@ -4597,7 +5293,7 @@ class _SimpleAdminProfileSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Profile Info
               const _ProfileInfoRow(
                   icon: Icons.email_outlined,
@@ -4609,7 +5305,7 @@ class _SimpleAdminProfileSheet extends StatelessWidget {
                   label: 'Phone',
                   value: '+91 98765 43210'),
               const SizedBox(height: 24),
-              
+
               // Logout Button
               SizedBox(
                 width: double.infinity,
@@ -4689,7 +5385,8 @@ class _AdminProfileSheetState extends State<_AdminProfileSheet> {
   }
 
   Future<void> _rejectFeedback(AnonymousFeedback feedback) async {
-    final success = await _db.rejectFeedback(feedback.id, 'admin_001', 'Not appropriate');
+    final success =
+        await _db.rejectFeedback(feedback.id, 'admin_001', 'Not appropriate');
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -4761,7 +5458,7 @@ class _AdminProfileSheetState extends State<_AdminProfileSheet> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Profile Header
             Container(
               width: 64,
@@ -4797,7 +5494,7 @@ class _AdminProfileSheetState extends State<_AdminProfileSheet> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Profile Info
             const _ProfileInfoRow(
                 icon: Icons.email_outlined,
@@ -4809,7 +5506,7 @@ class _AdminProfileSheetState extends State<_AdminProfileSheet> {
                 label: 'Phone',
                 value: '+91 98765 43210'),
             const SizedBox(height: 24),
-            
+
             // Pending Feedback Section
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -4824,7 +5521,8 @@ class _AdminProfileSheetState extends State<_AdminProfileSheet> {
                 ),
                 if (_pendingFeedbacks.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.error.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
@@ -4841,7 +5539,7 @@ class _AdminProfileSheetState extends State<_AdminProfileSheet> {
               ],
             ),
             const SizedBox(height: 12),
-            
+
             // Feedback List
             Expanded(
               child: _loading
@@ -4871,17 +5569,19 @@ class _AdminProfileSheetState extends State<_AdminProfileSheet> {
                             final feedback = _pendingFeedbacks[index];
                             return _FeedbackCard(
                               feedback: feedback,
-                              categoryLabel: _getCategoryLabel(feedback.category),
-                              categoryColor: _getCategoryColor(feedback.category),
+                              categoryLabel:
+                                  _getCategoryLabel(feedback.category),
+                              categoryColor:
+                                  _getCategoryColor(feedback.category),
                               onApprove: () => _approveFeedback(feedback),
                               onReject: () => _rejectFeedback(feedback),
                             );
                           },
                         ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Logout Button
             SizedBox(
               width: double.infinity,
@@ -4951,7 +5651,8 @@ class _FeedbackCard extends StatelessWidget {
                   color: categoryColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.feedback_outlined, color: categoryColor, size: 18),
+                child: Icon(Icons.feedback_outlined,
+                    color: categoryColor, size: 18),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -4980,14 +5681,16 @@ class _FeedbackCard extends StatelessWidget {
               // Rating
               if (feedback.rating != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFA726).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.star, color: Color(0xFFFFA726), size: 14),
+                      const Icon(Icons.star,
+                          color: Color(0xFFFFA726), size: 14),
                       const SizedBox(width: 4),
                       Text(
                         '${feedback.rating}',
@@ -5003,7 +5706,7 @@ class _FeedbackCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Feedback Text
           Text(
             feedback.feedbackText,
@@ -5014,7 +5717,7 @@ class _FeedbackCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Sender Info
           Row(
             children: [
@@ -5046,7 +5749,7 @@ class _FeedbackCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Action Buttons
           Row(
             children: [
@@ -5096,4 +5799,3 @@ class _FeedbackCard extends StatelessWidget {
     );
   }
 }
-

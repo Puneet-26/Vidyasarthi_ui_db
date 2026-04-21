@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import '../widgets/shared_widgets.dart';
 import '../services/database_service.dart';
+import '../services/attendance_service.dart';
+import '../services/marks_service.dart';
 import '../services/auth_session.dart';
 import '../models/models.dart';
 import 'login_screen.dart';
@@ -10,10 +12,11 @@ import 'placeholder_screens.dart';
 import 'mark_attendance_screen.dart';
 import 'select_batch_for_attendance.dart';
 import 'schedule_exam_screen.dart';
+import 'enter_marks_screen.dart';
 
 class TeacherDashboard extends StatefulWidget {
   final String? teacherEmail;
-  
+
   const TeacherDashboard({super.key, this.teacherEmail});
 
   @override
@@ -23,9 +26,11 @@ class TeacherDashboard extends StatefulWidget {
 class _TeacherDashboardState extends State<TeacherDashboard> {
   int _selectedIndex = 0;
   int _approvedFeedbackCount = 0;
+  int _noticeCount = 0;
   final _db = DatabaseService();
   Teacher? _currentTeacher;
   bool _loadingTeacher = true;
+  List<TimeTable> _teacherTimetable = [];
 
   @override
   void initState() {
@@ -35,37 +40,49 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
   Future<void> _loadTeacherData() async {
     setState(() => _loadingTeacher = true);
-    
+
     // Use AuthSession - always has the correct logged-in email
     final email = AuthSession.email ?? widget.teacherEmail;
-    
+
     if (email != null && email.isNotEmpty) {
       final teacher = await _db.getTeacherByEmail(email);
       if (mounted) {
         setState(() {
           // Even if teacher record not found, create a minimal one from email
-          _currentTeacher = teacher ?? Teacher(
-            id: '',
-            userId: '',
-            name: AuthSession.name ?? email.split('@')[0].replaceAll('.', ' ')
-                .split(' ').map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '').join(' '),
-            email: email,
-            phoneNumber: '',
-            employeeId: '',
-            subjects: [],
-            classes: [],
-            board: '',
-            qualification: null,
-            experienceYears: 0,
-            salary: 0,
-            isActive: true,
-            createdAt: DateTime.now(),
-          );
+          _currentTeacher = teacher ??
+              Teacher(
+                id: '',
+                userId: '',
+                name: AuthSession.name ??
+                    email
+                        .split('@')[0]
+                        .replaceAll('.', ' ')
+                        .split(' ')
+                        .map((w) => w.isNotEmpty
+                            ? '${w[0].toUpperCase()}${w.substring(1)}'
+                            : '')
+                        .join(' '),
+                email: email,
+                phoneNumber: '',
+                employeeId: '',
+                subjects: [],
+                classes: [],
+                board: '',
+                qualification: null,
+                experienceYears: 0,
+                salary: 0,
+                isActive: true,
+                createdAt: DateTime.now(),
+              );
           _loadingTeacher = false;
         });
-        
+
         if (_currentTeacher!.id.isNotEmpty) {
           _loadApprovedFeedbackCount(_currentTeacher!.id);
+        }
+        _loadTeacherNotices();
+        if ((_currentTeacher!.batchId ?? '').isNotEmpty) {
+          _loadTeacherTimetable(_currentTeacher!.batchId!);
         }
       }
     } else {
@@ -78,6 +95,16 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
     if (mounted) {
       setState(() => _approvedFeedbackCount = feedbacks.length);
     }
+  }
+
+  Future<void> _loadTeacherNotices() async {
+    final notices = await _db.getBroadcastsForRole('teachers');
+    if (mounted) setState(() => _noticeCount = notices.length);
+  }
+
+  Future<void> _loadTeacherTimetable(String batchId) async {
+    final items = await _db.getTimeTableByBatch(batchId);
+    if (mounted) setState(() => _teacherTimetable = items);
   }
 
   final List<BottomNavItem> _navItems = const [
@@ -96,8 +123,12 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
   ];
 
   List<Widget> get _pages => [
-        _TeacherHomePage(teacher: _currentTeacher),
-        const _TeacherClassesPage(),
+        _TeacherHomePage(
+          teacher: _currentTeacher,
+          noticeCount: _noticeCount,
+          timetable: _teacherTimetable,
+        ),
+        _TeacherClassesPage(teacher: _currentTeacher),
       ];
 
   void _showProfileSheet(BuildContext context) {
@@ -173,7 +204,8 @@ class _TeacherProfileSheetState extends State<_TeacherProfileSheet> {
 
   Future<void> _loadApprovedFeedback() async {
     setState(() => _loading = true);
-    final feedbacks = await _db.getApprovedFeedbackForTeacher(widget.teacher.id);
+    final feedbacks =
+        await _db.getApprovedFeedbackForTeacher(widget.teacher.id);
     if (mounted) {
       setState(() {
         _approvedFeedbacks = feedbacks;
@@ -226,7 +258,8 @@ class _TeacherProfileSheetState extends State<_TeacherProfileSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount = _approvedFeedbacks.where((f) => !f.isReadByTeacher).length;
+    final unreadCount =
+        _approvedFeedbacks.where((f) => !f.isReadByTeacher).length;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
@@ -251,7 +284,7 @@ class _TeacherProfileSheetState extends State<_TeacherProfileSheet> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Profile Header
             Container(
               width: 64,
@@ -287,7 +320,7 @@ class _TeacherProfileSheetState extends State<_TeacherProfileSheet> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Feedback Section
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -302,7 +335,8 @@ class _TeacherProfileSheetState extends State<_TeacherProfileSheet> {
                 ),
                 if (unreadCount > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.error.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
@@ -319,7 +353,7 @@ class _TeacherProfileSheetState extends State<_TeacherProfileSheet> {
               ],
             ),
             const SizedBox(height: 12),
-            
+
             // Feedback List
             Expanded(
               child: _loading
@@ -349,16 +383,18 @@ class _TeacherProfileSheetState extends State<_TeacherProfileSheet> {
                             final feedback = _approvedFeedbacks[index];
                             return _TeacherFeedbackCard(
                               feedback: feedback,
-                              categoryLabel: _getCategoryLabel(feedback.category),
-                              categoryColor: _getCategoryColor(feedback.category),
+                              categoryLabel:
+                                  _getCategoryLabel(feedback.category),
+                              categoryColor:
+                                  _getCategoryColor(feedback.category),
                               onTap: () => _markAsRead(feedback),
                             );
                           },
                         ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Logout Button
             SizedBox(
               width: double.infinity,
@@ -412,10 +448,14 @@ class _TeacherFeedbackCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: feedback.isReadByTeacher ? Colors.grey[50] : const Color(0xFFFFF3E0),
+          color: feedback.isReadByTeacher
+              ? Colors.grey[50]
+              : const Color(0xFFFFF3E0),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: feedback.isReadByTeacher ? Colors.grey[200]! : const Color(0xFFFFB74D),
+            color: feedback.isReadByTeacher
+                ? Colors.grey[200]!
+                : const Color(0xFFFFB74D),
             width: feedback.isReadByTeacher ? 1 : 2,
           ),
         ),
@@ -431,7 +471,8 @@ class _TeacherFeedbackCard extends StatelessWidget {
                     color: categoryColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.feedback_outlined, color: categoryColor, size: 18),
+                  child: Icon(Icons.feedback_outlined,
+                      color: categoryColor, size: 18),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -459,14 +500,16 @@ class _TeacherFeedbackCard extends StatelessWidget {
                 // Rating
                 if (feedback.rating != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFA726).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.star, color: Color(0xFFFFA726), size: 14),
+                        const Icon(Icons.star,
+                            color: Color(0xFFFFA726), size: 14),
                         const SizedBox(width: 4),
                         Text(
                           '${feedback.rating}',
@@ -493,7 +536,7 @@ class _TeacherFeedbackCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            
+
             // Feedback Text
             Text(
               feedback.feedbackText,
@@ -504,7 +547,7 @@ class _TeacherFeedbackCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            
+
             // Date
             Row(
               children: [
@@ -539,8 +582,11 @@ class _TeacherFeedbackCard extends StatelessWidget {
 
 class _TeacherHomePage extends StatelessWidget {
   final Teacher? teacher;
-  
-  const _TeacherHomePage({this.teacher});
+  final int noticeCount;
+  final List<TimeTable> timetable;
+
+  const _TeacherHomePage(
+      {this.teacher, this.noticeCount = 0, this.timetable = const []});
 
   void _showNoticesSheet(BuildContext context) {
     showBroadcastNoticesSheet(context, 'teachers');
@@ -558,7 +604,7 @@ class _TeacherHomePage extends StatelessWidget {
             role: 'TEACHER',
             subtitle: 'Teacher Dashboard',
             roleColor: AppColors.teacherAccent,
-            notificationCount: 5,
+            notificationCount: noticeCount,
             onNotification: () => _showNoticesSheet(context),
           ),
           const SizedBox(height: 24),
@@ -568,13 +614,13 @@ class _TeacherHomePage extends StatelessWidget {
           // Today's Schedule
           const SectionHeader(title: "Today's Schedule"),
           const SizedBox(height: 14),
-          _TeacherSchedule(),
+          _TeacherSchedule(timetable: timetable),
           const SizedBox(height: 24),
 
           // Attendance Summary
           const SectionHeader(title: 'Attendance Summary'),
           const SizedBox(height: 14),
-          _AttendanceSummaryCard(),
+          _AttendanceSummaryCard(teacher: teacher),
           const SizedBox(height: 24),
 
           const SizedBox(height: 80),
@@ -585,8 +631,9 @@ class _TeacherHomePage extends StatelessWidget {
 }
 
 class _TeacherClassesPage extends StatefulWidget {
-  const _TeacherClassesPage();
-  
+  final Teacher? teacher;
+  const _TeacherClassesPage({this.teacher});
+
   @override
   State<_TeacherClassesPage> createState() => _TeacherClassesPageState();
 }
@@ -603,14 +650,14 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
 
   Future<void> _loadScheduledExams() async {
     setState(() => _loadingExams = true);
-    
+
     try {
       final response = await Supabase.instance.client
           .from('tests')
           .select()
           .eq('status', 'scheduled')
           .order('test_date', ascending: true);
-      
+
       if (mounted) {
         setState(() {
           _scheduledExams = List<Map<String, dynamic>>.from(response);
@@ -632,6 +679,7 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
       return dateString;
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -642,51 +690,76 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
           // Header
           const SectionHeader(title: 'My Classes'),
           const SizedBox(height: 16),
-          const _ClassCard(
-              batch: 'Class 10-A',
-              subject: 'Chemistry',
-              students: 40,
-              room: 'Room 101',
-              time: 'Mon/Tue 9–10 AM',
-              attendanceStatus: 'Marked',
-              present: 38),
-          const SizedBox(height: 10),
-          const _ClassCard(
-              batch: 'Class 10-B',
-              subject: 'Chemistry',
-              students: 38,
-              room: 'Room 201',
-              time: 'Tue 10–11 AM',
-              attendanceStatus: 'Pending',
-              present: 0),
-          const SizedBox(height: 10),
-          const _ClassCard(
-              batch: 'Class 11-A',
-              subject: 'Chemistry',
-              students: 35,
-              room: 'Room 301',
-              time: 'Wed 11 AM–12 PM',
-              attendanceStatus: 'Pending',
-              present: 0),
+          _LiveClassCards(teacher: widget.teacher),
           const SizedBox(height: 20),
-          
+
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SelectBatchForAttendanceScreen(
+                        teacherId: widget.teacher?.id.isNotEmpty == true
+                            ? widget.teacher!.id
+                            : 'teacher_001',
+                        teacherName: widget.teacher?.name ?? 'Teacher',
+                      ),
+                    ),
+                  ),
+                  child: const _QuickActionMiniCard(
+                    icon: Icons.how_to_reg_rounded,
+                    label: 'Mark Attendance',
+                    color: AppColors.success,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (_scheduledExams.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content:
+                              Text('Schedule an exam first to enter marks'),
+                          backgroundColor: AppColors.warning,
+                        ),
+                      );
+                      return;
+                    }
+                    _openEnterMarks(_scheduledExams.first);
+                  },
+                  child: const _QuickActionMiniCard(
+                    icon: Icons.grading_rounded,
+                    label: 'Enter Marks',
+                    color: AppColors.info,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+
           // Schedule Exam Widget
           GestureDetector(
             onTap: () async {
-              // For now, use a valid UUID format as placeholder
-              // In production, this should come from the logged-in teacher's profile
-              const teacherId = '00000000-0000-0000-0000-000000000001';
-              
+              // Use the actual teacher ID from the session
+              final teacherId =
+                  widget.teacher?.id ?? '00000000-0000-0000-0000-000000000001';
+              final teacherName = widget.teacher?.name ?? 'Teacher';
+
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const ScheduleExamScreen(
+                  builder: (_) => ScheduleExamScreen(
                     teacherId: teacherId,
-                    teacherName: 'Teacher',
+                    teacherName: teacherName,
                   ),
                 ),
               );
-              
+
               // Reload exams if an exam was scheduled
               if (result == true) {
                 _loadScheduledExams();
@@ -760,11 +833,11 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Scheduled Exams Section
           const SectionHeader(title: 'Scheduled Exams'),
           const SizedBox(height: 12),
-          
+
           if (_loadingExams)
             const Center(child: CircularProgressIndicator())
           else if (_scheduledExams.isEmpty)
@@ -797,7 +870,7 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
             )
           else
             ..._scheduledExams.map((exam) => _buildExamCard(exam)),
-          
+
           const SizedBox(height: 30),
         ],
       ),
@@ -862,7 +935,8 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: AppColors.success.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(8),
@@ -892,7 +966,161 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
                   ),
                 ),
               ),
+              const SizedBox(height: 6),
+              GestureDetector(
+                onTap: () => _openEnterMarks(exam),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.info.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Enter Marks',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.info,
+                    ),
+                  ),
+                ),
+              ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openEnterMarks(Map<String, dynamic> exam) {
+    final teacherId = widget.teacher?.id.isNotEmpty == true
+        ? widget.teacher!.id
+        : 'teacher_001';
+    final testId = exam['id']?.toString() ?? '';
+    final batchId = exam['batch_id']?.toString() ?? '';
+    if (testId.isEmpty || batchId.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EnterMarksScreen(
+          teacherId: teacherId,
+          testId: testId,
+          testName: exam['title']?.toString() ?? 'Exam',
+          batchId: batchId,
+          batchName: batchId,
+          maxMarks: (exam['total_marks'] as num?)?.toInt() ?? 100,
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveClassCards extends StatefulWidget {
+  final Teacher? teacher;
+
+  const _LiveClassCards({this.teacher});
+
+  @override
+  State<_LiveClassCards> createState() => _LiveClassCardsState();
+}
+
+class _LiveClassCardsState extends State<_LiveClassCards> {
+  final _db = DatabaseService();
+  List<Map<String, dynamic>> _classes = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(_LiveClassCards oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.teacher?.email != widget.teacher?.email) _load();
+  }
+
+  Future<void> _load() async {
+    final email = widget.teacher?.email ?? '';
+    if (email.isEmpty) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    final classes = await _db.getTeacherClasses(email);
+    if (mounted)
+      setState(() {
+        _classes = classes;
+        _loading = false;
+      });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+
+    if (_classes.isEmpty) {
+      return const GlassCard(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Text('No classes assigned yet.',
+                style: TextStyle(color: AppColors.textMid)),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: _classes
+          .map((c) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _ClassCard(
+                  batch: c['batch_name'] ?? 'Batch',
+                  subject: c['subject'] ?? 'General',
+                  students: c['student_count'] ?? 0,
+                  room: '',
+                  time: '',
+                  attendanceStatus: 'Pending',
+                  present: 0,
+                ),
+              ))
+          .toList(),
+    );
+  }
+}
+
+class _QuickActionMiniCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  const _QuickActionMiniCard(
+      {required this.icon, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark),
+            ),
           ),
         ],
       ),
@@ -1144,125 +1372,148 @@ class _ClassAttendanceTab extends StatefulWidget {
 }
 
 class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
-  // 0 = mark today, 1 = view history
+  final _attendanceService = AttendanceService();
+  final _db = DatabaseService();
+
   int _view = 0;
   DateTime _selectedDate = DateTime.now();
 
-  // Sample student roster
-  late List<Map<String, dynamic>> _students;
+  // Live student roster from DB
+  List<Map<String, dynamic>> _students = [];
+  // Live history from DB: date string -> list of attendance records
+  Map<String, List<Map<String, dynamic>>> _history = {};
 
-  // Sample history: date string -> map of studentId -> bool
-  final Map<String, Map<String, bool>> _history = {};
+  bool _loadingStudents = true;
+  bool _loadingHistory = false;
+  bool _saving = false;
+
+  String? _batchId;
 
   @override
   void initState() {
     super.initState();
-    _students = [
-      {'id': 'S001', 'name': 'Aryan Sharma', 'present': false},
-      {'id': 'S002', 'name': 'Sneha Patel', 'present': false},
-      {'id': 'S003', 'name': 'Rohan Mehta', 'present': false},
-      {'id': 'S004', 'name': 'Priya Iyer', 'present': false},
-      {'id': 'S005', 'name': 'Karan Singh', 'present': false},
-      {'id': 'S006', 'name': 'Ananya Nair', 'present': false},
-      {'id': 'S007', 'name': 'Vikram Rao', 'present': false},
-      {'id': 'S008', 'name': 'Divya Menon', 'present': false},
-    ];
-    // Dummy history data
-    final now = DateTime.now();
-    _history[_dateKey(now.subtract(const Duration(days: 1)))] = {
-      'S001': true,
-      'S002': true,
-      'S003': false,
-      'S004': true,
-      'S005': true,
-      'S006': false,
-      'S007': true,
-      'S008': true,
-    };
-    _history[_dateKey(now.subtract(const Duration(days: 2)))] = {
-      'S001': true,
-      'S002': false,
-      'S003': true,
-      'S004': true,
-      'S005': false,
-      'S006': true,
-      'S007': true,
-      'S008': false,
-    };
-    _history[_dateKey(now.subtract(const Duration(days: 3)))] = {
-      'S001': true,
-      'S002': true,
-      'S003': true,
-      'S004': false,
-      'S005': true,
-      'S006': true,
-      'S007': false,
-      'S008': true,
-    };
-    _history[_dateKey(now.subtract(const Duration(days: 5)))] = {
-      'S001': false,
-      'S002': true,
-      'S003': true,
-      'S004': true,
-      'S005': true,
-      'S006': true,
-      'S007': true,
-      'S008': true,
-    };
-    _history[_dateKey(now.subtract(const Duration(days: 6)))] = {
-      'S001': true,
-      'S002': true,
-      'S003': false,
-      'S004': false,
-      'S005': true,
-      'S006': true,
-      'S007': true,
-      'S008': true,
-    };
-    _history[_dateKey(now.subtract(const Duration(days: 8)))] = {
-      'S001': true,
-      'S002': true,
-      'S003': true,
-      'S004': true,
-      'S005': false,
-      'S006': false,
-      'S007': true,
-      'S008': true,
-    };
+    _loadBatchAndStudents();
+  }
+
+  Future<void> _loadBatchAndStudents() async {
+    setState(() => _loadingStudents = true);
+    try {
+      // Find batch by name
+      final batches = await _db.getAllBatches();
+      final matched = batches
+          .where((b) =>
+              b.name.toLowerCase().contains(widget.batch.toLowerCase()) ||
+              widget.batch.toLowerCase().contains(b.name.toLowerCase()))
+          .toList();
+
+      if (matched.isNotEmpty) {
+        _batchId = matched.first.id;
+        final students = await _attendanceService.getStudentsForAttendance(
+            batchId: _batchId!);
+        if (mounted) {
+          setState(() {
+            _students = students.map((s) {
+              final name = s['users']?['name'] ?? s['name'] ?? 'Student';
+              final roll = s['roll_number'] ?? '';
+              return {
+                'id': s['id']?.toString() ?? '',
+                'name': name,
+                'roll': roll,
+                'status': 'present', // default
+              };
+            }).toList();
+            _loadingStudents = false;
+          });
+          _loadHistoryForDate(_selectedDate);
+        }
+      } else {
+        if (mounted) setState(() => _loadingStudents = false);
+      }
+    } catch (e) {
+      debugPrint('Error loading students: $e');
+      if (mounted) setState(() => _loadingStudents = false);
+    }
+  }
+
+  Future<void> _loadHistoryForDate(DateTime date) async {
+    if (_batchId == null) return;
+    setState(() => _loadingHistory = true);
+    try {
+      final records = await _attendanceService.getAttendanceByDate(
+        batchId: _batchId!,
+        subjectId: '',
+        date: date,
+      );
+      final key = _dateKey(date);
+      if (mounted) {
+        setState(() {
+          _history[key] = records;
+          _loadingHistory = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loadingHistory = false);
+    }
   }
 
   String _dateKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-  int get _presentCount => _students.where((s) => s['present'] == true).length;
+  int get _presentCount =>
+      _students.where((s) => s['status'] == 'present').length;
 
-  void _saveToday() {
-    final key = _dateKey(DateTime.now());
-    setState(() {
-      _history[key] = {
-        for (var s in _students) s['id'] as String: s['present'] as bool
-      };
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Attendance saved successfully'),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
+  Future<void> _saveToday() async {
+    if (_batchId == null || _students.isEmpty) return;
+    setState(() => _saving = true);
+
+    final records = _students
+        .map((s) => {
+              'student_id': s['id'],
+              'status': s['status'],
+            })
+        .toList();
+
+    final result = await _attendanceService.markAttendance(
+      batchId: _batchId!,
+      subjectId: '',
+      teacherId: '',
+      studentAttendance: records,
+      date: DateTime.now(),
     );
+
+    if (mounted) {
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['success'] == true
+              ? 'Attendance saved successfully'
+              : result['error'] ?? 'Failed to save attendance'),
+          backgroundColor:
+              result['success'] == true ? AppColors.success : AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      if (result['success'] == true) {
+        _loadHistoryForDate(DateTime.now());
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingStudents) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Column(
       children: [
-        // Toggle
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.teacherAccent.withOpacity(0.08),
+              color: AppColors.teacherAccent.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -1274,7 +1525,10 @@ class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
                 _ToggleBtn(
                     label: 'View History',
                     selected: _view == 1,
-                    onTap: () => setState(() => _view = 1)),
+                    onTap: () {
+                      setState(() => _view = 1);
+                      _loadHistoryForDate(_selectedDate);
+                    }),
               ],
             ),
           ),
@@ -1316,86 +1570,120 @@ class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
           ),
         ),
         const SizedBox(height: 12),
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: _students.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (_, i) {
-              final s = _students[i];
-              final isPresent = s['present'] as bool;
-              return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isPresent
-                        ? AppColors.success.withOpacity(0.3)
-                        : AppColors.error.withOpacity(0.3),
+        if (_students.isEmpty)
+          const Expanded(
+            child: Center(
+              child: Text('No students in this batch.',
+                  style: TextStyle(color: AppColors.textMid)),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: _students.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (_, i) {
+                final s = _students[i];
+                final status = s['status'] as String;
+                final isPresent = status == 'present';
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isPresent
+                          ? AppColors.success.withValues(alpha: 0.3)
+                          : AppColors.error.withValues(alpha: 0.3),
+                    ),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.teacherAccent.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(s['id'] as String,
-                          style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.teacherAccent)),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(s['name'] as String,
-                          style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textDark)),
-                    ),
-                    GestureDetector(
-                      onTap: () =>
-                          setState(() => _students[i]['present'] = !isPresent),
-                      child: Container(
+                  child: Row(
+                    children: [
+                      Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isPresent
-                              ? AppColors.success.withOpacity(0.12)
-                              : AppColors.error.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppColors.teacherAccent.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text(
-                          isPresent ? 'Present' : 'Absent',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color:
-                                isPresent ? AppColors.success : AppColors.error,
+                        child: Text(s['roll'] as String? ?? '',
+                            style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.teacherAccent)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(s['name'] as String,
+                            style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textDark)),
+                      ),
+                      // Status toggle: present / absent / late
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            // Cycle: present -> absent -> late -> present
+                            final next = status == 'present'
+                                ? 'absent'
+                                : status == 'absent'
+                                    ? 'late'
+                                    : 'present';
+                            _students[i]['status'] = next;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: status == 'present'
+                                ? AppColors.success.withValues(alpha: 0.12)
+                                : status == 'late'
+                                    ? AppColors.warning.withValues(alpha: 0.12)
+                                    : AppColors.error.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            status == 'present'
+                                ? 'Present'
+                                : status == 'late'
+                                    ? 'Late'
+                                    : 'Absent',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: status == 'present'
+                                  ? AppColors.success
+                                  : status == 'late'
+                                      ? AppColors.warning
+                                      : AppColors.error,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            },
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
-        ),
         Padding(
           padding: const EdgeInsets.all(20),
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _saveToday,
-              icon: const Icon(Icons.save_rounded, size: 18),
-              label: const Text('Save Attendance'),
+              onPressed: _saving ? null : _saveToday,
+              icon: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2))
+                  : const Icon(Icons.save_rounded, size: 18),
+              label: Text(_saving ? 'Saving...' : 'Save Attendance'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.teacherAccent,
                 foregroundColor: Colors.white,
@@ -1414,15 +1702,14 @@ class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
 
   Widget _buildHistory() {
     final key = _dateKey(_selectedDate);
-    final dayRecord = _history[key];
-    final isToday = _dateKey(_selectedDate) == _dateKey(DateTime.now());
+    final dayRecords = _history[key];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Simple date picker row
+          // Date picker row
           SizedBox(
             height: 72,
             child: ListView.builder(
@@ -1433,7 +1720,10 @@ class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
                 final isSelected = _dateKey(date) == _dateKey(_selectedDate);
                 final hasRecord = _history.containsKey(_dateKey(date));
                 return GestureDetector(
-                  onTap: () => setState(() => _selectedDate = date),
+                  onTap: () {
+                    setState(() => _selectedDate = date);
+                    _loadHistoryForDate(date);
+                  },
                   child: Container(
                     width: 48,
                     margin: const EdgeInsets.only(right: 8),
@@ -1494,18 +1784,9 @@ class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
             ),
           ),
           const SizedBox(height: 16),
-          if (isToday && dayRecord == null)
-            const GlassCard(
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text("Today's attendance not saved yet.",
-                      style:
-                          TextStyle(color: AppColors.textLight, fontSize: 13)),
-                ),
-              ),
-            )
-          else if (dayRecord == null)
+          if (_loadingHistory)
+            const Center(child: CircularProgressIndicator())
+          else if (dayRecords == null || dayRecords.isEmpty)
             const GlassCard(
               child: Center(
                 child: Padding(
@@ -1521,19 +1802,31 @@ class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
               children: [
                 _MiniStat(
                     label: 'Present',
-                    value: '${dayRecord.values.where((v) => v).length}',
+                    value:
+                        '${dayRecords.where((r) => r['status'] == 'present').length}',
                     color: AppColors.success),
                 const SizedBox(width: 10),
                 _MiniStat(
                     label: 'Absent',
-                    value: '${dayRecord.values.where((v) => !v).length}',
+                    value:
+                        '${dayRecords.where((r) => r['status'] == 'absent').length}',
                     color: AppColors.error),
+                const SizedBox(width: 10),
+                _MiniStat(
+                    label: 'Late',
+                    value:
+                        '${dayRecords.where((r) => r['status'] == 'late').length}',
+                    color: AppColors.warning),
               ],
             ),
             const SizedBox(height: 12),
-            ...dayRecord.entries.map((e) {
-              final student = _students.firstWhere((s) => s['id'] == e.key,
-                  orElse: () => {'id': e.key, 'name': 'Unknown'});
+            ...dayRecords.map((record) {
+              final status = record['status'] ?? 'absent';
+              final studentData = record['students'];
+              final name = studentData?['users']?['name'] ??
+                  studentData?['name'] ??
+                  'Student';
+              final roll = studentData?['roll_number'] ?? '';
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Container(
@@ -1543,29 +1836,33 @@ class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: e.value
-                          ? AppColors.success.withOpacity(0.3)
-                          : AppColors.error.withOpacity(0.3),
+                      color: status == 'present'
+                          ? AppColors.success.withValues(alpha: 0.3)
+                          : status == 'late'
+                              ? AppColors.warning.withValues(alpha: 0.3)
+                              : AppColors.error.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.teacherAccent.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
+                      if (roll.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color:
+                                AppColors.teacherAccent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(roll,
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.teacherAccent)),
                         ),
-                        child: Text(e.key,
-                            style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.teacherAccent)),
-                      ),
-                      const SizedBox(width: 12),
+                      if (roll.isNotEmpty) const SizedBox(width: 12),
                       Expanded(
-                        child: Text(student['name'] as String,
+                        child: Text(name,
                             style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -1575,19 +1872,28 @@ class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 5),
                         decoration: BoxDecoration(
-                          color: e.value
-                              ? AppColors.success.withOpacity(0.12)
-                              : AppColors.error.withOpacity(0.12),
+                          color: status == 'present'
+                              ? AppColors.success.withValues(alpha: 0.12)
+                              : status == 'late'
+                                  ? AppColors.warning.withValues(alpha: 0.12)
+                                  : AppColors.error.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          e.value ? 'Present' : 'Absent',
+                          status == 'present'
+                              ? 'Present'
+                              : status == 'late'
+                                  ? 'Late'
+                                  : 'Absent',
                           style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: e.value
-                                  ? AppColors.success
-                                  : AppColors.error),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: status == 'present'
+                                ? AppColors.success
+                                : status == 'late'
+                                    ? AppColors.warning
+                                    : AppColors.error,
+                          ),
                         ),
                       ),
                     ],
@@ -1596,7 +1902,7 @@ class _ClassAttendanceTabState extends State<_ClassAttendanceTab> {
               );
             }),
           ],
-          const SizedBox(height: 80),
+          const SizedBox(height: 30),
         ],
       ),
     );
@@ -1666,18 +1972,19 @@ class _MiniStat extends StatelessWidget {
   }
 }
 
-// ─── Test model ───────────────────────────────────────────────────────────────
+// ─── Test model (kept for backward compat with _ClassMarksTab) ───────────────
 class _TestEntry {
   String title;
   int maxMarks;
-  String status; // 'Upcoming', 'Pending', 'Graded'
-  Map<String, int?> studentMarks; // studentId -> marks (null = not entered)
+  String status;
+  Map<String, int?> studentMarks;
 
-  _TestEntry(
-      {required this.title,
-      required this.maxMarks,
-      required this.status,
-      required this.studentMarks});
+  _TestEntry({
+    required this.title,
+    required this.maxMarks,
+    required this.status,
+    required this.studentMarks,
+  });
 }
 
 class _ClassMarksTab extends StatefulWidget {
@@ -1689,455 +1996,134 @@ class _ClassMarksTab extends StatefulWidget {
 }
 
 class _ClassMarksTabState extends State<_ClassMarksTab> {
-  late List<_TestEntry> _tests;
-
-  final List<Map<String, String>> _students = const [
-    {'id': 'S001', 'name': 'Aryan Sharma'},
-    {'id': 'S002', 'name': 'Sneha Patel'},
-    {'id': 'S003', 'name': 'Rohan Mehta'},
-    {'id': 'S004', 'name': 'Priya Iyer'},
-    {'id': 'S005', 'name': 'Karan Singh'},
-    {'id': 'S006', 'name': 'Ananya Nair'},
-    {'id': 'S007', 'name': 'Vikram Rao'},
-    {'id': 'S008', 'name': 'Divya Menon'},
-  ];
+  final _db = DatabaseService();
+  final _marksService = MarksService();
+  List<Map<String, dynamic>> _tests = [];
+  bool _loading = true;
+  String? _batchId;
 
   @override
   void initState() {
     super.initState();
-    _tests = [
-      _TestEntry(
-        title: 'Unit Test 1 - Laws of Motion',
-        maxMarks: 25,
-        status: 'Graded',
-        studentMarks: {
-          'S001': 22,
-          'S002': 19,
-          'S003': 23,
-          'S004': 17,
-          'S005': 21,
-          'S006': 24,
-          'S007': 18,
-          'S008': 20
-        },
-      ),
-      _TestEntry(
-        title: 'Unit Test 2 - Atomic Structure',
-        maxMarks: 25,
-        status: 'Pending',
-        studentMarks: {
-          for (var s in [
-            'S001',
-            'S002',
-            'S003',
-            'S004',
-            'S005',
-            'S006',
-            'S007',
-            'S008'
-          ])
-            s: null
-        },
-      ),
-      _TestEntry(
-        title: 'Mid-Term Physics Exam',
-        maxMarks: 50,
-        status: 'Upcoming',
-        studentMarks: {
-          for (var s in [
-            'S001',
-            'S002',
-            'S003',
-            'S004',
-            'S005',
-            'S006',
-            'S007',
-            'S008'
-          ])
-            s: null
-        },
-      ),
-    ];
+    _loadTests();
   }
 
-  void _showScheduleDialog() {
-    final titleCtrl = TextEditingController();
-    final maxCtrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Schedule New Test',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleCtrl,
-              decoration: InputDecoration(
-                labelText: 'Test Title',
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: maxCtrl,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Max Marks',
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              final title = titleCtrl.text.trim();
-              final max = int.tryParse(maxCtrl.text.trim()) ?? 0;
-              if (title.isNotEmpty && max > 0) {
-                setState(() {
-                  _tests.add(_TestEntry(
-                    title: title,
-                    maxMarks: max,
-                    status: 'Upcoming',
-                    studentMarks: {for (var s in _students) s['id']!: null},
-                  ));
-                });
-                Navigator.pop(context);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.teacherAccent,
-                foregroundColor: Colors.white),
-            child: const Text('Schedule'),
-          ),
-        ],
-      ),
-    );
+  Future<void> _loadTests() async {
+    setState(() => _loading = true);
+    try {
+      final batches = await _db.getAllBatches();
+      final matched = batches
+          .where((b) =>
+              b.name.toLowerCase().contains(widget.batch.toLowerCase()) ||
+              widget.batch.toLowerCase().contains(b.name.toLowerCase()))
+          .toList();
+
+      if (matched.isNotEmpty) {
+        _batchId = matched.first.id;
+        final tests = await _marksService.getTestsByBatch(batchId: _batchId!);
+        if (mounted)
+          setState(() {
+            _tests = tests;
+            _loading = false;
+          });
+      } else {
+        if (mounted) setState(() => _loading = false);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
-  void _openGrading(_TestEntry test) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => _GradeStudentsPage(
-            test: test, students: _students, onSaved: () => setState(() {})),
-      ),
-    );
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final d = DateTime.parse(dateStr);
+      return '${d.day}/${d.month}/${d.year}';
+    } catch (_) {
+      return dateStr;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Expanded(child: SectionHeader(title: 'Tests')),
-              GestureDetector(
-                onTap: _showScheduleDialog,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: AppColors.teacherAccent,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.add_rounded, color: Colors.white, size: 16),
-                      SizedBox(width: 4),
-                      Text('Schedule',
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white)),
-                    ],
-                  ),
+          if (_tests.isEmpty)
+            const GlassCard(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Text('No tests scheduled for this batch.',
+                      style: TextStyle(color: AppColors.textMid)),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ..._tests.map((test) {
-            Color statusColor = test.status == 'Graded'
-                ? AppColors.success
-                : test.status == 'Upcoming'
-                    ? AppColors.info
-                    : AppColors.warning;
-            final gradedCount =
-                test.studentMarks.values.where((v) => v != null).length;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: GestureDetector(
-                onTap:
-                    test.status == 'Upcoming' ? null : () => _openGrading(test),
+            )
+          else
+            ..._tests.map((test) {
+              final status = test['status'] ?? 'scheduled';
+              Color statusColor;
+              switch (status) {
+                case 'completed':
+                  statusColor = AppColors.success;
+                  break;
+                case 'ongoing':
+                  statusColor = AppColors.warning;
+                  break;
+                default:
+                  statusColor = AppColors.info;
+              }
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
                 child: GlassCard(
-                  padding: const EdgeInsets.all(14),
-                  child: Row(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.quiz_rounded,
-                            color: statusColor, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(test.title,
-                                style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textDark)),
-                            Text(
-                                'Max: ${test.maxMarks} marks${test.status != 'Upcoming' ? ' • $gradedCount/${_students.length} graded' : ''}',
-                                style: const TextStyle(
-                                    fontSize: 11, color: AppColors.textMid)),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                      Row(
                         children: [
+                          Expanded(
+                            child: Text(
+                              test['title'] ?? 'Untitled',
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textDark),
+                            ),
+                          ),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                                color: statusColor.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(8)),
-                            child: Text(test.status,
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: statusColor)),
+                              color: statusColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              status.toUpperCase(),
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: statusColor),
+                            ),
                           ),
-                          if (test.status != 'Upcoming') ...[
-                            const SizedBox(height: 4),
-                            const Text('Tap to grade',
-                                style: TextStyle(
-                                    fontSize: 10, color: AppColors.textLight)),
-                          ],
                         ],
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
-          const SizedBox(height: 80),
-        ],
-      ),
-    );
-  }
-}
-
-class _GradeStudentsPage extends StatefulWidget {
-  final _TestEntry test;
-  final List<Map<String, String>> students;
-  final VoidCallback onSaved;
-
-  const _GradeStudentsPage(
-      {required this.test, required this.students, required this.onSaved});
-
-  @override
-  State<_GradeStudentsPage> createState() => _GradeStudentsPageState();
-}
-
-class _GradeStudentsPageState extends State<_GradeStudentsPage> {
-  late Map<String, TextEditingController> _controllers;
-
-  @override
-  void initState() {
-    super.initState();
-    _controllers = {
-      for (var s in widget.students)
-        s['id']!: TextEditingController(
-          text: widget.test.studentMarks[s['id']] != null
-              ? '${widget.test.studentMarks[s['id']]}'
-              : '',
-        )
-    };
-  }
-
-  @override
-  void dispose() {
-    for (var c in _controllers.values) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  void _save() {
-    bool hasError = false;
-    for (var s in widget.students) {
-      final val = int.tryParse(_controllers[s['id']]!.text.trim());
-      if (_controllers[s['id']]!.text.trim().isNotEmpty) {
-        if (val == null || val < 0 || val > widget.test.maxMarks) {
-          hasError = true;
-          break;
-        }
-        widget.test.studentMarks[s['id']!] = val;
-      }
-    }
-    if (hasError) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Marks must be between 0 and ${widget.test.maxMarks}'),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ));
-      return;
-    }
-    final allGraded = widget.test.studentMarks.values.every((v) => v != null);
-    widget.test.status = allGraded ? 'Graded' : 'Pending';
-    widget.onSaved();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: const Text('Marks saved successfully'),
-      backgroundColor: AppColors.success,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-    ));
-    Navigator.pop(context);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textDark),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(widget.test.title,
-                style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textDark)),
-            Text('Max Marks: ${widget.test.maxMarks}',
-                style: const TextStyle(fontSize: 12, color: AppColors.textMid)),
-          ],
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(20),
-              itemCount: widget.students.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (_, i) {
-                final s = widget.students[i];
-                final ctrl = _controllers[s['id']]!;
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.divider),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.teacherAccent.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(s['id']!,
-                            style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.teacherAccent)),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(s['name']!,
-                            style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textDark)),
-                      ),
-                      SizedBox(
-                        width: 72,
-                        child: TextField(
-                          controller: ctrl,
-                          keyboardType: TextInputType.number,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textDark),
-                          decoration: InputDecoration(
-                            hintText: '—',
-                            hintStyle:
-                                const TextStyle(color: AppColors.textLight),
-                            suffixText: '/${widget.test.maxMarks}',
-                            suffixStyle: const TextStyle(
-                                fontSize: 11, color: AppColors.textLight),
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 8),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide:
-                                  const BorderSide(color: AppColors.divider),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(
-                                  color: AppColors.teacherAccent),
-                            ),
-                          ),
-                        ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Date: ${_formatDate(test['test_date']?.toString())} • ${test['total_marks'] ?? 0} marks',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textMid),
                       ),
                     ],
                   ),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _save,
-                icon: const Icon(Icons.save_rounded, size: 18),
-                label: const Text('Save Marks'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.teacherAccent,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  textStyle: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w600),
                 ),
-              ),
-            ),
-          ),
+              );
+            }),
+          const SizedBox(height: 30),
         ],
       ),
     );
@@ -2153,107 +2139,23 @@ class _TeacherAttendancePage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Mark Attendance'),
+          SectionHeader(title: 'Attendance'),
           SizedBox(height: 12),
           GlassCard(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Select Class',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textDark)),
-                SizedBox(height: 12),
-                _AttendanceClassTile(
-                    batch: 'Class 10-A',
-                    status: 'Marked',
-                    present: 38,
-                    total: 40),
-                Divider(height: 20),
-                _AttendanceClassTile(
-                    batch: 'Class 10-B',
-                    status: 'Pending',
-                    present: 0,
-                    total: 38),
-                Divider(height: 20),
-                _AttendanceClassTile(
-                    batch: 'Class 11-A',
-                    status: 'Pending',
-                    present: 0,
-                    total: 35),
-              ],
-            ),
-          ),
-          SizedBox(height: 24),
-          SectionHeader(title: 'Summary - Today'),
-          SizedBox(height: 12),
-          GlassCard(
-            child: Column(
-              children: [
-                LabeledProgressBar(
-                    label: 'Class 10-A (38/40)',
-                    value: 0.95,
-                    color: AppColors.success),
-              ],
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Use "Mark Attendance" from the Classes tab to record attendance.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textMid),
+                ),
+              ),
             ),
           ),
           SizedBox(height: 30),
         ],
       ),
-    );
-  }
-}
-
-class _AttendanceClassTile extends StatelessWidget {
-  final String batch;
-  final String status;
-  final int present;
-  final int total;
-  const _AttendanceClassTile(
-      {required this.batch,
-      required this.status,
-      required this.present,
-      required this.total});
-  @override
-  Widget build(BuildContext context) {
-    final isDone = status == 'Marked';
-    return Row(
-      children: [
-        Icon(isDone ? Icons.check_circle_rounded : Icons.pending_rounded,
-            color: isDone ? AppColors.success : AppColors.warning, size: 24),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(batch,
-                  style: TextStyle(
-                      fontSize: Responsive.sp(context, 13),
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textDark)),
-              Text(isDone ? 'Present: $present / $total' : 'Not yet marked',
-                  style: TextStyle(
-                      fontSize: Responsive.sp(context, 11),
-                      color: AppColors.textMid)),
-            ],
-          ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: (isDone ? AppColors.success : AppColors.warning)
-                .withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(status,
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: isDone ? AppColors.success : AppColors.warning)),
-        ),
-      ],
     );
   }
 }
@@ -2267,24 +2169,20 @@ class _TeacherMarksPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Test Results Entry'),
+          SectionHeader(title: 'Test Results'),
           SizedBox(height: 12),
-          _MarksTestCard(
-              title: 'Unit Test 1 - Laws of Motion',
-              batch: 'Class 10-A',
-              status: 'Graded'),
-          SizedBox(height: 10),
-          _MarksTestCard(
-              title: 'Unit Test 1 - Atomic Structure',
-              batch: 'Class 10-B',
-              status: 'Pending'),
-          SizedBox(height: 24),
-          SectionHeader(title: 'Scheduled Tests'),
-          SizedBox(height: 12),
-          _MarksTestCard(
-              title: 'Mid-Term Physics Exam',
-              batch: 'Class 10-A',
-              status: 'Upcoming'),
+          GlassCard(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Use "Enter Marks" from the Classes tab to record test results.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textMid),
+                ),
+              ),
+            ),
+          ),
           SizedBox(height: 30),
         ],
       ),
@@ -2347,9 +2245,9 @@ class _MarksTestCard extends StatelessWidget {
 
 class _TeacherMessagesPage extends StatelessWidget {
   final Teacher? teacher;
-  
+
   const _TeacherMessagesPage({this.teacher});
-  
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -2535,7 +2433,10 @@ class _QuickActionsGrid extends StatelessWidget {
 }
 
 class _TeacherSchedule extends StatelessWidget {
-  final List<Map<String, String>> schedule = const [
+  final List<TimeTable> timetable;
+  const _TeacherSchedule({this.timetable = const []});
+
+  final List<Map<String, String>> fallbackSchedule = const [
     {
       'time': '09:00 AM',
       'class': 'Class 8-A',
@@ -2568,12 +2469,23 @@ class _TeacherSchedule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final schedule = timetable.isNotEmpty
+        ? timetable
+            .map((t) => {
+                  'time': _formatTime(t.startTime),
+                  'class': t.batchId,
+                  'subject': t.subjectId,
+                  'room': (t.room ?? 'Room -'),
+                  'endTime': _formatTime(t.endTime),
+                })
+            .toList()
+        : fallbackSchedule;
     return Column(
       children: schedule.map((s) {
         final status = _getClassStatus(s['time']!, s['endTime']!);
         Color statusColor;
         String statusLabel;
-        
+
         switch (status) {
           case 'done':
             statusColor = AppColors.textLight;
@@ -2587,7 +2499,7 @@ class _TeacherSchedule extends StatelessWidget {
             statusColor = AppColors.teacherAccent;
             statusLabel = 'Upcoming';
         }
-        
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: GlassCard(
@@ -2666,17 +2578,27 @@ class _TeacherSchedule extends StatelessWidget {
     );
   }
 
+  String _formatTime(String raw) {
+    final p = raw.split(':');
+    if (p.length < 2) return raw;
+    final hour = int.tryParse(p[0]) ?? 0;
+    final minute = p[1];
+    final suffix = hour >= 12 ? 'PM' : 'AM';
+    final hh = hour % 12 == 0 ? 12 : hour % 12;
+    return '$hh:$minute $suffix';
+  }
+
   String _getClassStatus(String startTimeStr, String endTimeStr) {
     final now = DateTime.now();
     final currentTime = TimeOfDay.fromDateTime(now);
-    
+
     final startTime = _parseTimeString(startTimeStr);
     final endTime = _parseTimeString(endTimeStr);
-    
+
     final currentMinutes = currentTime.hour * 60 + currentTime.minute;
     final startMinutes = startTime.hour * 60 + startTime.minute;
     final endMinutes = endTime.hour * 60 + endTime.minute;
-    
+
     if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
       return 'current';
     } else if (currentMinutes >= endMinutes) {
@@ -2692,18 +2614,18 @@ class _TeacherSchedule extends StatelessWidget {
       final parts = timeStr.split(' ');
       final timePart = parts[0];
       final period = parts[1];
-      
+
       final hourMinute = timePart.split(':');
       int hour = int.parse(hourMinute[0]);
       final minute = int.parse(hourMinute[1]);
-      
+
       // Convert to 24-hour format
       if (period == 'PM' && hour != 12) {
         hour += 12;
       } else if (period == 'AM' && hour == 12) {
         hour = 0;
       }
-      
+
       return TimeOfDay(hour: hour, minute: minute);
     } catch (e) {
       return const TimeOfDay(hour: 0, minute: 0);
@@ -2742,28 +2664,98 @@ class _ClassPerformanceList extends StatelessWidget {
   }
 }
 
-class _AttendanceSummaryCard extends StatelessWidget {
+class _AttendanceSummaryCard extends StatefulWidget {
+  final Teacher? teacher;
+
+  const _AttendanceSummaryCard({this.teacher});
+
+  @override
+  State<_AttendanceSummaryCard> createState() => _AttendanceSummaryCardState();
+}
+
+class _AttendanceSummaryCardState extends State<_AttendanceSummaryCard> {
+  final _db = DatabaseService();
+  int _present = 0;
+  int _absent = 0;
+  int _leave = 0;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(_AttendanceSummaryCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.teacher?.email != widget.teacher?.email) _load();
+  }
+
+  Future<void> _load() async {
+    final email = widget.teacher?.email ?? '';
+    if (email.isEmpty) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    final summary = await _db.getTeacherAttendanceSummary(email);
+    if (mounted) {
+      setState(() {
+        _present = summary['present'] ?? 0;
+        _absent = summary['absent'] ?? 0;
+        _leave = summary['leave'] ?? 0;
+        _loading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const GlassCard(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
+    final total = _present + _absent + _leave;
+    if (total == 0) {
+      return const GlassCard(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('No attendance data for this month.',
+                style: TextStyle(color: AppColors.textMid)),
+          ),
+        ),
+      );
+    }
+
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: _AttendanceStat(
-                    label: 'Present', value: '162', color: AppColors.success),
+                    label: 'Present',
+                    value: '$_present',
+                    color: AppColors.success),
               ),
               Container(width: 1, height: 48, color: AppColors.divider),
-              const Expanded(
+              Expanded(
                 child: _AttendanceStat(
-                    label: 'Absent', value: '18', color: AppColors.error),
+                    label: 'Absent', value: '$_absent', color: AppColors.error),
               ),
               Container(width: 1, height: 48, color: AppColors.divider),
-              const Expanded(
+              Expanded(
                 child: _AttendanceStat(
-                    label: 'Leave', value: '4', color: AppColors.warning),
+                    label: 'Leave', value: '$_leave', color: AppColors.warning),
               ),
             ],
           ),
@@ -2772,18 +2764,21 @@ class _AttendanceSummaryCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             child: Row(
               children: [
-                Expanded(
-                  flex: 162,
-                  child: Container(height: 10, color: AppColors.success),
-                ),
-                Expanded(
-                  flex: 18,
-                  child: Container(height: 10, color: AppColors.error),
-                ),
-                Expanded(
-                  flex: 4,
-                  child: Container(height: 10, color: AppColors.warning),
-                ),
+                if (_present > 0)
+                  Expanded(
+                    flex: _present,
+                    child: Container(height: 10, color: AppColors.success),
+                  ),
+                if (_absent > 0)
+                  Expanded(
+                    flex: _absent,
+                    child: Container(height: 10, color: AppColors.error),
+                  ),
+                if (_leave > 0)
+                  Expanded(
+                    flex: _leave,
+                    child: Container(height: 10, color: AppColors.warning),
+                  ),
               ],
             ),
           ),
