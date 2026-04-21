@@ -76,14 +76,13 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
       var query = Supabase.instance.client
           .from('tests')
           .select('*')
-          .gte('test_date', DateTime.now().toIso8601String().split('T')[0])
-          .order('test_date', ascending: true);
+          .gte('test_date', DateTime.now().toIso8601String().split('T')[0]);
 
       if (widget.batchId != null) {
-        query = query.eq('batch_id', widget.batchId);
+        query = query.eq('batch_id', widget.batchId!);
       }
 
-      final response = await query;
+      final response = await query.order('test_date', ascending: true);
       final exams = List<Map<String, dynamic>>.from(response);
 
       setState(() {
@@ -372,7 +371,7 @@ class _ViewExamsScreenState extends State<ViewExamsScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      isScrollControlEnabled: true,
+      isScrollControlled: true,
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
         decoration: const BoxDecoration(
