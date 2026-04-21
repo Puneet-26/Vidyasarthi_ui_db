@@ -3,7 +3,7 @@
     <application
         android:label="vidyasarathi"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/launcher_icon"
         android:usesCleartextTraffic="false"
         android:networkSecurityConfig="@xml/network_security_config">
         <activity
