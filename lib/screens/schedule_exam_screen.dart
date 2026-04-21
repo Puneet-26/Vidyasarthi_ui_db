@@ -29,21 +29,34 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
   DateTime? _selectedDate;
   bool _isSaving = false;
 
-  final List<Map<String, String>> _batches = [
-    {'id': 'batch_12_science_a', 'name': 'Class 12 Science A'},
-    {'id': 'batch_12_science_b', 'name': 'Class 12 Science B'},
-    {'id': 'batch_11_science_a', 'name': 'Class 11 Science A'},
-    {'id': 'batch_11_science_b', 'name': 'Class 11 Science B'},
-    {'id': 'batch_10_a', 'name': 'Class 10 A'},
-  ];
+  List<Map<String, dynamic>> _batches = [];
+  List<Map<String, dynamic>> _subjects = [];
+  bool _isLoading = true;
 
-  final List<Map<String, String>> _subjects = [
-    {'id': 'sub_physics', 'name': 'Physics'},
-    {'id': 'sub_chemistry', 'name': 'Chemistry'},
-    {'id': 'sub_mathematics', 'name': 'Mathematics'},
-    {'id': 'sub_biology', 'name': 'Biology'},
-    {'id': 'sub_english', 'name': 'English'},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final batchesReq = await Supabase.instance.client.from('batches').select('id, batch_name');
+      final subjectsReq = await Supabase.instance.client.from('subjects').select('id, name');
+      if (mounted) {
+        setState(() {
+          _batches = List<Map<String, dynamic>>.from(batchesReq).map((b) => {'id': b['id'].toString(), 'name': b['batch_name'].toString()}).toList();
+          _subjects = List<Map<String, dynamic>>.from(subjectsReq).map((s) => {'id': s['id'].toString(), 'name': s['name'].toString()}).toList();
+          _isLoading = false;
+        });
+      }
+    } catch(e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showError('Failed to load classes and subjects');
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -140,7 +153,9 @@ class _ScheduleExamScreenState extends State<ScheduleExamScreen> {
         backgroundColor: AppColors.teacherAccent,
         foregroundColor: Colors.white,
       ),
-      body: Form(
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator()) 
+        : Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),

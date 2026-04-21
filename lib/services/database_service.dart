@@ -610,6 +610,51 @@ class DatabaseService {
     }
   }
 
+  Future<List<TimeTable>> getTimeTableByTeacher(String teacherId) async {
+    try {
+      final response = await _client
+          .from('timetables')
+          .select()
+          .eq('teacher_id', teacherId);
+      return (response as List).map((t) => TimeTable.fromJson(t)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getTeacherTimetable(String teacherId) async {
+    try {
+      final timetables = await _client
+          .from('timetables')
+          .select()
+          .eq('teacher_id', teacherId);
+      
+      final batches = await getAllBatches();
+      final subjects = await getAllSubjects();
+      
+      final Map<String, String> batchNames = { for (var b in batches) b.id: b.name };
+      final Map<String, String> subjectNames = { for (var s in subjects) s.id: s.name };
+
+      List<Map<String, dynamic>> result = [];
+      for (var t in timetables as List) {
+        result.add({
+          'id': t['id'],
+          'day': t['day'],
+          'time': '${t['start_time']} - ${t['end_time']}',
+          'start_time': t['start_time'],
+          'end_time': t['end_time'],
+          'room': t['room'] ?? 'TBA',
+          'batch': batchNames[t['batch_id']] ?? 'Unknown Batch',
+          'subject': subjectNames[t['subject_id']] ?? 'Unknown Subject',
+        });
+      }
+      return result;
+    } catch (e) {
+      debugPrint('Error: $e');
+      return [];
+    }
+  }
+
   Future<bool> createTimeTableEntry(TimeTable tt) async {
     try {
       await _client.from('timetables').insert(tt.toJson());

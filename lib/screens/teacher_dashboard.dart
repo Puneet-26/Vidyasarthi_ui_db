@@ -98,7 +98,7 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
 
   List<Widget> get _pages => [
         _TeacherHomePage(teacher: _currentTeacher),
-        const _TeacherClassesPage(),
+        _TeacherClassesPage(teacher: _currentTeacher),
       ];
 
   void _showProfileSheet(BuildContext context) {
@@ -569,7 +569,7 @@ class _TeacherHomePage extends StatelessWidget {
           // Today's Schedule
           const SectionHeader(title: "Today's Schedule"),
           const SizedBox(height: 14),
-          _TeacherSchedule(),
+          _TeacherSchedule(teacher: teacher),
           const SizedBox(height: 24),
 
           // Attendance Summary
@@ -586,7 +586,8 @@ class _TeacherHomePage extends StatelessWidget {
 }
 
 class _TeacherClassesPage extends StatefulWidget {
-  const _TeacherClassesPage();
+  final Teacher? teacher;
+  const _TeacherClassesPage({this.teacher});
   
   @override
   State<_TeacherClassesPage> createState() => _TeacherClassesPageState();
@@ -674,16 +675,14 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
           // Schedule Exam Widget
           GestureDetector(
             onTap: () async {
-              // For now, use a valid UUID format as placeholder
-              // In production, this should come from the logged-in teacher's profile
-              const teacherId = '00000000-0000-0000-0000-000000000001';
+              final teacherId = widget.teacher?.id ?? 'teacher_001';
               
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const ScheduleExamScreen(
+                  builder: (_) => ScheduleExamScreen(
                     teacherId: teacherId,
-                    teacherName: 'Teacher',
+                    teacherName: widget.teacher?.name ?? 'Teacher',
                   ),
                 ),
               );
@@ -1081,39 +1080,42 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
   }
 
   void _showTimetableDialog(BuildContext context) {
+    if (widget.teacher == null) return;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('My Timetable'),
-        content: const SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _TimetableListItem(
-                day: 'Monday',
-                time: '9:00 - 10:00 AM',
-                batch: 'Class 10-A',
-                subject: 'Chemistry',
-                room: 'Room 101',
-              ),
-              SizedBox(height: 12),
-              _TimetableListItem(
-                day: 'Tuesday',
-                time: '10:00 - 11:00 AM',
-                batch: 'Class 10-B',
-                subject: 'Chemistry',
-                room: 'Room 201',
-              ),
-              SizedBox(height: 12),
-              _TimetableListItem(
-                day: 'Wednesday',
-                time: '11:00 AM - 12:00 PM',
-                batch: 'Class 11-A',
-                subject: 'Chemistry',
-                room: 'Room 301',
-              ),
-            ],
+        content: SizedBox(
+          width: double.maxFinite,
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: DatabaseService().getTeacherTimetable(widget.teacher!.id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return const Text('Error loading timetable');
+              }
+              final data = snapshot.data ?? [];
+              if (data.isEmpty) {
+                return const Text('No classes scheduled.');
+              }
+              return ListView.separated(
+                shrinkWrap: true,
+                itemCount: data.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final t = data[index];
+                  return _TimetableListItem(
+                    day: t['day'] ?? '',
+                    time: t['time'] ?? '',
+                    batch: t['batch'] ?? '',
+                    subject: t['subject'] ?? '',
+                    room: t['room'] ?? '',
+                  );
+                },
+              );
+            },
           ),
         ),
         actions: [
@@ -2830,43 +2832,52 @@ class _QuickActionsGrid extends StatelessWidget {
   }
 }
 
-class _TeacherSchedule extends StatelessWidget {
-  final List<Map<String, String>> schedule = const [
-    {
-      'time': '09:00 AM',
-      'class': 'Class 8-A',
-      'subject': 'Chemistry',
-      'room': 'Room 204',
-      'endTime': '10:00 AM'
-    },
-    {
-      'time': '10:30 AM',
-      'class': 'Class 9-B',
-      'subject': 'Chemistry',
-      'room': 'Room 301',
-      'endTime': '11:30 AM'
-    },
-    {
-      'time': '12:30 PM',
-      'class': 'Class 7-C',
-      'subject': 'Chemistry',
-      'room': 'Room 105',
-      'endTime': '01:30 PM'
-    },
-    {
-      'time': '02:00 PM',
-      'class': 'Class 10-A',
-      'subject': 'Chemistry',
-      'room': 'Room 204',
-      'endTime': '03:00 PM'
-    },
-  ];
+class _TeacherSchedule extends StatefulWidget {
+  final Teacher? teacher;
+  const _TeacherSchedule({this.teacher});
+
+  @override
+  State<_TeacherSchedule> createState() => _TeacherScheduleState();
+}
+
+class _TeacherScheduleState extends State<_TeacherSchedule> {
+  List<Map<String, dynamic>> _schedule = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSchedule();
+  }
+
+  Future<void> _loadSchedule() async {
+    if (widget.teacher == null) return;
+    try {
+      final timetable = await DatabaseService().getTeacherTimetable(widget.teacher!.id);
+      
+      // Filter for today's schedule (basic simulation, or you can just show all/next configured ones)
+      // Since it's a demo, let's just show what we fetch, assuming getTeacherTimetable can be modified to filter by Day of Week later.
+      final dayName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][DateTime.now().weekday - 1];
+      
+      final todaySchedule = timetable.where((t) => t['day'] == dayName).toList();
+      
+      setState(() {
+        _schedule = todaySchedule.isNotEmpty ? todaySchedule : timetable; // fallback to all if today is empty
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_schedule.isEmpty) return const Center(child: Text("No upcoming classes scheduled."));
+
     return Column(
-      children: schedule.map((s) {
-        final status = _getClassStatus(s['time']!, s['endTime']!);
+      children: _schedule.map((s) {
+        final status = _getClassStatus(s['start_time'], s['end_time']);
         Color statusColor;
         String statusLabel;
         
@@ -2897,7 +2908,7 @@ class _TeacherSchedule extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      s['time']!,
+                      s['time'] ?? '',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -2905,7 +2916,7 @@ class _TeacherSchedule extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      s['room']!,
+                      s['room'] ?? '',
                       style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.textLight,
@@ -2921,7 +2932,7 @@ class _TeacherSchedule extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        s['class']!,
+                        s['batch'] ?? '',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -2929,7 +2940,7 @@ class _TeacherSchedule extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        s['subject']!,
+                        s['subject'] ?? '',
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.textMid,

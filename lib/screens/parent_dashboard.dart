@@ -8,6 +8,8 @@ import 'connect_with_us_screen.dart';
 import 'faculty_screen.dart';
 import 'submit_feedback_screen_premium.dart';
 import 'view_attendance_screen.dart';
+import '../services/attendance_service.dart';
+import '../services/marks_service.dart';
 
 class ParentDashboard extends StatefulWidget {
   final String parentEmail;
@@ -311,66 +313,13 @@ class _ParentHomePageState extends State<_ParentHomePage> {
         }),
         const SizedBox(height: 24),
         
-        // Performance Banner
-        _PerformanceBanner(studentName: student.name.split(' ')[0]),
-        const SizedBox(height: 24),
-        
-        // Stats Cards
-        Wrap(spacing: 12, runSpacing: 12, children: [
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ViewAttendanceScreen(
-                    studentId: student.id,
-                    studentName: student.name,
-                  ),
-                ),
-              );
-            },
-            child: SizedBox(
-                width: (MediaQuery.of(context).size.width - 52) / 2,
-                child: const StatCard(
-                    title: 'Attendance',
-                    value: '92%',
-                    icon: Icons.how_to_reg_rounded,
-                    color: AppColors.success,
-                    subtitle: 'This month')),
-          ),
-          SizedBox(
-              width: (MediaQuery.of(context).size.width - 52) / 2,
-              child: const StatCard(
-                  title: 'Overall Grade',
-                  value: 'A-',
-                  icon: Icons.star_rounded,
-                  color: AppColors.parentAccent,
-                  subtitle: 'Semester 2')),
-          SizedBox(
-              width: (MediaQuery.of(context).size.width - 52) / 2,
-              child: StatCard(
-                  title: 'Fee Status',
-                  value: feeLabel,
-                  icon: feeColor == AppColors.success
-                      ? Icons.check_circle_rounded
-                      : Icons.pending_rounded,
-                  color: feeColor,
-                  subtitle: '${(feeProgress * 100).toInt()}% paid')),
-          SizedBox(
-              width: (MediaQuery.of(context).size.width - 52) / 2,
-              child: const StatCard(
-                  title: 'Class Rank',
-                  value: '#7',
-                  icon: Icons.bar_chart_rounded,
-                  color: AppColors.warning,
-                  subtitle: 'Out of 40')),
-        ]),
-        const SizedBox(height: 24),
-        
-        // Academic Progress
-        const SectionHeader(title: 'Academic Progress'),
-        const SizedBox(height: 14),
-        const _AcademicProgressCard(),
+        // Realtime Stats and Academic Progress
+        _RealtimeStudentStats(
+          student: student,
+          feeLabel: feeLabel,
+          feeProgress: feeProgress,
+          feeColor: feeColor,
+        ),
         const SizedBox(height: 24),
         
         const SectionHeader(title: 'Fee Progress'),
@@ -421,7 +370,8 @@ class _ParentHomePageState extends State<_ParentHomePage> {
 // Performance Banner Widget
 class _PerformanceBanner extends StatelessWidget {
   final String studentName;
-  const _PerformanceBanner({required this.studentName});
+  final Map<String, dynamic> performance;
+  const _PerformanceBanner({required this.studentName, required this.performance});
 
   @override
   Widget build(BuildContext context) {
@@ -495,12 +445,12 @@ class _PerformanceBanner extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Column(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Tests: 8/10',
-                        style: TextStyle(
+                        'Tests: ${performance['total_tests'] ?? 0}',
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -522,7 +472,7 @@ class _PerformanceBanner extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Homework: 95%',
+                        'Homework: 95%', // Still mock for homework until we have a service for it
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -541,34 +491,171 @@ class _PerformanceBanner extends StatelessWidget {
   }
 }
 
-// Academic Progress Card Widget
-class _AcademicProgressCard extends StatelessWidget {
-  const _AcademicProgressCard();
+// ─── Realtime Stats Component ──────────────────────────────────────────────────
+class _RealtimeStudentStats extends StatefulWidget {
+  final Student student;
+  final String feeLabel;
+  final double feeProgress;
+  final Color feeColor;
+
+  const _RealtimeStudentStats({
+    required this.student,
+    required this.feeLabel,
+    required this.feeProgress,
+    required this.feeColor,
+  });
+
+  @override
+  State<_RealtimeStudentStats> createState() => _RealtimeStudentStatsState();
+}
+
+class _RealtimeStudentStatsState extends State<_RealtimeStudentStats> {
+  Map<String, dynamic> _attendanceSummary = {};
+  Map<String, dynamic> _performanceSummary = {};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  @override
+  void didUpdateWidget(covariant _RealtimeStudentStats oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.student.id != widget.student.id) {
+      _loadStats();
+    }
+  }
+
+  Future<void> _loadStats() async {
+    setState(() => _isLoading = true);
+    try {
+      final now = DateTime.now();
+      final startOfMonth = DateTime(now.year, now.month, 1);
+      final attendance = await AttendanceService().getStudentAttendanceSummary(
+        studentId: widget.student.id,
+        startDate: startOfMonth,
+        endDate: now,
+      );
+      final performance = await MarksService().getStudentPerformanceSummary(
+        studentId: widget.student.id,
+      );
+
+      if (mounted) {
+        setState(() {
+          _attendanceSummary = attendance;
+          _performanceSummary = performance;
+          _isLoading = false;
+        });
+      }
+    } catch(e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const GlassCard(
-      child: Column(
-        children: [
-          LabeledProgressBar(
-            label: 'Physics',
-            value: 0.85,
-            color: Color(0xFF667EEA),
+    if (_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    
+    // Fallback logic
+    final attPct = _attendanceSummary['percentage'] ?? '0.0';
+    final avgPctStr = _performanceSummary['average_percentage'] ?? '0.0';
+    final avgPct = double.tryParse(avgPctStr) ?? 0.0;
+    
+    String overallGrade = MarksService().calculateGrade(avgPct);
+    if (_performanceSummary['total_tests'] == 0) overallGrade = 'N/A';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Performance Banner
+        _PerformanceBanner(
+          studentName: widget.student.name.split(' ')[0], 
+          performance: _performanceSummary
+        ),
+        const SizedBox(height: 24),
+        
+        // Stats Cards
+        Wrap(spacing: 12, runSpacing: 12, children: [
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ViewAttendanceScreen(
+                    studentId: widget.student.id,
+                    studentName: widget.student.name,
+                  ),
+                ),
+              );
+            },
+            child: SizedBox(
+                width: (MediaQuery.of(context).size.width - 52) / 2,
+                child: StatCard(
+                    title: 'Attendance',
+                    value: '$attPct%',
+                    icon: Icons.how_to_reg_rounded,
+                    color: AppColors.success,
+                    subtitle: 'This month')),
           ),
-          SizedBox(height: 14),
-          LabeledProgressBar(
-            label: 'Chemistry',
-            value: 0.78,
-            color: Color(0xFF26C6DA),
+          SizedBox(
+              width: (MediaQuery.of(context).size.width - 52) / 2,
+              child: StatCard(
+                  title: 'Overall Grade',
+                  value: overallGrade,
+                  icon: Icons.star_rounded,
+                  color: AppColors.parentAccent,
+                  subtitle: 'Average')),
+          SizedBox(
+              width: (MediaQuery.of(context).size.width - 52) / 2,
+              child: StatCard(
+                  title: 'Fee Status',
+                  value: widget.feeLabel,
+                  icon: widget.feeColor == AppColors.success
+                      ? Icons.check_circle_rounded
+                      : Icons.pending_rounded,
+                  color: widget.feeColor,
+                  subtitle: '${(widget.feeProgress * 100).toInt()}% paid')),
+          SizedBox(
+              width: (MediaQuery.of(context).size.width - 52) / 2,
+              child: const StatCard(
+                  title: 'Class Rank',
+                  value: 'TBD',
+                  icon: Icons.bar_chart_rounded,
+                  color: AppColors.warning,
+                  subtitle: 'Pending calculation')),
+        ]),
+        const SizedBox(height: 24),
+        
+        // Academic Progress overview (using real performance data)
+        const SectionHeader(title: 'Academic Progress'),
+        const SizedBox(height: 14),
+        GlassCard(
+          child: Column(
+            children: [
+              LabeledProgressBar(
+                label: 'Average Score',
+                value: avgPct / 100.0,
+                color: Color(0xFF667EEA),
+              ),
+              const SizedBox(height: 14),
+              LabeledProgressBar(
+                label: 'Highest Score',
+                value: (double.tryParse(_performanceSummary['highest_percentage'] ?? '0') ?? 0) / 100.0,
+                color: AppColors.success,
+              ),
+            ],
           ),
-          SizedBox(height: 14),
-          LabeledProgressBar(
-            label: 'Mathematics',
-            value: 0.91,
-            color: AppColors.success,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
