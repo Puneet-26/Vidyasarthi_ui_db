@@ -1412,7 +1412,7 @@ class _FeeRemindersCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final outstandingFees = student.totalFees - student.feesPaid;
-    final daysUntilDue = 15; // Mock deadline
+    final daysUntilDue = 10 + (student.id.hashCode % 20); // Dynamic mock deadline based on student ID
     
     return GlassCard(
       padding: const EdgeInsets.all(14),
@@ -1557,9 +1557,7 @@ class _CurriculumProgressCardState extends State<_CurriculumProgressCard> {
           (index) {
             final subjectId = _curriculumProgress.keys.elementAt(index);
             final progress = _curriculumProgress[subjectId] ?? 0.0;
-            final subjectName = index < subjectNames.length
-                ? subjectNames[index]
-                : 'Subject ${index + 1}';
+            final subjectName = subjectId.toUpperCase();
             final color = index < colors.length ? colors[index] : AppColors.primary;
 
             return Padding(

@@ -465,6 +465,21 @@ class DatabaseService {
       if (totalFees != null) studentData['total_fees'] = totalFees.toInt();
       if (feesPaid != null) studentData['fees_paid'] = feesPaid.toInt();
       
+      // New fields
+      if (selectedClass != null) studentData['class'] = selectedClass;
+      if (selectedBoard != null) studentData['board'] = selectedBoard;
+      if (address != null) studentData['address'] = address;
+      if (dateOfBirth != null) studentData['date_of_birth'] = dateOfBirth.toIso8601String();
+      if (admissionDate != null) studentData['admission_date'] = admissionDate.toIso8601String();
+      if (emergencyContact != null) studentData['emergency_contact'] = emergencyContact;
+      if (rollNumber != null) {
+        studentData['roll_number'] = rollNumber;
+      } else {
+        // Auto-generate roll number if missing
+        studentData['roll_number'] = 'RN-$ts';
+      }
+      if (bloodGroup != null) studentData['blood_group'] = bloodGroup;
+      
       await _client.from('students').insert(studentData);
       debugPrint('✓ Student record created');
 
@@ -536,15 +551,39 @@ class DatabaseService {
 
       // 3. Insert into users table (teachers are users with role='teacher')
       //    users: id UUID DEFAULT gen_random_uuid() PK, email, name, role, phone_number, credential_id
-      await _client.from('users').insert({
+      final insertedUser = await _client.from('users').insert({
         'email': email.toLowerCase(),
         'name': name,
         'role': 'teacher',
         'phone_number': phoneNumber,
         'is_active': true,
         'credential_id': credId,
-      });
-      debugPrint('✓ Teacher user record created');
+      }).select('id');
+      
+      final userId = insertedUser.isNotEmpty ? insertedUser[0]['id']?.toString() : null;
+      debugPrint('✓ Teacher user record created (id: $userId)');
+
+      // 4. Insert into teachers table (extra profile info)
+      try {
+        await _client.from('teachers').insert({
+          'id': 'tea_$ts',
+          'user_id': userId, // link to users table if possible
+          'name': name,
+          'email': email.toLowerCase(),
+          'phone': phoneNumber,
+          'employee_id': 'EMP-$ts', // Auto-generated employee ID
+          'qualification': qualification,
+          'experience_years': experienceYears,
+          'subjects': subjects.join(', '), // Store as comma-separated string as per migration
+          'classes': classes.join(', '),
+          'board': board,
+          'batch_id': batchId,
+          'is_active': true,
+        });
+        debugPrint('✓ Teacher profile record created');
+      } catch (e) {
+        debugPrint('⚠️ Error creating teacher profile (table might be missing): $e');
+      }
 
       return true;
     } on PostgrestException catch (e) {

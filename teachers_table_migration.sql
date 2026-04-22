@@ -8,6 +8,7 @@ BEGIN
         -- Create teachers table if it doesn't exist
         CREATE TABLE teachers (
             id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+            user_id UUID REFERENCES users(id) ON DELETE CASCADE,
             name TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             phone TEXT,
@@ -81,6 +82,13 @@ BEGIN
                    WHERE table_name='teachers' AND column_name='batch_id') THEN
         ALTER TABLE teachers ADD COLUMN batch_id TEXT;
         RAISE NOTICE 'Added batch_id column';
+    END IF;
+
+    -- Add user_id column if missing
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name='teachers' AND column_name='user_id') THEN
+        ALTER TABLE teachers ADD COLUMN user_id UUID REFERENCES users(id) ON DELETE CASCADE;
+        RAISE NOTICE 'Added user_id column';
     END IF;
 
     -- Add is_active column if missing

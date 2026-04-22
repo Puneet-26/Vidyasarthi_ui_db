@@ -636,6 +636,9 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
   }
   @override
   Widget build(BuildContext context) {
+    final classes = widget.teacher?.classes ?? [];
+    final batchId = widget.teacher?.batchId;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -644,32 +647,34 @@ class _TeacherClassesPageState extends State<_TeacherClassesPage> {
           // Header
           const SectionHeader(title: 'My Classes'),
           const SizedBox(height: 16),
-          const _ClassCard(
-              batch: 'Class 10-A',
-              subject: 'Chemistry',
-              students: 40,
-              room: 'Room 101',
-              time: 'Mon/Tue 9–10 AM',
-              attendanceStatus: 'Marked',
-              present: 38),
-          const SizedBox(height: 10),
-          const _ClassCard(
-              batch: 'Class 10-B',
-              subject: 'Chemistry',
-              students: 38,
-              room: 'Room 201',
-              time: 'Tue 10–11 AM',
-              attendanceStatus: 'Pending',
-              present: 0),
-          const SizedBox(height: 10),
-          const _ClassCard(
-              batch: 'Class 11-A',
-              subject: 'Chemistry',
-              students: 35,
-              room: 'Room 301',
-              time: 'Wed 11 AM–12 PM',
-              attendanceStatus: 'Pending',
-              present: 0),
+          if (classes.isEmpty && (batchId == null || batchId.isEmpty))
+            const Center(child: Text('No classes assigned yet.'))
+          else ...[
+            if (batchId != null && batchId.isNotEmpty)
+              _ClassCard(
+                batch: batchId,
+                subject: widget.teacher?.subjects.isNotEmpty == true ? widget.teacher!.subjects[0] : 'Subject',
+                students: 40,
+                room: 'Room 101',
+                time: 'Assigned Slot',
+                attendanceStatus: 'Pending',
+                present: 0,
+              ),
+            ...classes.where((c) => c != batchId).map((c) => Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    _ClassCard(
+                      batch: c,
+                      subject: widget.teacher?.subjects.isNotEmpty == true ? widget.teacher!.subjects[0] : 'Subject',
+                      students: 35,
+                      room: 'Room TBD',
+                      time: 'Check Timetable',
+                      attendanceStatus: 'Pending',
+                      present: 0,
+                    ),
+                  ],
+                )),
+          ],
           const SizedBox(height: 20),
           
           // Schedule Exam Widget

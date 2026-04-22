@@ -255,52 +255,41 @@ class _StudentHomePage extends StatelessWidget {
                   },
                   child: const StatCard(
                     title: 'Attendance',
-                    value: '92%',
+                    value: '95%', // Placeholder for real attendance calculation
                     icon: Icons.how_to_reg_rounded,
                     color: AppColors.success,
-                    subtitle: 'This month',
+                    subtitle: 'Current Month',
                   ),
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: StatCard(
-                  title: 'Pending Tasks',
-                  value: '4',
+                  title: 'Tasks',
+                  value: '${homework.length + tests.length}',
                   icon: Icons.pending_actions_rounded,
                   color: AppColors.error,
-                  subtitle: 'Due this week',
+                  subtitle: 'Upcoming',
                 ),
               ),
             ],
           ),
           const SizedBox(height: 24),
 
-          // Subject Performance
           const SectionHeader(title: 'Subject Performance'),
           const SizedBox(height: 14),
-          const GlassCard(
+          GlassCard(
             child: Column(
-              children: [
-                LabeledProgressBar(
-                    label: 'Mathematics',
-                    value: 0.85,
-                    color: AppColors.primary),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'Science', value: 0.78, color: AppColors.info),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'English', value: 0.91, color: AppColors.success),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'History', value: 0.65, color: AppColors.warning),
-                SizedBox(height: 14),
-                LabeledProgressBar(
-                    label: 'Computer',
-                    value: 0.95,
-                    color: AppColors.studentAccent),
-              ],
+              children: subjects.isEmpty 
+                ? [const Text('No subjects assigned', style: TextStyle(color: AppColors.textMid))]
+                : subjects.take(5).map((s) => Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: LabeledProgressBar(
+                      label: s.name, 
+                      value: 0.7 + (s.id.hashCode % 30) / 100, // Dynamic mock progress
+                      color: AppColors.primary
+                    ),
+                  )).toList(),
             ),
           ),
           const SizedBox(height: 24),
@@ -356,79 +345,39 @@ class _StudentSubjectsPage extends StatelessWidget {
 
   const _StudentSubjectsPage({required this.subjects, required this.loading});
 
-  static const _physicsModules = [
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'ongoing'},
-    {'status': 'pending'},
-    {'status': 'pending'},
-    {'status': 'pending'},
-    {'status': 'pending'},
-  ];
-  static const _chemModules = [
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'ongoing'},
-    {'status': 'pending'},
-    {'status': 'pending'},
-    {'status': 'pending'},
-  ];
-  static const _mathModules = [
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'done'},
-    {'status': 'ongoing'},
-    {'status': 'pending'},
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(20),
+    if (loading) return const Center(child: CircularProgressIndicator());
+    if (subjects.isEmpty) {
+      return const Center(child: Text('No subjects assigned yet.'));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'My Subjects'),
-          SizedBox(height: 16),
-          _SubjectCard(
-              name: 'Physics',
-              code: 'PHY101',
-              teacher: 'Mr. Arun Kumar',
-              progress: 0.65,
-              color: AppColors.primary,
-              modules: _physicsModules),
-          SizedBox(height: 12),
-          _SubjectCard(
-              name: 'Chemistry',
-              code: 'CHM101',
-              teacher: 'Mrs. Priya Sharma',
-              progress: 0.72,
-              color: AppColors.info,
-              modules: _chemModules),
-          SizedBox(height: 12),
-          _SubjectCard(
-              name: 'Mathematics',
-              code: 'MTH101',
-              teacher: 'Mr. Vikram Singh',
-              progress: 0.85,
-              color: AppColors.success,
-              modules: _mathModules),
-          SizedBox(height: 30),
+          const SectionHeader(title: 'My Subjects'),
+          const SizedBox(height: 16),
+          ...subjects.map((s) => Column(
+                children: [
+                  _SubjectCard(
+                    name: s.name,
+                    code: s.id,
+                    teacher: 'Assigned Faculty',
+                    progress: 0.75, // Placeholder for now, could be calculated
+                    color: AppColors.primary,
+                    modules: const [
+                      {'status': 'done'},
+                      {'status': 'done'},
+                      {'status': 'ongoing'},
+                      {'status': 'pending'},
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              )),
+          const SizedBox(height: 30),
         ],
       ),
     );
@@ -735,45 +684,49 @@ class _StudentTasksPage extends StatelessWidget {
       {required this.homework, required this.tests, required this.loading});
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(20),
+    if (loading) return const Center(child: CircularProgressIndicator());
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Pending Homework'),
-          SizedBox(height: 12),
-          _TaskItem(
-              title: 'Laws of Motion Problems',
-              subject: 'Physics',
-              due: 'Due in 3 days',
-              urgent: false),
-          SizedBox(height: 10),
-          _TaskItem(
-              title: 'Chemical Bonding Worksheet',
-              subject: 'Chemistry',
-              due: 'Due in 5 days',
-              urgent: false),
-          SizedBox(height: 10),
-          _TaskItem(
-              title: 'Integration Practice',
-              subject: 'Mathematics',
-              due: 'Due Tomorrow',
-              urgent: true),
-          SizedBox(height: 24),
-          SectionHeader(title: 'Upcoming Tests'),
-          SizedBox(height: 12),
-          _TestItem(
-              title: 'Mid-Term Physics Exam',
-              date: 'Mar 28, 2026',
-              marks: 100,
-              color: AppColors.primary),
-          SizedBox(height: 10),
-          _TestItem(
-              title: 'Mid-Term Mathematics Exam',
-              date: 'Apr 1, 2026',
-              marks: 100,
-              color: AppColors.studentAccent),
-          SizedBox(height: 30),
+          const SectionHeader(title: 'Pending Homework'),
+          const SizedBox(height: 12),
+          if (homework.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Text('No pending homework', style: TextStyle(color: AppColors.textMid)),
+            )
+          else
+            ...homework.map((hw) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _TaskItem(
+                    title: hw.title,
+                    subject: hw.subjectId,
+                    due: 'Due ${hw.dueDate.day}/${hw.dueDate.month}',
+                    urgent: hw.dueDate.difference(DateTime.now()).inDays <= 1,
+                  ),
+                )),
+          const SizedBox(height: 24),
+          const SectionHeader(title: 'Upcoming Tests'),
+          const SizedBox(height: 12),
+          if (tests.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Text('No upcoming tests', style: TextStyle(color: AppColors.textMid)),
+            )
+          else
+            ...tests.map((test) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _TestItem(
+                    title: test.title,
+                    date: '${test.testDate.day}/${test.testDate.month}/${test.testDate.year}',
+                    marks: test.totalMarks.toInt(),
+                    color: AppColors.primary,
+                  ),
+                )),
+          const SizedBox(height: 30),
         ],
       ),
     );
