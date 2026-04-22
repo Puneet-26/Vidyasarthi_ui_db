@@ -149,23 +149,6 @@ class _ReceptionHomePageState extends State<_ReceptionHomePage> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _QuickActionCard(
-                  title: _isSeeding ? 'Seeding...' : 'Seed Database',
-                  icon: _isSeeding
-                      ? Icons.hourglass_empty
-                      : Icons.storage_rounded,
-                  color: AppColors.warning,
-                  onTap: _isSeeding ? () {} : _seedDatabase,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(child: SizedBox()), // Empty space for alignment
-            ],
-          ),
           const SizedBox(height: 24),
 
           // Statistics
