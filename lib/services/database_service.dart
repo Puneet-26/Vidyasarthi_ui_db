@@ -39,9 +39,15 @@ class DatabaseService {
   }
 
   // ==================== TEACHERS ====================
+  // NOTE: In the actual schema, teachers are stored in the 'users' table with role='teacher'.
+  // There is no separate 'teachers' table.
+
   Future<List<Teacher>> getAllTeachers() async {
     try {
-      final response = await _client.from('teachers').select();
+      final response = await _client
+          .from('users')
+          .select()
+          .eq('role', 'teacher');
       final List<Teacher> result = [];
       for (final t in response as List) {
         try {
@@ -60,8 +66,13 @@ class DatabaseService {
 
   Future<Teacher?> getTeacherById(String teacherId) async {
     try {
-      final response =
-          await _client.from('teachers').select().eq('id', teacherId).single();
+      final response = await _client
+          .from('users')
+          .select()
+          .eq('id', teacherId)
+          .eq('role', 'teacher')
+          .maybeSingle();
+      if (response == null) return null;
       return _teacherFromRow(response);
     } catch (e) {
       return null;
@@ -72,15 +83,19 @@ class DatabaseService {
     try {
       debugPrint('Looking up teacher by email: $email');
       final response = await _client
-          .from('teachers')
+          .from('users')
           .select()
           .eq('email', email.trim().toLowerCase())
+          .eq('role', 'teacher')
           .maybeSingle();
       
       if (response == null) {
         debugPrint('Teacher not found with email: $email');
         // Try case-insensitive search as fallback
-        final allTeachers = await _client.from('teachers').select();
+        final allTeachers = await _client
+            .from('users')
+            .select()
+            .eq('role', 'teacher');
         final match = (allTeachers as List).firstWhere(
           (t) => (t['email'] ?? '').toString().toLowerCase() == email.trim().toLowerCase(),
           orElse: () => <String, dynamic>{},
@@ -101,7 +116,7 @@ class DatabaseService {
     }
   }
 
-  // Helper: build Teacher from a teachers-table row (name/email stored directly)
+  // Helper: build Teacher from a users-table row (role='teacher')
   Teacher _teacherFromRow(Map<String, dynamic> d) {
     List<String> parseList(dynamic val) {
       if (val is List) return List<String>.from(val);
@@ -110,11 +125,11 @@ class DatabaseService {
     }
     return Teacher(
       id: d['id']?.toString() ?? '',
-      userId: d['user_id']?.toString() ?? d['id']?.toString() ?? '',
+      userId: d['id']?.toString() ?? '',
       name: d['name']?.toString() ?? '',
       email: d['email']?.toString() ?? '',
-      phoneNumber: d['phone']?.toString() ?? d['phone_number']?.toString() ?? '',
-      employeeId: d['employee_id']?.toString() ?? '',
+      phoneNumber: d['phone_number']?.toString() ?? d['phone']?.toString() ?? '',
+      employeeId: d['credential_id']?.toString() ?? '',
       subjects: parseList(d['subjects']),
       classes: parseList(d['classes']),
       board: d['board']?.toString() ?? 'CBSE',
@@ -336,7 +351,10 @@ class DatabaseService {
   }
 
   /// Simple student creation for current database schema
-  /// Works with the actual table structure (id, name, email, phone, parent_name, parent_phone, batch_id, enrollment_status)
+  /// Works with the actual table structure:
+  ///   students: id TEXT PK, user_id UUID NOT NULL FK -> users(id), name, email, phone,
+  ///            parent_name, parent_email, parent_phone, batch_id FK -> batches(id),
+  ///            subject_ids TEXT[], total_fees, fees_paid, fee_status, enrollment_status
   Future<bool> addStudentSimple({
     required String name,
     required String email,
@@ -362,11 +380,13 @@ class DatabaseService {
   }) async {
     try {
       debugPrint('Adding student: $name ($email)');
+      final ts = DateTime.now().millisecondsSinceEpoch;
 
       // 1. Create student auth credentials (skip if already exists)
+      final credId = 'cred_stu_$ts';
       try {
         await _client.from('auth_credentials').insert({
-          'id': 'cred_stu_${DateTime.now().millisecondsSinceEpoch}',
+          'id': credId,
           'email': email.toLowerCase(),
           'password_hash': 'Student@123',
           'name': name,
@@ -380,7 +400,7 @@ class DatabaseService {
       // 2. Create parent auth credentials (skip if already exists)
       try {
         await _client.from('auth_credentials').insert({
-          'id': 'cred_par_${DateTime.now().millisecondsSinceEpoch}',
+          'id': 'cred_par_$ts',
           'email': parentEmail.toLowerCase(),
           'password_hash': 'Parent@123',
           'name': parentName,
@@ -391,34 +411,77 @@ class DatabaseService {
         debugPrint('Parent auth credentials may already exist, continuing: $e');
       }
 
-      // 3. Insert into students table
+      // 3. Create a users row (user_id UUID is required by students FK)
+      //    users table: id UUID DEFAULT gen_random_uuid() PK, email, name, role, phone_number, credential_id
+      String? userId;
+      try {
+        final insertedUser = await _client.from('users').insert({
+          'email': email.toLowerCase(),
+          'name': name,
+          'role': 'student',
+          'phone_number': phone,
+          'is_active': true,
+          'credential_id': credId,
+        }).select('id');
+        userId = insertedUser.isNotEmpty ? insertedUser[0]['id']?.toString() : null;
+        debugPrint('✓ User record created (id: $userId)');
+      } catch (e) {
+        debugPrint('User creation issue, trying to find existing: $e');
+        // If user already exists, look them up
+        try {
+          final existingUser = await _client
+              .from('users')
+              .select('id')
+              .eq('email', email.toLowerCase())
+              .maybeSingle();
+          userId = existingUser?['id']?.toString();
+        } catch (_) {}
+      }
+
+      if (userId == null || userId.isEmpty) {
+        debugPrint('❌ Cannot create student: user_id is required');
+        return false;
+      }
+
+      // 4. Insert into students table
       // CRITICAL: parent_name format MUST be "Name (email)" for parent-student isolation
-      // This format is used by getStudentsByParentEmail() to filter students
-      // DO NOT CHANGE without updating the filtering logic
       final parentNameWithEmail = '$parentName ($parentEmail)';
+      final studentId = 'stu_$ts';
       
-      // Only insert columns that actually exist in the students table
       final studentData = <String, dynamic>{
+        'id': studentId,
+        'user_id': userId,
         'name': name,
         'email': email,
         'phone': phone,
         'parent_name': parentNameWithEmail,
+        'parent_email': parentEmail,
         'parent_phone': parentPhone,
         'enrollment_status': 'active',
       };
       
-      // batch_id is uuid type - only add if valid
       if (batchId.isNotEmpty) studentData['batch_id'] = batchId;
-      if (selectedClass != null) studentData['class'] = selectedClass;
-      if (selectedBoard != null) studentData['board'] = selectedBoard;
-      if (totalFees != null) studentData['total_fees'] = totalFees;
-      if (feesPaid != null) studentData['fees_paid'] = feesPaid;
-      if (admissionDate != null) studentData['admission_date'] = admissionDate.toIso8601String().split('T')[0];
-      if (dateOfBirth != null) studentData['date_of_birth'] = dateOfBirth.toIso8601String().split('T')[0];
-      if (address != null && address.isNotEmpty) studentData['address'] = address;
+      if (subjectIds != null && subjectIds.isNotEmpty) studentData['subject_ids'] = subjectIds;
+      if (totalFees != null) studentData['total_fees'] = totalFees.toInt();
+      if (feesPaid != null) studentData['fees_paid'] = feesPaid.toInt();
       
       await _client.from('students').insert(studentData);
       debugPrint('✓ Student record created');
+
+      // 5. Create parent user & auth if we have parent info
+      try {
+        await _client.from('users').insert({
+          'email': parentEmail.toLowerCase(),
+          'name': parentName,
+          'role': 'parent',
+          'phone_number': parentPhone,
+          'is_active': true,
+          'credential_id': 'cred_par_$ts',
+        });
+        debugPrint('✓ Parent user record created');
+      } catch (e) {
+        debugPrint('Parent user may already exist, continuing: $e');
+      }
 
       return true;
     } on PostgrestException catch (e) {
@@ -434,7 +497,9 @@ class DatabaseService {
   }
 
   /// Simple teacher creation for current database schema
-  /// Auto-generates email and creates auth credentials
+  /// In this schema, teachers are stored in the 'users' table with role='teacher'
+  /// There is NO separate 'teachers' table.
+  /// Auto-generates email and creates auth credentials + user record.
   Future<bool> addTeacherSimple({
     required String name,
     required String phoneNumber,
@@ -449,15 +514,16 @@ class DatabaseService {
   }) async {
     try {
       debugPrint('Adding teacher: $name');
+      final ts = DateTime.now().millisecondsSinceEpoch;
 
       // 1. Auto-generate email from name
-      final email = name.toLowerCase().trim().replaceAll(' ', '.') + '@teachers.com';
-      final employeeId = 'EMP${DateTime.now().millisecondsSinceEpoch}';
+      final email = '${name.toLowerCase().trim().replaceAll(' ', '.')}@teachers.com';
+      final credId = 'cred_tea_$ts';
 
       // 2. Create teacher auth credentials (skip if already exists)
       try {
         await _client.from('auth_credentials').insert({
-          'id': 'cred_tea_${DateTime.now().millisecondsSinceEpoch}',
+          'id': credId,
           'email': email.toLowerCase(),
           'password_hash': 'Teacher@123',
           'name': name,
@@ -468,33 +534,23 @@ class DatabaseService {
         debugPrint('Teacher auth credentials may already exist, continuing: $e');
       }
 
-      // 3. Insert into teachers table
-      final teacherData = <String, dynamic>{
-        'id': 'teacher_${DateTime.now().millisecondsSinceEpoch}',
+      // 3. Insert into users table (teachers are users with role='teacher')
+      //    users: id UUID DEFAULT gen_random_uuid() PK, email, name, role, phone_number, credential_id
+      await _client.from('users').insert({
+        'email': email.toLowerCase(),
         'name': name,
-        'email': email,
-        'phone': phoneNumber,
-        'employee_id': employeeId,
-        'subjects': subjects.join(','),
-        'classes': classes.join(','),
-        'board': board,
+        'role': 'teacher',
+        'phone_number': phoneNumber,
         'is_active': true,
-      };
-      
-      if (batchId != null) teacherData['batch_id'] = batchId;
-      if (qualification != null) teacherData['qualification'] = qualification;
-      if (experienceYears > 0) teacherData['experience_years'] = experienceYears;
-      if (salary > 0) teacherData['salary'] = salary;
-      if (joiningDate != null) teacherData['joining_date'] = joiningDate.toIso8601String().split('T')[0];
-      if (subjects.isNotEmpty) teacherData['specialization'] = subjects[0];
-      
-      await _client.from('teachers').insert(teacherData);
-      debugPrint('✓ Teacher record created');
+        'credential_id': credId,
+      });
+      debugPrint('✓ Teacher user record created');
 
       return true;
     } on PostgrestException catch (e) {
       debugPrint('❌ Supabase error adding teacher: ${e.message}');
       debugPrint('Error code: ${e.code}');
+      debugPrint('Error details: ${e.details}');
       return false;
     } catch (e) {
       debugPrint('❌ Error adding teacher: $e');
@@ -505,14 +561,20 @@ class DatabaseService {
   Future<bool> createBatch(Batch batch) async {
     try {
       debugPrint('Creating batch: ${batch.name}');
-      // Actual DB columns: id (uuid auto), batch_name, subject_id, schedule, created_at
+      // Actual DB columns: id TEXT PK, name TEXT, level TEXT, subject_ids TEXT[], created_at, updated_at
+      final batchId = 'batch_${DateTime.now().millisecondsSinceEpoch}';
       await _client.from('batches').insert({
-        'batch_name': batch.name,
+        'id': batchId,
+        'name': batch.name,
+        'level': batch.level.isNotEmpty ? batch.level : '10',
+        'subject_ids': batch.subjects.isNotEmpty ? batch.subjects : <String>[],
       });
       debugPrint('✓ Batch created successfully');
       return true;
     } on PostgrestException catch (e) {
       debugPrint('❌ Supabase error creating batch: ${e.message}');
+      debugPrint('Error code: ${e.code}');
+      debugPrint('Error details: ${e.details}');
       return false;
     } catch (e) {
       debugPrint('❌ Error creating batch: $e');
